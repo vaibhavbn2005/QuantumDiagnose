@@ -1,46 +1,111 @@
-from flask import Flask, jsonify
+from flask import Flask, render_template, request, jsonify
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from pathlib import Path
 
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "Training.csv"
+TEMPLATE_DIR = BASE_DIR / "templates"
+STATIC_DIR = BASE_DIR / "static"
+
+app = Flask(
+    __name__,
+    template_folder=str(TEMPLATE_DIR),
+    static_folder=str(STATIC_DIR)
+)
+
+# Load training data
+df = pd.read_csv(DATA_PATH)
+
+# First column is disease, remaining columns are symptoms
+target_column = "disease"
+symptom_columns = [col for col in df.columns if col != target_column]
+
+X = df[symptom_columns]
+y = df[target_column]
+
+# Train ML model
+model = RandomForestClassifier(
+    n_estimators=200,
+    random_state=42
+)
+model.fit(X, y)
+
 
 @app.route("/")
 def home():
-    return """
-    <html>
-    <head>
-        <title>QuantumDiagnose</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                text-align: center;
-                padding: 80px;
-                background: #f5f7fb;
-            }
-            h1 {
-                color: #2563eb;
-            }
-            .box {
-                background: white;
-                padding: 40px;
-                border-radius: 15px;
-                max-width: 600px;
-                margin: auto;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            }
-        </style>
-    </head>
-    <body>
-        <div class="box">
-            <h1>QuantumDiagnose</h1>
-            <p>Quantum and ML based disease prediction system</p>
-            <p>Application deployed successfully!</p>
-        </div>
-    </body>
-    </html>
-    """
+    return render_template(
+        "index.html",
+        symptoms=symptom_columns
+    )
 
-@app.route("/api/health")
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        data = request.get_json()
+
+        if not data or "symptoms" not in data:
+            return jsonify({"error": "No symptoms provided"}), 400
+
+        selected_symptoms = data["symptoms"]
+
+        if not selected_symptoms:
+            return jsonify({"error": "Please select at least one symptom"}), 400
+
+        # Create input with all symptoms set to 0
+        input_data = {symptom: 0 for symptom in symptom_columns}
+
+        # Set selected symptoms to 1
+        for symptom in selected_symptoms:
+            if symptom in input_data:
+                input_data[symptom] = 1
+
+        input_df = pd.DataFrame([input_data])
+
+        # Prediction
+        prediction = model.predict(input_df)[0]
+        probabilities = model.predict_proba(input_df)[0]
+
+        # Top predictions
+        classes = model.classes_
+
+        results = sorted(
+            zip(classes, probabilities),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        top_predictions = [
+            {
+                "disease": disease,
+                "confidence": round(float(probability) * 100, 2)
+            }
+            for disease, probability in results[:5]
+        ]
+
+        confidence = top_predictions[0]["confidence"]
+
+        return jsonify({
+            "disease": prediction,
+            "confidence": confidence,
+            "top_predictions": top_predictions,
+            "message": "This is an educational ML prediction and should not be used as a medical diagnosis."
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
+@app.route("/health")
 def health():
     return jsonify({"status": "ok"})
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
