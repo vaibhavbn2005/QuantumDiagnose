@@ -29,6 +29,7 @@ model = RandomForestClassifier(
     n_estimators=200,
     random_state=42
 )
+
 model.fit(X, y)
 
 
@@ -46,15 +47,21 @@ def predict():
         data = request.get_json()
 
         if not data or "symptoms" not in data:
-            return jsonify({"error": "No symptoms provided"}), 400
+            return jsonify({
+                "error": "No symptoms provided"
+            }), 400
 
         selected_symptoms = data["symptoms"]
 
         if not selected_symptoms:
-            return jsonify({"error": "Please select at least one symptom"}), 400
+            return jsonify({
+                "error": "Please select at least one symptom"
+            }), 400
 
         # Create input with all symptoms set to 0
-        input_data = {symptom: 0 for symptom in symptom_columns}
+        input_data = {
+            symptom: 0 for symptom in symptom_columns
+        }
 
         # Set selected symptoms to 1
         for symptom in selected_symptoms:
@@ -79,7 +86,9 @@ def predict():
         top_predictions = [
             {
                 "disease": disease,
-                "confidence": round(float(probability) * 100, 2)
+                "confidence": round(
+                    float(probability) * 100, 2
+                )
             }
             for disease, probability in results[:5]
         ]
@@ -90,7 +99,10 @@ def predict():
             "disease": prediction,
             "confidence": confidence,
             "top_predictions": top_predictions,
-            "message": "This is an educational ML prediction and should not be used as a medical diagnosis."
+            "message": (
+                "This is an educational ML prediction and "
+                "should not be used as a medical diagnosis."
+            )
         })
 
     except Exception as e:
@@ -101,7 +113,9 @@ def predict():
 
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({
+        "status": "ok"
+    })
 
 
 if __name__ == "__main__":
