@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuantumDiagnose</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="background"></div>
+  <main class="container">
+    <header class="hero">
+      <div class="logo">Q</div>
+      <div>
+        <h1>QuantumDiagnose</h1>
+        <p>Machine-learning based symptom analysis</p>
+      </div>
+      <span class="badge">ML Prototype</span>
+    </header>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Enter symptoms</h2>
+          <p>Select the symptoms reported by the patient.</p>
+        </div>
+        <button id="clearBtn" class="secondary">Clear</button>
+      </div>
+
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Search symptoms...">
+      </div>
+
+      <div id="symptomGrid" class="symptom-grid">
+        {% for symptom in symptoms %}
+        <label class="symptom" data-name="{{ symptom|replace('_', ' ') }}">
+          <input type="checkbox" value="{{ symptom }}">
+          <span>{{ symptom|replace('_', ' ')|title }}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="selected-line">
+        <span><strong id="count">0</strong> symptoms selected</span>
+        <button id="predictBtn" class="primary">Predict Possible Disease</button>
+      </div>
+    </section>
+
+    <section id="result" class="card result hidden">
+      <div class="result-label">Prediction</div>
+      <h2 id="disease">—</h2>
+      <div class="confidence-bar"><span id="confidenceBar"></span></div>
+      <p id="confidenceText"></p>
+      <div id="topPredictions" class="top-list"></div>
+      <p class="disclaimer" id="message"></p>
+    </section>
+
+    <footer>
+      <span>QuantumDiagnose • Educational project</span>
+      <a href="/health" target="_blank">System status</a>
+    </footer>
+  </main>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
