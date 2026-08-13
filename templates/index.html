@@ -21,14 +21,18 @@
 
     <header class="hero">
 
-        <div class="logo">Q</div>
+        <div class="logo">
+            Q
+        </div>
 
         <div class="brand">
             <h1>QuantumDiagnose</h1>
             <p>Machine-learning based symptom analysis</p>
         </div>
 
-        <span class="badge">ML Prototype</span>
+        <span class="badge">
+            ML Prototype
+        </span>
 
         <div class="auth-buttons">
 
@@ -74,6 +78,8 @@
         </div>
 
 
+        <!-- ================= SEARCH ================= -->
+
         <div class="search-wrap">
 
             <input
@@ -83,6 +89,8 @@
 
         </div>
 
+
+        <!-- ================= SYMPTOM GRID ================= -->
 
         <div id="symptomGrid"
              class="symptom-grid">
@@ -107,6 +115,8 @@
 
         </div>
 
+
+        <!-- ================= SELECTED COUNT ================= -->
 
         <div class="selected-line">
 
@@ -138,17 +148,30 @@
             —
         </h2>
 
+
+        <!-- Confidence -->
+
         <div class="confidence-bar">
+
             <span id="confidenceBar"></span>
+
         </div>
 
         <p id="confidenceText"></p>
 
-        <h3>Top Predictions</h3>
+
+        <!-- Top Predictions -->
+
+        <h3>
+            Top Predictions
+        </h3>
 
         <div id="topPredictions"
              class="top-list">
         </div>
+
+
+        <!-- Disclaimer / Message -->
 
         <p id="message"
            class="disclaimer">
@@ -157,92 +180,69 @@
     </section>
 
 
-    <!-- ================= AUTH MODAL ================= -->
+    <!-- ==================================================
+         AUTHENTICATION MODAL
+         EMAIL + PASSWORD ONLY
+         ================================================== -->
 
     <div id="authModal"
          class="modal hidden">
 
         <div class="modal-content">
 
+
+            <!-- Close -->
+
             <button id="closeModal"
-                    class="close-btn">
+                    class="close-btn"
+                    type="button">
                 ×
             </button>
+
+
+            <!-- Title -->
 
             <h2 id="authTitle">
                 Login
             </h2>
 
 
-            <!-- Authentication method -->
-
-            <div class="auth-tabs">
-
-                <button id="emailTab"
-                        class="auth-tab active">
-                    Email
-                </button>
-
-                <button id="phoneTab"
-                        class="auth-tab">
-                    Phone
-                </button>
-
-            </div>
-
-
-            <!-- EMAIL AUTH -->
+            <!-- ================= EMAIL AUTH ================= -->
 
             <div id="emailAuth">
+
+
+                <!-- Email -->
 
                 <input
                     id="authEmail"
                     type="email"
-                    placeholder="Email">
+                    placeholder="Email"
+                    autocomplete="email">
+
+
+                <!-- Password -->
 
                 <input
                     id="authPassword"
                     type="password"
-                    placeholder="Password">
+                    placeholder="Password"
+                    autocomplete="current-password">
+
+
+                <!-- Submit -->
 
                 <button id="authSubmit"
-                        class="primary">
+                        class="primary"
+                        type="button">
                     Login
                 </button>
 
-            </div>
-
-
-            <!-- PHONE AUTH -->
-
-            <div id="phoneAuth"
-                 class="hidden">
-
-                <input
-                    id="phoneNumber"
-                    type="tel"
-                    placeholder="+91XXXXXXXXXX">
-
-                <div id="recaptcha-container"></div>
-
-                <button id="sendOtpBtn"
-                        class="primary">
-                    Send OTP
-                </button>
-
-                <input
-                    id="otpCode"
-                    type="text"
-                    placeholder="Enter OTP"
-                    maxlength="6">
-
-                <button id="verifyOtpBtn"
-                        class="primary">
-                    Verify OTP
-                </button>
 
             </div>
 
+
+            <!-- Firebase message -->
 
             <p id="authMessage"></p>
 
@@ -270,8 +270,7 @@
 
 
 <!-- ==================================================
-     FIREBASE + APPLICATION JAVASCRIPT
-     IMPORTANT: THIS IS THE ONLY SCRIPT TAG NEEDED
+     APPLICATION JAVASCRIPT
      ================================================== -->
 
 <script type="module"
@@ -279,4 +278,5 @@
 </script>
 
 </body>
+
 </html>
