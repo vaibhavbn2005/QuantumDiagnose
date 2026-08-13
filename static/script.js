@@ -1,13 +1,17 @@
 // ============================================================
 // QUANTUMDIAGNOSE
-// Firebase Authentication + Symptom Prediction
+// Firebase Authentication + Firestore + Prediction
 // ============================================================
+
 
 // ============================================================
 // FIREBASE IMPORTS
 // ============================================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
 
 import {
     getAuth,
@@ -18,112 +22,270 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+
 // ============================================================
 // FIREBASE CONFIGURATION
 // ============================================================
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
-    authDomain: "quantumdiagnose.firebaseapp.com",
-    projectId: "quantumdiagnose",
-    storageBucket: "quantumdiagnose.firebasestorage.app",
-    messagingSenderId: "727641186346",
-    appId: "1:727641186346:web:c8eed6274fd1582169e353",
-    measurementId: "G-DSDM1YM4WB"
+
+    apiKey:
+        "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
+
+    authDomain:
+        "quantumdiagnose.firebaseapp.com",
+
+    projectId:
+        "quantumdiagnose",
+
+    storageBucket:
+        "quantumdiagnose.firebasestorage.app",
+
+    messagingSenderId:
+        "727641186346",
+
+    appId:
+        "1:727641186346:web:c8eed6274fd1582169e353",
+
+    measurementId:
+        "G-DSDM1YM4WB"
 };
+
 
 
 // ============================================================
 // INITIALIZE FIREBASE
 // ============================================================
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const app =
+    initializeApp(firebaseConfig);
 
 
-// ============================================================
-// GET HTML ELEMENTS
-// ============================================================
+const auth =
+    getAuth(app);
 
-// Authentication buttons
-const loginBtn = document.getElementById("loginBtn");
-const signupBtn = document.getElementById("signupBtn");
-const logoutBtn = document.getElementById("logoutBtn");
 
-// Authentication modal
-const authModal = document.getElementById("authModal");
-const closeModal = document.getElementById("closeModal");
+const db =
+    getFirestore(app);
 
-const authTitle = document.getElementById("authTitle");
-const authEmail = document.getElementById("authEmail");
-const authPassword = document.getElementById("authPassword");
-const authSubmit = document.getElementById("authSubmit");
-const authMessage = document.getElementById("authMessage");
-
-// Symptom elements
-const search = document.getElementById("search");
-const symptomGrid = document.getElementById("symptomGrid");
-const count = document.getElementById("count");
-
-const clearBtn = document.getElementById("clearBtn");
-const predictBtn = document.getElementById("predictBtn");
-
-// Result elements
-const result = document.getElementById("result");
-const disease = document.getElementById("disease");
-const confidenceBar = document.getElementById("confidenceBar");
-const confidenceText = document.getElementById("confidenceText");
-const topPredictions = document.getElementById("topPredictions");
-const message = document.getElementById("message");
 
 
 // ============================================================
-// AUTHENTICATION MODE
+// AUTH ELEMENTS
 // ============================================================
 
-let authMode = "login";
+const loginBtn =
+    document.getElementById("loginBtn");
+
+
+const signupBtn =
+    document.getElementById("signupBtn");
+
+
+const logoutBtn =
+    document.getElementById("logoutBtn");
+
+
+const authModal =
+    document.getElementById("authModal");
+
+
+const closeModal =
+    document.getElementById("closeModal");
+
+
+const authTitle =
+    document.getElementById("authTitle");
+
+
+const authEmail =
+    document.getElementById("authEmail");
+
+
+const authPassword =
+    document.getElementById("authPassword");
+
+
+const authSubmit =
+    document.getElementById("authSubmit");
+
+
+const authMessage =
+    document.getElementById("authMessage");
+
+
+const userStatus =
+    document.getElementById("userStatus");
+
 
 
 // ============================================================
-// OPEN LOGIN MODAL
+// PROFILE ELEMENTS
+// ============================================================
+
+const profileModal =
+    document.getElementById("profileModal");
+
+
+const profileName =
+    document.getElementById("profileName");
+
+
+const profileGender =
+    document.getElementById("profileGender");
+
+
+const profileAge =
+    document.getElementById("profileAge");
+
+
+const profileHeight =
+    document.getElementById("profileHeight");
+
+
+const profileWeight =
+    document.getElementById("profileWeight");
+
+
+const saveProfileBtn =
+    document.getElementById("saveProfileBtn");
+
+
+const profileMessage =
+    document.getElementById("profileMessage");
+
+
+
+// ============================================================
+// SYMPTOM ELEMENTS
+// ============================================================
+
+const search =
+    document.getElementById("search");
+
+
+const symptomGrid =
+    document.getElementById("symptomGrid");
+
+
+const count =
+    document.getElementById("count");
+
+
+const clearBtn =
+    document.getElementById("clearBtn");
+
+
+const predictBtn =
+    document.getElementById("predictBtn");
+
+
+
+// ============================================================
+// RESULT ELEMENTS
+// ============================================================
+
+const result =
+    document.getElementById("result");
+
+
+const disease =
+    document.getElementById("disease");
+
+
+const confidenceBar =
+    document.getElementById("confidenceBar");
+
+
+const confidenceText =
+    document.getElementById("confidenceText");
+
+
+const topPredictions =
+    document.getElementById("topPredictions");
+
+
+const message =
+    document.getElementById("message");
+
+
+
+// ============================================================
+// AUTH MODE
+// ============================================================
+
+let authMode =
+    "login";
+
+
+
+// ============================================================
+// OPEN LOGIN
 // ============================================================
 
 function openLogin() {
 
     authMode = "login";
 
-    authTitle.textContent = "Login";
-    authSubmit.textContent = "Login";
+    authTitle.textContent =
+        "Login";
 
-    authEmail.value = "";
-    authPassword.value = "";
+    authSubmit.textContent =
+        "Login";
 
-    authMessage.textContent = "";
-    authMessage.style.color = "";
+    authEmail.value =
+        "";
 
-    authModal.classList.remove("hidden");
+    authPassword.value =
+        "";
+
+    authMessage.textContent =
+        "";
+
+    authModal.classList.remove(
+        "hidden"
+    );
 }
 
 
+
 // ============================================================
-// OPEN SIGNUP MODAL
+// OPEN SIGNUP
 // ============================================================
 
 function openSignup() {
 
     authMode = "signup";
 
-    authTitle.textContent = "Create Account";
-    authSubmit.textContent = "Sign Up";
+    authTitle.textContent =
+        "Create Account";
 
-    authEmail.value = "";
-    authPassword.value = "";
+    authSubmit.textContent =
+        "Sign Up";
 
-    authMessage.textContent = "";
-    authMessage.style.color = "";
+    authEmail.value =
+        "";
 
-    authModal.classList.remove("hidden");
+    authPassword.value =
+        "";
+
+    authMessage.textContent =
+        "";
+
+    authModal.classList.remove(
+        "hidden"
+    );
 }
+
 
 
 // ============================================================
@@ -132,13 +294,12 @@ function openSignup() {
 
 function closeAuthModal() {
 
-    authModal.classList.add("hidden");
+    authModal.classList.add(
+        "hidden"
+    );
 
-    authEmail.value = "";
-    authPassword.value = "";
-
-    authMessage.textContent = "";
 }
+
 
 
 // ============================================================
@@ -147,13 +308,13 @@ function closeAuthModal() {
 
 if (loginBtn) {
 
-    loginBtn.addEventListener("click", function () {
-
-        openLogin();
-
-    });
+    loginBtn.addEventListener(
+        "click",
+        openLogin
+    );
 
 }
+
 
 
 // ============================================================
@@ -162,113 +323,98 @@ if (loginBtn) {
 
 if (signupBtn) {
 
-    signupBtn.addEventListener("click", function () {
-
-        openSignup();
-
-    });
+    signupBtn.addEventListener(
+        "click",
+        openSignup
+    );
 
 }
 
 
+
 // ============================================================
-// CLOSE BUTTON
+// CLOSE AUTH
 // ============================================================
 
 if (closeModal) {
 
-    closeModal.addEventListener("click", function () {
-
-        closeAuthModal();
-
-    });
-
-}
-
-
-// ============================================================
-// CLOSE MODAL WHEN CLICKING OUTSIDE
-// ============================================================
-
-if (authModal) {
-
-    authModal.addEventListener("click", function (event) {
-
-        if (event.target === authModal) {
-
-            closeAuthModal();
-
-        }
-
-    });
+    closeModal.addEventListener(
+        "click",
+        closeAuthModal
+    );
 
 }
 
 
+
 // ============================================================
-// FIREBASE AUTHENTICATION
+// AUTHENTICATION
 // ============================================================
 
 if (authSubmit) {
 
-    authSubmit.addEventListener("click", async function () {
+    authSubmit.addEventListener(
+        "click",
+        async function () {
 
-        const email = authEmail.value.trim();
-        const password = authPassword.value.trim();
-
-
-        // --------------------------------------------------------
-        // VALIDATION
-        // --------------------------------------------------------
-
-        if (!email) {
-
-            authMessage.textContent = "Please enter your email.";
-            authMessage.style.color = "red";
-
-            return;
-        }
+            const email =
+                authEmail.value.trim();
 
 
-        if (!password) {
-
-            authMessage.textContent = "Please enter your password.";
-            authMessage.style.color = "red";
-
-            return;
-        }
+            const password =
+                authPassword.value.trim();
 
 
-        if (password.length < 6) {
 
-            authMessage.textContent =
-                "Password must contain at least 6 characters.";
+            if (!email) {
 
-            authMessage.style.color = "red";
+                authMessage.textContent =
+                    "Please enter your email.";
 
-            return;
-        }
+                return;
 
-
-        // --------------------------------------------------------
-        // SHOW LOADING
-        // --------------------------------------------------------
-
-        authSubmit.disabled = true;
-        authSubmit.textContent = "Please wait...";
-
-        authMessage.textContent = "";
+            }
 
 
-        try {
 
-            // ====================================================
-            // SIGN UP
-            // ====================================================
+            if (!password) {
 
-            if (authMode === "signup") {
+                authMessage.textContent =
+                    "Please enter your password.";
 
-                const userCredential =
+                return;
+
+            }
+
+
+
+            if (password.length < 6) {
+
+                authMessage.textContent =
+                    "Password must contain at least 6 characters.";
+
+                return;
+
+            }
+
+
+
+            authSubmit.disabled =
+                true;
+
+
+            authSubmit.textContent =
+                "Please wait...";
+
+
+
+            try {
+
+                if (
+                    authMode ===
+                    "signup"
+                ) {
+
                     await createUserWithEmailAndPassword(
                         auth,
                         email,
@@ -276,35 +422,15 @@ if (authSubmit) {
                     );
 
 
-                console.log(
-                    "Account created:",
-                    userCredential.user.uid
-                );
+                    authMessage.textContent =
+                        "Account created successfully.";
+
+                    authMessage.style.color =
+                        "green";
 
 
-                authMessage.textContent =
-                    "Account created successfully!";
+                } else {
 
-                authMessage.style.color = "green";
-
-
-                // Close after short delay
-                setTimeout(() => {
-
-                    closeAuthModal();
-
-                }, 1000);
-
-            }
-
-
-            // ====================================================
-            // LOGIN
-            // ====================================================
-
-            else {
-
-                const userCredential =
                     await signInWithEmailAndPassword(
                         auth,
                         email,
@@ -312,148 +438,110 @@ if (authSubmit) {
                     );
 
 
-                console.log(
-                    "Login successful:",
-                    userCredential.user.uid
+                    authMessage.textContent =
+                        "Login successful.";
+
+                    authMessage.style.color =
+                        "green";
+
+                }
+
+
+
+                setTimeout(
+                    closeAuthModal,
+                    700
                 );
 
 
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                let errorMessage =
+                    "Authentication failed.";
+
+
+
+                switch (error.code) {
+
+                    case "auth/email-already-in-use":
+
+                        errorMessage =
+                            "This email is already registered.";
+
+                        break;
+
+
+                    case "auth/invalid-email":
+
+                        errorMessage =
+                            "Please enter a valid email.";
+
+                        break;
+
+
+                    case "auth/weak-password":
+
+                        errorMessage =
+                            "Password must contain at least 6 characters.";
+
+                        break;
+
+
+                    case "auth/invalid-credential":
+
+                        errorMessage =
+                            "Incorrect email or password.";
+
+                        break;
+
+
+                    case "auth/operation-not-allowed":
+
+                        errorMessage =
+                            "Email/Password authentication is not enabled.";
+
+                        break;
+
+
+                    default:
+
+                        errorMessage =
+                            error.message;
+
+                }
+
+
+
                 authMessage.textContent =
-                    "Login successful!";
+                    errorMessage;
 
-                authMessage.style.color = "green";
-
-
-                setTimeout(() => {
-
-                    closeAuthModal();
-
-                }, 700);
-
-            }
+                authMessage.style.color =
+                    "red";
 
 
-        } catch (error) {
+            } finally {
 
-            console.error(
-                "Firebase authentication error:",
-                error
-            );
+                authSubmit.disabled =
+                    false;
 
 
-            // ----------------------------------------------------
-            // FRIENDLY ERROR MESSAGES
-            // ----------------------------------------------------
-
-            let errorMessage = "Something went wrong.";
-
-
-            switch (error.code) {
-
-                case "auth/email-already-in-use":
-
-                    errorMessage =
-                        "This email is already registered. Please login.";
-
-                    break;
-
-
-                case "auth/invalid-email":
-
-                    errorMessage =
-                        "Please enter a valid email address.";
-
-                    break;
-
-
-                case "auth/weak-password":
-
-                    errorMessage =
-                        "Password must contain at least 6 characters.";
-
-                    break;
-
-
-                case "auth/invalid-credential":
-
-                    errorMessage =
-                        "Incorrect email or password.";
-
-                    break;
-
-
-                case "auth/user-not-found":
-
-                    errorMessage =
-                        "No account found with this email.";
-
-                    break;
-
-
-                case "auth/wrong-password":
-
-                    errorMessage =
-                        "Incorrect password.";
-
-                    break;
-
-
-                case "auth/too-many-requests":
-
-                    errorMessage =
-                        "Too many attempts. Please try again later.";
-
-                    break;
-
-
-                case "auth/network-request-failed":
-
-                    errorMessage =
-                        "Network error. Please check your internet connection.";
-
-                    break;
-
-
-                case "auth/operation-not-allowed":
-
-                    errorMessage =
-                        "Email/Password authentication is not enabled in Firebase.";
-
-                    break;
-
-
-                default:
-
-                    errorMessage =
-                        error.message || "Authentication failed.";
-
-                    break;
-            }
-
-
-            authMessage.textContent = errorMessage;
-            authMessage.style.color = "red";
-
-
-        } finally {
-
-            authSubmit.disabled = false;
-
-            if (authMode === "login") {
-
-                authSubmit.textContent = "Login";
-
-            } else {
-
-                authSubmit.textContent = "Sign Up";
+                authSubmit.textContent =
+                    authMode === "login"
+                        ? "Login"
+                        : "Sign Up";
 
             }
 
         }
-
-    });
+    );
 
 }
+
 
 
 // ============================================================
@@ -462,104 +550,472 @@ if (authSubmit) {
 
 if (logoutBtn) {
 
-    logoutBtn.addEventListener("click", async function () {
+    logoutBtn.addEventListener(
+        "click",
+        async function () {
 
-        try {
+            try {
 
-            await signOut(auth);
+                await signOut(auth);
 
-            console.log("User logged out.");
+            } catch (error) {
 
-        } catch (error) {
+                console.error(
+                    "Logout error:",
+                    error
+                );
 
-            console.error(
-                "Logout error:",
-                error
-            );
+            }
 
         }
-
-    });
+    );
 
 }
 
 
+
 // ============================================================
-// FIREBASE AUTH STATE
+// CHECK PATIENT PROFILE
 // ============================================================
 
-onAuthStateChanged(auth, function (user) {
+async function checkPatientProfile(user) {
 
-    if (user) {
+    try {
+
+        const profileRef =
+            doc(
+                db,
+                "patients",
+                user.uid
+            );
+
+
+        const profileSnapshot =
+            await getDoc(
+                profileRef
+            );
+
+
+        if (
+            profileSnapshot.exists()
+        ) {
+
+            console.log(
+                "Patient profile found."
+            );
+
+
+            const profileData =
+                profileSnapshot.data();
+
+
+            if (userStatus) {
+
+                userStatus.textContent =
+                    `Welcome back, ${profileData.name}.`;
+
+            }
+
+
+            return true;
+
+        }
+
 
         // ======================================================
-        // USER IS LOGGED IN
+        // PROFILE DOES NOT EXIST
         // ======================================================
 
         console.log(
-            "Logged-in user:",
-            user.email
+            "No patient profile found."
         );
 
 
-        // Hide Login and Signup
-        if (loginBtn) {
+        openProfileModal();
 
-            loginBtn.classList.add("hidden");
-
-        }
+        return false;
 
 
-        if (signupBtn) {
+    } catch (error) {
 
-            signupBtn.classList.add("hidden");
-
-        }
-
-
-        // Show Logout
-        if (logoutBtn) {
-
-            logoutBtn.classList.remove("hidden");
-
-        }
+        console.error(
+            "Profile check error:",
+            error
+        );
 
 
-    } else {
+        if (profileMessage) {
 
-        // ======================================================
-        // USER IS LOGGED OUT
-        // ======================================================
+            profileMessage.textContent =
+                "Unable to load your profile. Please try again.";
 
-        console.log("No user logged in.");
-
-
-        // Show Login
-        if (loginBtn) {
-
-            loginBtn.classList.remove("hidden");
+            profileMessage.style.color =
+                "red";
 
         }
 
 
-        // Show Signup
-        if (signupBtn) {
+        return false;
 
-            signupBtn.classList.remove("hidden");
+    }
+
+}
+
+
+
+// ============================================================
+// OPEN PROFILE MODAL
+// ============================================================
+
+function openProfileModal() {
+
+    if (!profileModal) {
+
+        return;
+
+    }
+
+
+    profileModal.classList.remove(
+        "hidden"
+    );
+
+
+    profileMessage.textContent =
+        "";
+
+}
+
+
+
+// ============================================================
+// SAVE PROFILE
+// ============================================================
+
+if (saveProfileBtn) {
+
+    saveProfileBtn.addEventListener(
+        "click",
+        async function () {
+
+            const user =
+                auth.currentUser;
+
+
+
+            if (!user) {
+
+                profileMessage.textContent =
+                    "Please login first.";
+
+                return;
+
+            }
+
+
+
+            const name =
+                profileName.value.trim();
+
+
+            const gender =
+                profileGender.value;
+
+
+            const age =
+                profileAge.value;
+
+
+            const height =
+                profileHeight.value;
+
+
+            const weight =
+                profileWeight.value;
+
+
+
+            // ==================================================
+            // VALIDATION
+            // ==================================================
+
+            if (!name) {
+
+                profileMessage.textContent =
+                    "Please enter your name.";
+
+                profileMessage.style.color =
+                    "red";
+
+                return;
+
+            }
+
+
+
+            if (!gender) {
+
+                profileMessage.textContent =
+                    "Please select your gender.";
+
+                profileMessage.style.color =
+                    "red";
+
+                return;
+
+            }
+
+
+
+            if (!age) {
+
+                profileMessage.textContent =
+                    "Please enter your age.";
+
+                profileMessage.style.color =
+                    "red";
+
+                return;
+
+            }
+
+
+
+            if (!height) {
+
+                profileMessage.textContent =
+                    "Please enter your height.";
+
+                profileMessage.style.color =
+                    "red";
+
+                return;
+
+            }
+
+
+
+            if (!weight) {
+
+                profileMessage.textContent =
+                    "Please enter your weight.";
+
+                profileMessage.style.color =
+                    "red";
+
+                return;
+
+            }
+
+
+
+            saveProfileBtn.disabled =
+                true;
+
+
+            saveProfileBtn.textContent =
+                "Saving...";
+
+
+
+            try {
+
+                const profileRef =
+                    doc(
+                        db,
+                        "patients",
+                        user.uid
+                    );
+
+
+
+                await setDoc(
+                    profileRef,
+                    {
+
+                        uid:
+                            user.uid,
+
+                        email:
+                            user.email,
+
+                        name:
+                            name,
+
+                        gender:
+                            gender,
+
+                        age:
+                            Number(age),
+
+                        height:
+                            Number(height),
+
+                        weight:
+                            Number(weight),
+
+                        updatedAt:
+                            serverTimestamp(),
+
+                        createdAt:
+                            serverTimestamp()
+
+                    },
+                    {
+                        merge: true
+                    }
+                );
+
+
+
+                profileMessage.textContent =
+                    "Profile saved successfully.";
+
+                profileMessage.style.color =
+                    "green";
+
+
+
+                if (userStatus) {
+
+                    userStatus.textContent =
+                        `Welcome, ${name}.`;
+
+                }
+
+
+
+                setTimeout(
+                    function () {
+
+                        profileModal.classList.add(
+                            "hidden"
+                        );
+
+                    },
+                    800
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Profile save error:",
+                    error
+                );
+
+
+                profileMessage.textContent =
+                    "Unable to save profile: " +
+                    error.message;
+
+                profileMessage.style.color =
+                    "red";
+
+
+            } finally {
+
+                saveProfileBtn.disabled =
+                    false;
+
+
+                saveProfileBtn.textContent =
+                    "Save & Continue";
+
+            }
 
         }
+    );
+
+}
 
 
-        // Hide Logout
-        if (logoutBtn) {
 
-            logoutBtn.classList.add("hidden");
+// ============================================================
+// AUTH STATE
+// ============================================================
+
+onAuthStateChanged(
+    auth,
+    async function (user) {
+
+        if (user) {
+
+            console.log(
+                "Logged in:",
+                user.email
+            );
+
+
+
+            // -----------------------------------------------
+            // BUTTONS
+            // -----------------------------------------------
+
+            loginBtn?.classList.add(
+                "hidden"
+            );
+
+            signupBtn?.classList.add(
+                "hidden"
+            );
+
+            logoutBtn?.classList.remove(
+                "hidden"
+            );
+
+
+
+            if (userStatus) {
+
+                userStatus.textContent =
+                    `Logged in as ${user.email}`;
+
+            }
+
+
+
+            // -----------------------------------------------
+            // CHECK PROFILE
+            // -----------------------------------------------
+
+            await checkPatientProfile(
+                user
+            );
+
+
+        } else {
+
+            console.log(
+                "User logged out."
+            );
+
+
+            loginBtn?.classList.remove(
+                "hidden"
+            );
+
+            signupBtn?.classList.remove(
+                "hidden"
+            );
+
+            logoutBtn?.classList.add(
+                "hidden"
+            );
+
+
+            if (userStatus) {
+
+                userStatus.textContent =
+                    "Please login or create an account to continue.";
+
+            }
 
         }
 
     }
+);
 
-});
 
 
 // ============================================================
@@ -568,50 +1024,55 @@ onAuthStateChanged(auth, function (user) {
 
 if (search) {
 
-    search.addEventListener("input", function () {
+    search.addEventListener(
+        "input",
+        function () {
 
-        const searchText =
-            search.value
-                .trim()
-                .toLowerCase();
-
-
-        const symptoms =
-            symptomGrid.querySelectorAll(".symptom");
-
-
-        symptoms.forEach(function (symptom) {
-
-            const name =
-                symptom
-                    .getAttribute("data-name")
+            const searchText =
+                search.value
+                    .trim()
                     .toLowerCase();
 
 
-            if (name.includes(searchText)) {
+            const symptoms =
+                symptomGrid.querySelectorAll(
+                    ".symptom"
+                );
 
-                symptom.style.display = "";
 
-            } else {
+            symptoms.forEach(
+                function (symptom) {
 
-                symptom.style.display = "none";
+                    const name =
+                        symptom
+                            .getAttribute(
+                                "data-name"
+                            )
+                            .toLowerCase();
 
-            }
 
-        });
+                    symptom.style.display =
+                        name.includes(searchText)
+                            ? ""
+                            : "none";
 
-    });
+                }
+            );
+
+        }
+    );
 
 }
 
 
+
 // ============================================================
-// UPDATE SELECTED SYMPTOM COUNT
+// UPDATE COUNT
 // ============================================================
 
 function updateCount() {
 
-    if (!symptomGrid || !count) {
+    if (!symptomGrid) {
 
         return;
 
@@ -624,87 +1085,90 @@ function updateCount() {
         );
 
 
-    count.textContent = checked.length;
+    count.textContent =
+        checked.length;
 
 }
 
 
+
 // ============================================================
-// CHECKBOX CHANGE
+// CHECKBOX EVENTS
 // ============================================================
 
 if (symptomGrid) {
 
-    symptomGrid.addEventListener("change", function (event) {
-
-        if (
-            event.target &&
-            event.target.type === "checkbox"
-        ) {
+    symptomGrid.addEventListener(
+        "change",
+        function () {
 
             updateCount();
 
         }
-
-    });
+    );
 
 }
 
 
+
 // ============================================================
-// CLEAR SYMPTOMS
+// CLEAR
 // ============================================================
 
 if (clearBtn) {
 
-    clearBtn.addEventListener("click", function () {
+    clearBtn.addEventListener(
+        "click",
+        function () {
 
-        const checkboxes =
-            symptomGrid.querySelectorAll(
-                'input[type="checkbox"]'
+            const checkboxes =
+                symptomGrid.querySelectorAll(
+                    'input[type="checkbox"]'
+                );
+
+
+            checkboxes.forEach(
+                function (checkbox) {
+
+                    checkbox.checked =
+                        false;
+
+                }
             );
 
 
-        checkboxes.forEach(function (checkbox) {
-
-            checkbox.checked = false;
-
-        });
+            updateCount();
 
 
-        updateCount();
+            search.value =
+                "";
 
 
-        // Clear search
-        if (search) {
-
-            search.value = "";
-
-        }
+            const symptoms =
+                symptomGrid.querySelectorAll(
+                    ".symptom"
+                );
 
 
-        // Show all symptoms
-        const symptoms =
-            symptomGrid.querySelectorAll(".symptom");
+            symptoms.forEach(
+                function (symptom) {
+
+                    symptom.style.display =
+                        "";
+
+                }
+            );
 
 
-        symptoms.forEach(function (symptom) {
-
-            symptom.style.display = "";
-
-        });
-
-
-        // Hide previous result
-        if (result) {
-
-            result.classList.add("hidden");
+            result?.classList.add(
+                "hidden"
+            );
 
         }
-
-    });
+    );
 
 }
+
 
 
 // ============================================================
@@ -713,170 +1177,159 @@ if (clearBtn) {
 
 function getSelectedSymptoms() {
 
-    if (!symptomGrid) {
-
-        return [];
-
-    }
-
-
     const checked =
         symptomGrid.querySelectorAll(
             'input[type="checkbox"]:checked'
         );
 
 
-    return Array.from(checked).map(function (checkbox) {
-
-        return checkbox.value;
-
-    });
+    return Array.from(
+        checked
+    ).map(
+        checkbox =>
+            checkbox.value
+    );
 
 }
 
 
+
 // ============================================================
-// PREDICT
+// PREDICTION
 // ============================================================
 
 if (predictBtn) {
 
-    predictBtn.addEventListener("click", async function () {
+    predictBtn.addEventListener(
+        "click",
+        async function () {
 
-        const selectedSymptoms =
-            getSelectedSymptoms();
+            // -----------------------------------------------
+            // LOGIN CHECK
+            // -----------------------------------------------
 
+            if (!auth.currentUser) {
 
-        // --------------------------------------------------------
-        // CHECK LOGIN
-        // --------------------------------------------------------
-
-        if (!auth.currentUser) {
-
-            alert(
-                "Please login or sign up before making a prediction."
-            );
-
-            openLogin();
-
-            return;
-
-        }
-
-
-        // --------------------------------------------------------
-        // CHECK SYMPTOMS
-        // --------------------------------------------------------
-
-        if (selectedSymptoms.length === 0) {
-
-            alert(
-                "Please select at least one symptom."
-            );
-
-            return;
-
-        }
-
-
-        // --------------------------------------------------------
-        // LOADING
-        // --------------------------------------------------------
-
-        predictBtn.disabled = true;
-        predictBtn.textContent = "Analyzing...";
-
-
-        if (result) {
-
-            result.classList.add("hidden");
-
-        }
-
-
-        try {
-
-            // ====================================================
-            // SEND DATA TO FLASK
-            // ====================================================
-
-            const response =
-                await fetch("/predict", {
-
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body: JSON.stringify({
-
-                        symptoms:
-                            selectedSymptoms
-
-                    })
-
-                });
-
-
-            // ====================================================
-            // READ RESPONSE
-            // ====================================================
-
-            const data =
-                await response.json();
-
-
-            // ====================================================
-            // ERROR
-            // ====================================================
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.error ||
-                    "Prediction failed."
+                alert(
+                    "Please login before making a prediction."
                 );
+
+                openLogin();
+
+                return;
 
             }
 
 
-            // ====================================================
-            // DISPLAY RESULT
-            // ====================================================
 
-            displayPrediction(data);
+            const selectedSymptoms =
+                getSelectedSymptoms();
 
 
-        } catch (error) {
 
-            console.error(
-                "Prediction error:",
-                error
-            );
+            if (
+                selectedSymptoms.length === 0
+            ) {
+
+                alert(
+                    "Please select at least one symptom."
+                );
+
+                return;
+
+            }
 
 
-            alert(
-                "Prediction failed: " +
-                error.message
-            );
 
+            predictBtn.disabled =
+                true;
 
-        } finally {
-
-            predictBtn.disabled = false;
 
             predictBtn.textContent =
-                "Predict Possible Disease";
+                "Analyzing...";
+
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/predict",
+                        {
+
+                            method:
+                                "POST",
+
+                            headers:
+                                {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                            body:
+                                JSON.stringify(
+                                    {
+                                        symptoms:
+                                            selectedSymptoms
+                                    }
+                                )
+
+                        }
+                    );
+
+
+
+                const data =
+                    await response.json();
+
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Prediction failed."
+                    );
+
+                }
+
+
+
+                displayPrediction(
+                    data
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Prediction error:",
+                    error
+                );
+
+
+                alert(
+                    "Prediction failed: " +
+                    error.message
+                );
+
+
+            } finally {
+
+                predictBtn.disabled =
+                    false;
+
+
+                predictBtn.textContent =
+                    "Predict Possible Disease";
+
+            }
 
         }
-
-    });
+    );
 
 }
+
 
 
 // ============================================================
@@ -885,140 +1338,105 @@ if (predictBtn) {
 
 function displayPrediction(data) {
 
-    // ----------------------------------------------------------
-    // DISEASE
-    // ----------------------------------------------------------
+    disease.textContent =
+        formatDiseaseName(
+            data.disease
+        );
 
-    if (disease) {
-
-        disease.textContent =
-            formatDiseaseName(data.disease);
-
-    }
-
-
-    // ----------------------------------------------------------
-    // CONFIDENCE
-    // ----------------------------------------------------------
 
     const confidence =
-        Number(data.confidence) || 0;
+        Number(
+            data.confidence
+        ) || 0;
 
 
-    if (confidenceText) {
 
-        confidenceText.textContent =
-            `Model confidence: ${confidence}%`;
+    confidenceText.textContent =
+        `Model confidence: ${confidence}%`;
+
+
+
+    confidenceBar.style.width =
+        `${Math.min(
+            confidence,
+            100
+        )}%`;
+
+
+
+    topPredictions.innerHTML =
+        "";
+
+
+
+    if (
+        data.top_predictions
+    ) {
+
+        data.top_predictions.forEach(
+            function (
+                prediction,
+                index
+            ) {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                item.className =
+                    "prediction-item";
+
+
+                item.innerHTML = `
+
+                    <div>
+                        <strong>
+                            ${index + 1}.
+                            ${formatDiseaseName(
+                                prediction.disease
+                            )}
+                        </strong>
+                    </div>
+
+                    <div>
+                        ${prediction.confidence}%
+                    </div>
+
+                `;
+
+
+                topPredictions.appendChild(
+                    item
+                );
+
+            }
+        );
 
     }
 
 
-    if (confidenceBar) {
 
-        confidenceBar.style.width =
-            `${Math.min(confidence, 100)}%`;
-
-    }
+    message.textContent =
+        data.message ||
+        "This is an educational ML prediction and should not be used as a medical diagnosis.";
 
 
-    // ----------------------------------------------------------
-    // TOP PREDICTIONS
-    // ----------------------------------------------------------
 
-    if (topPredictions) {
-
-        topPredictions.innerHTML = "";
+    result.classList.remove(
+        "hidden"
+    );
 
 
-        if (
-            data.top_predictions &&
-            data.top_predictions.length > 0
-        ) {
-
-            data.top_predictions.forEach(
-                function (prediction, index) {
-
-                    const item =
-                        document.createElement("div");
-
-
-                    item.className =
-                        "prediction-item";
-
-
-                    const diseaseName =
-                        formatDiseaseName(
-                            prediction.disease
-                        );
-
-
-                    const predictionConfidence =
-                        Number(
-                            prediction.confidence
-                        ) || 0;
-
-
-                    item.innerHTML = `
-                        <div>
-                            <strong>
-                                ${index + 1}. ${diseaseName}
-                            </strong>
-                        </div>
-
-                        <div>
-                            ${predictionConfidence}%
-                        </div>
-                    `;
-
-
-                    topPredictions.appendChild(item);
-
-                }
-            );
-
+    result.scrollIntoView(
+        {
+            behavior: "smooth"
         }
-
-    }
-
-
-    // ----------------------------------------------------------
-    // MESSAGE
-    // ----------------------------------------------------------
-
-    if (message) {
-
-        message.textContent =
-            data.message ||
-            "This is an educational ML prediction and should not be used as a medical diagnosis.";
-
-    }
-
-
-    // ----------------------------------------------------------
-    // SHOW RESULT
-    // ----------------------------------------------------------
-
-    if (result) {
-
-        result.classList.remove("hidden");
-
-
-        // Scroll smoothly to result
-        setTimeout(function () {
-
-            result.scrollIntoView({
-
-                behavior: "smooth",
-
-                block: "start"
-
-            });
-
-        }, 100);
-
-    }
+    );
 
 }
+
 
 
 // ============================================================
@@ -1035,33 +1453,40 @@ function formatDiseaseName(name) {
 
 
     return String(name)
-        .replace(/_/g, " ")
-        .replace(/\s+/g, " ")
+        .replace(
+            /_/g,
+            " "
+        )
+        .replace(
+            /\s+/g,
+            " "
+        )
         .trim()
-        .replace(/\b\w/g, function (letter) {
-
-            return letter.toUpperCase();
-
-        });
+        .replace(
+            /\b\w/g,
+            letter =>
+                letter.toUpperCase()
+        );
 
 }
 
 
+
 // ============================================================
-// INITIAL COUNT
+// INITIALIZE
 // ============================================================
 
 updateCount();
 
 
-// ============================================================
-// APPLICATION STARTED
-// ============================================================
-
 console.log(
-    "QuantumDiagnose JavaScript loaded successfully."
+    "QuantumDiagnose loaded successfully."
 );
 
 console.log(
-    "Firebase initialized successfully."
+    "Firebase Authentication initialized."
+);
+
+console.log(
+    "Firestore initialized."
 );
