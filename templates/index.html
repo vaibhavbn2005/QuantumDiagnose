@@ -1,65 +1,768 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>QuantumDiagnose</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    /* ==============================
+       AUTHENTICATION UI
+       ============================== */
+
+    .auth-buttons {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      align-items: center;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      width: min(400px, 90%);
+      background: white;
+      padding: 30px;
+      border-radius: 18px;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 20px;
+    }
+
+    .modal-content input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    .modal-content button.primary {
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .close-btn {
+      position: absolute;
+      right: 15px;
+      top: 10px;
+      border: none;
+      background: transparent;
+      font-size: 28px;
+      cursor: pointer;
+    }
+
+    #authMessage {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 800px) {
+      .auth-buttons {
+        margin-left: 0;
+        margin-top: 10px;
+      }
+
+      .hero {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+
 </head>
+
+
 <body>
+
   <div class="background"></div>
+
   <main class="container">
+
+    <!-- ==============================
+         HEADER
+         ============================== -->
+
     <header class="hero">
-      <div class="logo">Q</div>
+
+      <div class="logo">
+        Q
+      </div>
+
       <div>
         <h1>QuantumDiagnose</h1>
         <p>Machine-learning based symptom analysis</p>
       </div>
-      <span class="badge">ML Prototype</span>
+
+      <span class="badge">
+        ML Prototype
+      </span>
+
+      <!-- Authentication Buttons -->
+
+      <div class="auth-buttons">
+
+        <button id="loginBtn"
+                class="secondary">
+          Login
+        </button>
+
+        <button id="signupBtn"
+                class="primary">
+          Sign Up
+        </button>
+
+        <button id="logoutBtn"
+                class="secondary hidden">
+          Logout
+        </button>
+
+      </div>
+
     </header>
 
+
+    <!-- ==============================
+         SYMPTOM ANALYSIS
+         ============================== -->
+
     <section class="card">
+
       <div class="section-head">
+
         <div>
           <h2>Enter symptoms</h2>
-          <p>Select the symptoms reported by the patient.</p>
+
+          <p>
+            Select the symptoms reported by the patient.
+          </p>
         </div>
-        <button id="clearBtn" class="secondary">Clear</button>
+
+        <button id="clearBtn"
+                class="secondary">
+          Clear
+        </button>
+
       </div>
+
+
+      <!-- Search -->
 
       <div class="search-wrap">
-        <input id="search" type="search" placeholder="Search symptoms...">
+
+        <input
+          id="search"
+          type="search"
+          placeholder="Search symptoms..."
+        >
+
       </div>
 
-      <div id="symptomGrid" class="symptom-grid">
+
+      <!-- Symptoms -->
+
+      <div id="symptomGrid"
+           class="symptom-grid">
+
         {% for symptom in symptoms %}
-        <label class="symptom" data-name="{{ symptom|replace('_', ' ') }}">
-          <input type="checkbox" value="{{ symptom }}">
-          <span>{{ symptom|replace('_', ' ')|title }}</span>
+
+        <label
+          class="symptom"
+          data-name="{{ symptom|replace('_', ' ') }}"
+        >
+
+          <input
+            type="checkbox"
+            value="{{ symptom }}"
+          >
+
+          <span>
+            {{ symptom|replace('_', ' ')|title }}
+          </span>
+
         </label>
+
         {% endfor %}
+
       </div>
+
+
+      <!-- Selected symptoms -->
 
       <div class="selected-line">
-        <span><strong id="count">0</strong> symptoms selected</span>
-        <button id="predictBtn" class="primary">Predict Possible Disease</button>
+
+        <span>
+          <strong id="count">0</strong>
+          symptoms selected
+        </span>
+
+        <button
+          id="predictBtn"
+          class="primary"
+        >
+          Predict Possible Disease
+        </button>
+
       </div>
+
     </section>
 
-    <section id="result" class="card result hidden">
-      <div class="result-label">Prediction</div>
-      <h2 id="disease">—</h2>
-      <div class="confidence-bar"><span id="confidenceBar"></span></div>
+
+    <!-- ==============================
+         PREDICTION RESULT
+         ============================== -->
+
+    <section
+      id="result"
+      class="card result hidden"
+    >
+
+      <div class="result-label">
+        Prediction
+      </div>
+
+      <h2 id="disease">
+        —
+      </h2>
+
+
+      <!-- Confidence -->
+
+      <div class="confidence-bar">
+
+        <span id="confidenceBar"></span>
+
+      </div>
+
       <p id="confidenceText"></p>
-      <div id="topPredictions" class="top-list"></div>
-      <p class="disclaimer" id="message"></p>
+
+
+      <!-- Top predictions -->
+
+      <div
+        id="topPredictions"
+        class="top-list"
+      ></div>
+
+
+      <!-- Disclaimer -->
+
+      <p
+        class="disclaimer"
+        id="message"
+      ></p>
+
     </section>
+
+
+    <!-- ==============================
+         LOGIN / SIGNUP MODAL
+         ============================== -->
+
+    <div
+      id="authModal"
+      class="modal hidden"
+    >
+
+      <div class="modal-content">
+
+        <button
+          id="closeModal"
+          class="close-btn"
+        >
+          ×
+        </button>
+
+
+        <h2 id="authTitle">
+          Login
+        </h2>
+
+
+        <input
+          id="authEmail"
+          type="email"
+          placeholder="Email"
+        >
+
+
+        <input
+          id="authPassword"
+          type="password"
+          placeholder="Password"
+        >
+
+
+        <button
+          id="authSubmit"
+          class="primary"
+        >
+          Login
+        </button>
+
+
+        <p id="authMessage"></p>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==============================
+         FOOTER
+         ============================== -->
 
     <footer>
-      <span>QuantumDiagnose • Educational project</span>
-      <a href="/health" target="_blank">System status</a>
+
+      <span>
+        QuantumDiagnose • Educational project
+      </span>
+
+      <a
+        href="/health"
+        target="_blank"
+      >
+        System status
+      </a>
+
     </footer>
+
   </main>
+
+
+  <!-- ==============================
+       YOUR EXISTING PREDICTION SCRIPT
+       ============================== -->
+
   <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+
+  <!-- ==============================
+       FIREBASE AUTHENTICATION
+       ============================== -->
+
+  <script type="module">
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+
+    import {
+      getFirestore
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+
+    /* =================================
+       FIREBASE CONFIGURATION
+       ================================= */
+
+    const firebaseConfig = {
+
+      apiKey: "YOUR_API_KEY",
+
+      authDomain:
+        "quantumdiagnose.firebaseapp.com",
+
+      projectId:
+        "quantumdiagnose",
+
+      storageBucket:
+        "quantumdiagnose.firebasestorage.app",
+
+      messagingSenderId:
+        "YOUR_MESSAGING_SENDER_ID",
+
+      appId:
+        "YOUR_APP_ID"
+
+    };
+
+
+    /* =================================
+       INITIALIZE FIREBASE
+       ================================= */
+
+    const firebaseApp =
+      initializeApp(firebaseConfig);
+
+
+    const auth =
+      getAuth(firebaseApp);
+
+
+    const db =
+      getFirestore(firebaseApp);
+
+
+    /* =================================
+       GET HTML ELEMENTS
+       ================================= */
+
+    const authModal =
+      document.getElementById("authModal");
+
+
+    const authTitle =
+      document.getElementById("authTitle");
+
+
+    const authEmail =
+      document.getElementById("authEmail");
+
+
+    const authPassword =
+      document.getElementById("authPassword");
+
+
+    const authSubmit =
+      document.getElementById("authSubmit");
+
+
+    const authMessage =
+      document.getElementById("authMessage");
+
+
+    const loginBtn =
+      document.getElementById("loginBtn");
+
+
+    const signupBtn =
+      document.getElementById("signupBtn");
+
+
+    const logoutBtn =
+      document.getElementById("logoutBtn");
+
+
+    const closeModal =
+      document.getElementById("closeModal");
+
+
+    /* =================================
+       AUTH MODE
+       ================================= */
+
+    let authMode = "login";
+
+
+    /* =================================
+       OPEN LOGIN
+       ================================= */
+
+    loginBtn.addEventListener("click", () => {
+
+      authMode = "login";
+
+      authTitle.textContent = "Login";
+
+      authSubmit.textContent = "Login";
+
+      authMessage.textContent = "";
+
+      authEmail.value = "";
+
+      authPassword.value = "";
+
+      authModal.classList.remove("hidden");
+
+    });
+
+
+    /* =================================
+       OPEN SIGNUP
+       ================================= */
+
+    signupBtn.addEventListener("click", () => {
+
+      authMode = "signup";
+
+      authTitle.textContent =
+        "Create Account";
+
+      authSubmit.textContent =
+        "Sign Up";
+
+      authMessage.textContent = "";
+
+      authEmail.value = "";
+
+      authPassword.value = "";
+
+      authModal.classList.remove("hidden");
+
+    });
+
+
+    /* =================================
+       CLOSE MODAL
+       ================================= */
+
+    closeModal.addEventListener("click", () => {
+
+      authModal.classList.add("hidden");
+
+    });
+
+
+    /* =================================
+       LOGIN / SIGNUP
+       ================================= */
+
+    authSubmit.addEventListener(
+      "click",
+      async () => {
+
+        const email =
+          authEmail.value.trim();
+
+        const password =
+          authPassword.value;
+
+
+        if (!email || !password) {
+
+          authMessage.textContent =
+            "Please enter email and password.";
+
+          return;
+
+        }
+
+
+        if (password.length < 6) {
+
+          authMessage.textContent =
+            "Password must be at least 6 characters.";
+
+          return;
+
+        }
+
+
+        try {
+
+          authSubmit.disabled = true;
+
+
+          /* ==========================
+             SIGN UP
+             ========================== */
+
+          if (authMode === "signup") {
+
+            await createUserWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+
+
+            authMessage.textContent =
+              "Account created successfully!";
+
+
+            setTimeout(() => {
+
+              authModal.classList.add("hidden");
+
+            }, 1000);
+
+          }
+
+
+          /* ==========================
+             LOGIN
+             ========================== */
+
+          else {
+
+            await signInWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+
+
+            authModal.classList.add("hidden");
+
+          }
+
+
+        } catch (error) {
+
+          console.error(
+            "Firebase Auth Error:",
+            error
+          );
+
+
+          if (
+            error.code ===
+            "auth/email-already-in-use"
+          ) {
+
+            authMessage.textContent =
+              "This email is already registered.";
+
+          }
+
+          else if (
+            error.code ===
+            "auth/invalid-email"
+          ) {
+
+            authMessage.textContent =
+              "Please enter a valid email.";
+
+          }
+
+          else if (
+            error.code ===
+            "auth/invalid-credential"
+          ) {
+
+            authMessage.textContent =
+              "Invalid email or password.";
+
+          }
+
+          else {
+
+            authMessage.textContent =
+              error.message;
+
+          }
+
+        }
+
+        finally {
+
+          authSubmit.disabled = false;
+
+        }
+
+      }
+    );
+
+
+    /* =================================
+       LOGOUT
+       ================================= */
+
+    logoutBtn.addEventListener(
+      "click",
+      async () => {
+
+        try {
+
+          await signOut(auth);
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "Logout error:",
+            error
+          );
+
+        }
+
+      }
+    );
+
+
+    /* =================================
+       CHECK LOGIN STATUS
+       ================================= */
+
+    onAuthStateChanged(
+      auth,
+      (user) => {
+
+        if (user) {
+
+          console.log(
+            "Logged in:",
+            user.email
+          );
+
+
+          loginBtn.classList.add(
+            "hidden"
+          );
+
+
+          signupBtn.classList.add(
+            "hidden"
+          );
+
+
+          logoutBtn.classList.remove(
+            "hidden"
+          );
+
+        }
+
+        else {
+
+          console.log(
+            "User not logged in"
+          );
+
+
+          loginBtn.classList.remove(
+            "hidden"
+          );
+
+
+          signupBtn.classList.remove(
+            "hidden"
+          );
+
+
+          logoutBtn.classList.add(
+            "hidden"
+          );
+
+        }
+
+      }
+    );
+
+  </script>
+
 </body>
+
 </html>
