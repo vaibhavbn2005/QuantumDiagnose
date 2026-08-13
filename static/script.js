@@ -1,7 +1,7 @@
 // ============================================================
 // QUANTUMDIAGNOSE - COMPLETE SCRIPT.JS
 // Email/Password Authentication Only
-// Phone OTP Disabled
+// Fixed to match actual index.html element IDs
 // ============================================================
 
 
@@ -25,6 +25,11 @@ import {
     getFirestore,
     collection,
     addDoc,
+    query,
+    where,
+    orderBy,
+    limit,
+    getDocs,
     serverTimestamp
 } from
     "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -50,15 +55,8 @@ const firebaseConfig = {
 // ============================================================
 
 const firebaseApp = initializeApp(firebaseConfig);
-
 const auth = getAuth(firebaseApp);
-
 const db = getFirestore(firebaseApp);
-
-
-// ============================================================
-// MAKE FIREBASE AVAILABLE FOR DEBUGGING
-// ============================================================
 
 window.firebaseAuth = auth;
 window.firebaseDB = db;
@@ -67,270 +65,142 @@ console.log("Firebase initialized successfully.");
 
 
 // ============================================================
-// GET HTML ELEMENTS
+// GET HTML ELEMENTS (matching actual index.html IDs)
 // ============================================================
 
-// Authentication buttons
-const loginBtn =
-    document.getElementById("loginBtn");
+// Auth screen
+const authScreen = document.getElementById("authScreen");
+const app = document.getElementById("app");
 
-const signupBtn =
-    document.getElementById("signupBtn");
+const loginTab = document.getElementById("loginTab");
+const signupTab = document.getElementById("signupTab");
 
-const logoutBtn =
-    document.getElementById("logoutBtn");
+const authEmail = document.getElementById("authEmail");
+const authPassword = document.getElementById("authPassword");
+const authSubmit = document.getElementById("authSubmit");
+const authMessage = document.getElementById("authMessage");
 
+const logoutBtn = document.getElementById("logoutBtn");
+const userEmail = document.getElementById("userEmail");
+const welcomeName = document.getElementById("welcomeName");
 
-// Authentication modal
-const authModal =
-    document.getElementById("authModal");
+// Navigation
+const navItems = document.querySelectorAll(".nav-item");
+const goButtons = document.querySelectorAll("[data-go]");
+const pageTitle = document.getElementById("pageTitle");
 
-const closeModal =
-    document.getElementById("closeModal");
+// Dashboard stats
+const predictionCount = document.getElementById("predictionCount");
+const latestDisease = document.getElementById("latestDisease");
+const dashboardLatest = document.getElementById("dashboardLatest");
 
-const authTitle =
-    document.getElementById("authTitle");
+// Profile
+const saveProfileBtn = document.getElementById("saveProfileBtn");
+const profileMessage = document.getElementById("profileMessage");
+const profileName = document.getElementById("profileName");
+const profileGender = document.getElementById("profileGender");
+const profileAge = document.getElementById("profileAge");
+const profileHeight = document.getElementById("profileHeight");
+const profileWeight = document.getElementById("profileWeight");
 
+// Symptoms / prediction
+const searchInput = document.getElementById("search");
+const symptomGrid = document.getElementById("symptomGrid");
+const count = document.getElementById("count");
+const clearBtn = document.getElementById("clearBtn");
+const predictBtn = document.getElementById("predictBtn");
 
-// Authentication tabs
-const emailTab =
-    document.getElementById("emailTab");
+const result = document.getElementById("result");
+const disease = document.getElementById("disease");
+const confidenceBar = document.getElementById("confidenceBar");
+const confidenceText = document.getElementById("confidenceText");
+const topPredictions = document.getElementById("topPredictions");
+const message = document.getElementById("message");
 
+// History
+const historyList = document.getElementById("historyList");
 
-// Email authentication
-const emailAuth =
-    document.getElementById("emailAuth");
+// Doctors
+const doctorList = document.getElementById("doctorList");
 
-const authEmail =
-    document.getElementById("authEmail");
+// Quantum
+const quantumBtn = document.getElementById("quantumBtn");
+const quantumResult = document.getElementById("quantumResult");
 
-const authPassword =
-    document.getElementById("authPassword");
-
-const authSubmit =
-    document.getElementById("authSubmit");
-
-
-// Authentication message
-const authMessage =
-    document.getElementById("authMessage");
-
-
-// Symptoms
-const searchInput =
-    document.getElementById("search");
-
-const symptomGrid =
-    document.getElementById("symptomGrid");
-
-const count =
-    document.getElementById("count");
-
-const clearBtn =
-    document.getElementById("clearBtn");
-
-const predictBtn =
-    document.getElementById("predictBtn");
-
-
-// Result
-const result =
-    document.getElementById("result");
-
-const disease =
-    document.getElementById("disease");
-
-const confidenceBar =
-    document.getElementById("confidenceBar");
-
-const confidenceText =
-    document.getElementById("confidenceText");
-
-const topPredictions =
-    document.getElementById("topPredictions");
-
-const message =
-    document.getElementById("message");
+// Performance
+const metricAccuracy = document.getElementById("metricAccuracy");
+const metricPrecision = document.getElementById("metricPrecision");
+const metricRecall = document.getElementById("metricRecall");
+const metricF1 = document.getElementById("metricF1");
+const trainingSamples = document.getElementById("trainingSamples");
+const testingSamples = document.getElementById("testingSamples");
+const symptomTotal = document.getElementById("symptomTotal");
+const diseaseTotal = document.getElementById("diseaseTotal");
+const rfAccuracy = document.getElementById("rfAccuracy");
 
 
 // ============================================================
-// AUTHENTICATION STATE
+// AUTH MODE STATE (login vs signup)
 // ============================================================
 
 let authMode = "login";
 
 
-// ============================================================
-// SHOW AUTH MESSAGE
-// ============================================================
+function showAuthMessage(text, isError = false) {
 
-function showAuthMessage(
-    text,
-    isError = false
-) {
-
-    if (!authMessage) {
-        return;
-    }
+    if (!authMessage) return;
 
     authMessage.textContent = text;
-
-    if (isError) {
-
-        authMessage.style.color =
-            "#d32f2f";
-
-    } else {
-
-        authMessage.style.color =
-            "#2e7d32";
-    }
+    authMessage.style.color = isError ? "#d32f2f" : "#2e7d32";
 }
 
 
-// ============================================================
-// OPEN AUTH MODAL
-// ============================================================
-
-function openAuthModal(mode) {
+function setAuthMode(mode) {
 
     authMode = mode;
 
-
-    if (authTitle) {
-
-        authTitle.textContent =
-            mode === "login"
-                ? "Login"
-                : "Create Account";
+    if (loginTab) {
+        loginTab.classList.toggle("active", mode === "login");
     }
 
+    if (signupTab) {
+        signupTab.classList.toggle("active", mode === "signup");
+    }
 
     if (authSubmit) {
-
-        authSubmit.textContent =
-            mode === "login"
-                ? "Login"
-                : "Create Account";
+        authSubmit.textContent = mode === "login" ? "Login" : "Create Account";
     }
-
-
-    if (authModal) {
-
-        authModal.classList.remove(
-            "hidden"
-        );
-    }
-
-
-    showEmailAuth();
-
-    clearAuthInputs();
 
     showAuthMessage("");
 }
 
 
 // ============================================================
-// CLOSE AUTH MODAL
+// SHOW / HIDE APP AFTER AUTH STATE CHANGES
 // ============================================================
 
-function closeAuthModal() {
+function showApp(user) {
 
-    if (authModal) {
+    if (authScreen) authScreen.classList.add("hidden");
+    if (app) app.classList.remove("hidden");
 
-        authModal.classList.add(
-            "hidden"
-        );
-    }
+    if (userEmail) userEmail.textContent = user.email || "";
+    if (welcomeName) welcomeName.textContent = user.email ? user.email.split("@")[0] : "Patient";
 
-    showAuthMessage("");
-
-    clearAuthInputs();
+    loadHistory();
+    loadDashboardStats();
 }
 
 
-// ============================================================
-// CLEAR AUTH INPUTS
-// ============================================================
+function showAuthScreen() {
 
-function clearAuthInputs() {
+    if (app) app.classList.add("hidden");
+    if (authScreen) authScreen.classList.remove("hidden");
 
-    if (authEmail) {
+    if (authEmail) authEmail.value = "";
+    if (authPassword) authPassword.value = "";
 
-        authEmail.value = "";
-    }
-
-    if (authPassword) {
-
-        authPassword.value = "";
-    }
-}
-
-
-// ============================================================
-// EMAIL AUTHENTICATION ONLY
-// ============================================================
-
-function showEmailAuth() {
-
-    if (emailTab) {
-
-        emailTab.classList.add(
-            "active"
-        );
-    }
-
-
-    if (emailAuth) {
-
-        emailAuth.classList.remove(
-            "hidden"
-        );
-
-        emailAuth.style.display =
-            "";
-    }
-
-
-    // --------------------------------------------------------
-    // PHONE AUTHENTICATION IS DISABLED
-    // --------------------------------------------------------
-
-    const phoneTab =
-        document.getElementById(
-            "phoneTab"
-        );
-
-    const phoneAuth =
-        document.getElementById(
-            "phoneAuth"
-        );
-
-
-    if (phoneTab) {
-
-        phoneTab.classList.add(
-            "hidden"
-        );
-
-        phoneTab.style.display =
-            "none";
-    }
-
-
-    if (phoneAuth) {
-
-        phoneAuth.classList.add(
-            "hidden"
-        );
-
-        phoneAuth.style.display =
-            "none";
-    }
-
-
-    showAuthMessage("");
+    setAuthMode("login");
 }
 
 
@@ -341,351 +211,129 @@ function showEmailAuth() {
 async function handleEmailAuthentication() {
 
     if (!authEmail || !authPassword) {
-
-        console.error(
-            "Authentication input elements not found."
-        );
-
+        console.error("Authentication input elements not found.");
         return;
     }
 
-
-    const email =
-        authEmail.value.trim();
-
-    const password =
-        authPassword.value;
-
-
-    // --------------------------------------------------------
-    // VALIDATE EMAIL
-    // --------------------------------------------------------
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
 
     if (!email) {
-
-        showAuthMessage(
-            "Please enter your email address.",
-            true
-        );
-
+        showAuthMessage("Please enter your email address.", true);
         return;
     }
-
-
-    // --------------------------------------------------------
-    // VALIDATE PASSWORD
-    // --------------------------------------------------------
 
     if (!password) {
-
-        showAuthMessage(
-            "Please enter your password.",
-            true
-        );
-
+        showAuthMessage("Please enter your password.", true);
         return;
     }
-
 
     if (password.length < 6) {
-
-        showAuthMessage(
-            "Password must contain at least 6 characters.",
-            true
-        );
-
+        showAuthMessage("Password must contain at least 6 characters.", true);
         return;
     }
 
-
-    // --------------------------------------------------------
-    // DISABLE BUTTON
-    // --------------------------------------------------------
-
     if (authSubmit) {
-
-        authSubmit.disabled =
-            true;
-
-        authSubmit.textContent =
-            "Please wait...";
+        authSubmit.disabled = true;
+        authSubmit.textContent = "Please wait...";
     }
 
-
-    showAuthMessage(
-        "Processing..."
-    );
-
+    showAuthMessage("Processing...");
 
     try {
 
-        // ====================================================
-        // LOGIN
-        // ====================================================
-
         if (authMode === "login") {
 
-            await signInWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
+            await signInWithEmailAndPassword(auth, email, password);
+            showAuthMessage("Login successful!");
+            console.log("User logged in:", email);
 
+        } else {
 
-            showAuthMessage(
-                "Login successful!"
-            );
-
-
-            console.log(
-                "User logged in:",
-                email
-            );
-
-
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            showAuthMessage("Account created successfully!");
+            console.log("Account created:", userCredential.user.email);
         }
 
-        // ====================================================
-        // SIGN UP
-        // ====================================================
-
-        else {
-
-            const userCredential =
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-
-            const user =
-                userCredential.user;
-
-
-            showAuthMessage(
-                "Account created successfully!"
-            );
-
-
-            console.log(
-                "Account created:",
-                user.email
-            );
-        }
-
-
-        // ----------------------------------------------------
-        // CLOSE MODAL
-        // ----------------------------------------------------
-
-        setTimeout(
-            function () {
-
-                closeAuthModal();
-
-            },
-            800
-        );
-
+        // onAuthStateChanged will handle showing the app
 
     } catch (error) {
 
-        console.error(
-            "Firebase authentication error:",
-            error
-        );
+        console.error("Firebase authentication error:", error);
 
-
-        let errorMessage =
-            "Authentication failed.";
-
+        let errorMessage = "Authentication failed.";
 
         switch (error.code) {
 
-
             case "auth/invalid-email":
-
-                errorMessage =
-                    "Please enter a valid email address.";
-
+                errorMessage = "Please enter a valid email address.";
                 break;
-
 
             case "auth/user-not-found":
-
-                errorMessage =
-                    "No account found with this email.";
-
+                errorMessage = "No account found with this email.";
                 break;
-
 
             case "auth/wrong-password":
-
-                errorMessage =
-                    "Incorrect password.";
-
+                errorMessage = "Incorrect password.";
                 break;
-
 
             case "auth/invalid-credential":
-
-                errorMessage =
-                    "Invalid email or password.";
-
+                errorMessage = "Invalid email or password.";
                 break;
-
 
             case "auth/email-already-in-use":
-
-                errorMessage =
-                    "This email is already registered. Please login.";
-
+                errorMessage = "This email is already registered. Please login.";
                 break;
-
 
             case "auth/weak-password":
-
-                errorMessage =
-                    "Password is too weak.";
-
+                errorMessage = "Password is too weak.";
                 break;
-
 
             case "auth/too-many-requests":
-
-                errorMessage =
-                    "Too many attempts. Please try again later.";
-
+                errorMessage = "Too many attempts. Please try again later.";
                 break;
-
 
             case "auth/api-key-not-valid":
-
-                errorMessage =
-                    "Firebase API key is invalid. Please check the Firebase configuration.";
-
+                errorMessage = "Firebase API key is invalid. Please check the Firebase configuration.";
                 break;
-
 
             case "auth/network-request-failed":
-
-                errorMessage =
-                    "Network error. Please check your internet connection.";
-
+                errorMessage = "Network error. Please check your internet connection.";
                 break;
 
-
             default:
-
-                errorMessage =
-                    error.message ||
-                    "Authentication failed.";
+                errorMessage = error.message || "Authentication failed.";
         }
 
-
-        showAuthMessage(
-            errorMessage,
-            true
-        );
-
+        showAuthMessage(errorMessage, true);
 
     } finally {
 
         if (authSubmit) {
-
-            authSubmit.disabled =
-                false;
-
-            authSubmit.textContent =
-                authMode === "login"
-                    ? "Login"
-                    : "Create Account";
+            authSubmit.disabled = false;
+            authSubmit.textContent = authMode === "login" ? "Login" : "Create Account";
         }
     }
 }
 
 
 // ============================================================
-// AUTHENTICATION STATE
+// AUTH STATE LISTENER
 // ============================================================
 
-onAuthStateChanged(
-    auth,
-    function (user) {
+onAuthStateChanged(auth, function (user) {
 
-        if (user) {
+    if (user) {
 
-            console.log(
-                "Logged in user:",
-                user.email
-            );
+        console.log("Logged in user:", user.email);
+        showApp(user);
 
+    } else {
 
-            // ------------------------------------------------
-            // LOGGED IN
-            // ------------------------------------------------
-
-            if (loginBtn) {
-
-                loginBtn.classList.add(
-                    "hidden"
-                );
-            }
-
-
-            if (signupBtn) {
-
-                signupBtn.classList.add(
-                    "hidden"
-                );
-            }
-
-
-            if (logoutBtn) {
-
-                logoutBtn.classList.remove(
-                    "hidden"
-                );
-            }
-
-
-        } else {
-
-            console.log(
-                "No user logged in."
-            );
-
-
-            // ------------------------------------------------
-            // LOGGED OUT
-            // ------------------------------------------------
-
-            if (loginBtn) {
-
-                loginBtn.classList.remove(
-                    "hidden"
-                );
-            }
-
-
-            if (signupBtn) {
-
-                signupBtn.classList.remove(
-                    "hidden"
-                );
-            }
-
-
-            if (logoutBtn) {
-
-                logoutBtn.classList.add(
-                    "hidden"
-                );
-            }
-        }
+        console.log("No user logged in.");
+        showAuthScreen();
     }
-);
+});
 
 
 // ============================================================
@@ -697,103 +345,134 @@ async function logoutUser() {
     try {
 
         await signOut(auth);
-
-        alert(
-            "Logged out successfully."
-        );
-
+        alert("Logged out successfully.");
 
     } catch (error) {
 
-        console.error(
-            "Logout error:",
-            error
-        );
-
-
-        alert(
-            "Logout failed: " +
-            error.message
-        );
+        console.error("Logout error:", error);
+        alert("Logout failed: " + error.message);
     }
 }
 
 
 // ============================================================
-// GET SYMPTOM CHECKBOXES
+// SIDEBAR NAVIGATION
+// ============================================================
+
+function goToPage(pageId) {
+
+    document.querySelectorAll(".page").forEach(function (page) {
+        page.classList.remove("active-page");
+    });
+
+    const target = document.getElementById(pageId);
+
+    if (target) {
+        target.classList.add("active-page");
+    }
+
+    navItems.forEach(function (item) {
+        item.classList.toggle("active", item.dataset.page === pageId);
+    });
+
+    if (pageTitle) {
+        pageTitle.textContent = pageId.charAt(0).toUpperCase() + pageId.slice(1);
+    }
+
+    if (pageId === "doctors") loadDoctors();
+    if (pageId === "performance") loadPerformance();
+    if (pageId === "history") loadHistory();
+}
+
+
+navItems.forEach(function (item) {
+
+    item.addEventListener("click", function () {
+        goToPage(item.dataset.page);
+    });
+});
+
+
+goButtons.forEach(function (btn) {
+
+    btn.addEventListener("click", function () {
+        goToPage(btn.dataset.go);
+    });
+});
+
+
+// ============================================================
+// PROFILE
+// ============================================================
+
+if (saveProfileBtn) {
+
+    saveProfileBtn.addEventListener("click", async function () {
+
+        const user = auth.currentUser;
+
+        if (!user) {
+            if (profileMessage) profileMessage.textContent = "Please login first.";
+            return;
+        }
+
+        const profileData = {
+            userId: user.uid,
+            name: profileName ? profileName.value.trim() : "",
+            gender: profileGender ? profileGender.value : "",
+            age: profileAge ? profileAge.value : "",
+            height: profileHeight ? profileHeight.value : "",
+            weight: profileWeight ? profileWeight.value : "",
+            updatedAt: serverTimestamp()
+        };
+
+        try {
+
+            await addDoc(collection(db, "profiles"), profileData);
+
+            if (profileMessage) profileMessage.textContent = "Profile saved.";
+            if (welcomeName && profileData.name) welcomeName.textContent = profileData.name;
+
+        } catch (error) {
+
+            console.error("Profile save error:", error);
+            if (profileMessage) profileMessage.textContent = "Could not save profile: " + error.message;
+        }
+    });
+}
+
+
+// ============================================================
+// SYMPTOM CHECKBOXES
 // ============================================================
 
 function getSymptomCheckboxes() {
-
-    return document.querySelectorAll(
-        '#symptomGrid input[type="checkbox"]'
-    );
+    return document.querySelectorAll('#symptomGrid input[type="checkbox"]');
 }
 
-
-// ============================================================
-// UPDATE SYMPTOM COUNT
-// ============================================================
 
 function updateCount() {
 
-    const boxes =
-        getSymptomCheckboxes();
+    const boxes = getSymptomCheckboxes();
+    let selectedCount = 0;
 
+    boxes.forEach(function (box) {
+        if (box.checked) selectedCount++;
+    });
 
-    let selectedCount =
-        0;
-
-
-    boxes.forEach(
-        function (box) {
-
-            if (box.checked) {
-
-                selectedCount++;
-            }
-        }
-    );
-
-
-    if (count) {
-
-        count.textContent =
-            selectedCount;
-    }
+    if (count) count.textContent = selectedCount;
 }
 
 
-// ============================================================
-// SETUP SYMPTOM EVENTS
-// ============================================================
-
 function setupSymptomEvents() {
 
-    const boxes =
-        getSymptomCheckboxes();
+    const boxes = getSymptomCheckboxes();
 
+    console.log("Found symptom checkboxes:", boxes.length);
 
-    console.log(
-        "Found symptom checkboxes:",
-        boxes.length
-    );
-
-
-    boxes.forEach(
-        function (box) {
-
-            box.addEventListener(
-                "change",
-                function () {
-
-                    updateCount();
-
-                }
-            );
-        }
-    );
-
+    boxes.forEach(function (box) {
+        box.addEventListener("change", updateCount);
+    });
 
     updateCount();
 }
@@ -805,50 +484,17 @@ function setupSymptomEvents() {
 
 if (searchInput) {
 
-    searchInput.addEventListener(
-        "input",
-        function (event) {
+    searchInput.addEventListener("input", function (event) {
 
-            const searchText =
-                event.target.value
-                    .toLowerCase()
-                    .trim();
+        const searchText = event.target.value.toLowerCase().trim();
+        const symptoms = document.querySelectorAll("#symptomGrid .symptom");
 
+        symptoms.forEach(function (symptom) {
 
-            const symptoms =
-                document.querySelectorAll(
-                    "#symptomGrid .symptom"
-                );
-
-
-            symptoms.forEach(
-                function (symptom) {
-
-                    const name =
-                        (
-                            symptom.dataset.name ||
-                            ""
-                        ).toLowerCase();
-
-
-                    if (
-                        name.includes(
-                            searchText
-                        )
-                    ) {
-
-                        symptom.style.display =
-                            "";
-
-                    } else {
-
-                        symptom.style.display =
-                            "none";
-                    }
-                }
-            );
-        }
-    );
+            const name = (symptom.dataset.name || "").toLowerCase();
+            symptom.style.display = name.includes(searchText) ? "" : "none";
+        });
+    });
 }
 
 
@@ -858,56 +504,21 @@ if (searchInput) {
 
 if (clearBtn) {
 
-    clearBtn.addEventListener(
-        "click",
-        function () {
+    clearBtn.addEventListener("click", function () {
 
-            const boxes =
-                getSymptomCheckboxes();
+        getSymptomCheckboxes().forEach(function (box) {
+            box.checked = false;
+        });
 
+        updateCount();
 
-            boxes.forEach(
-                function (box) {
+        if (result) result.classList.add("hidden");
+        if (searchInput) searchInput.value = "";
 
-                    box.checked =
-                        false;
-                }
-            );
-
-
-            updateCount();
-
-
-            if (result) {
-
-                result.classList.add(
-                    "hidden"
-                );
-            }
-
-
-            if (searchInput) {
-
-                searchInput.value =
-                    "";
-            }
-
-
-            const symptoms =
-                document.querySelectorAll(
-                    "#symptomGrid .symptom"
-                );
-
-
-            symptoms.forEach(
-                function (symptom) {
-
-                    symptom.style.display =
-                        "";
-                }
-            );
-        }
-    );
+        document.querySelectorAll("#symptomGrid .symptom").forEach(function (symptom) {
+            symptom.style.display = "";
+        });
+    });
 }
 
 
@@ -915,297 +526,108 @@ if (clearBtn) {
 // PREDICTION
 // ============================================================
 
+function getSelectedSymptoms() {
+
+    const selected = [];
+
+    getSymptomCheckboxes().forEach(function (box) {
+        if (box.checked) selected.push(box.value);
+    });
+
+    return selected;
+}
+
+
 async function makePrediction() {
 
-    const boxes =
-        getSymptomCheckboxes();
+    const selectedSymptoms = getSelectedSymptoms();
 
-
-    const selectedSymptoms =
-        [];
-
-
-    boxes.forEach(
-        function (box) {
-
-            if (box.checked) {
-
-                selectedSymptoms.push(
-                    box.value
-                );
-            }
-        }
-    );
-
-
-    console.log(
-        "Selected symptoms:",
-        selectedSymptoms
-    );
-
-
-    // --------------------------------------------------------
-    // CHECK LOGIN
-    // --------------------------------------------------------
+    console.log("Selected symptoms:", selectedSymptoms);
 
     if (!auth.currentUser) {
-
-        alert(
-            "Please login before making a prediction."
-        );
-
-        openAuthModal(
-            "login"
-        );
-
+        alert("Please login before making a prediction.");
         return;
     }
 
-
-    // --------------------------------------------------------
-    // CHECK SYMPTOMS
-    // --------------------------------------------------------
-
-    if (
-        selectedSymptoms.length ===
-        0
-    ) {
-
-        alert(
-            "Please select at least one symptom."
-        );
-
+    if (selectedSymptoms.length === 0) {
+        alert("Please select at least one symptom.");
         return;
     }
-
-
-    // --------------------------------------------------------
-    // DISABLE PREDICTION BUTTON
-    // --------------------------------------------------------
 
     if (predictBtn) {
-
-        predictBtn.disabled =
-            true;
-
-        predictBtn.textContent =
-            "Analyzing...";
+        predictBtn.disabled = true;
+        predictBtn.textContent = "Analyzing...";
     }
-
 
     try {
 
-        // ====================================================
-        // CALL FLASK /predict API
-        // ====================================================
+        const response = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ symptoms: selectedSymptoms })
+        });
 
-        const response =
-            await fetch(
-                "/predict",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify(
-                        {
-                            symptoms:
-                                selectedSymptoms
-                        }
-                    )
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        // ====================================================
-        // CHECK RESPONSE
-        // ====================================================
+        const data = await response.json();
 
         if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Prediction failed."
-            );
+            throw new Error(data.error || "Prediction failed.");
         }
 
+        if (result) result.classList.remove("hidden");
+        if (disease) disease.textContent = data.disease || "Unknown";
 
-        // ====================================================
-        // SHOW RESULT
-        // ====================================================
+        const confidence = Number(data.confidence || 0);
 
-        if (result) {
-
-            result.classList.remove(
-                "hidden"
-            );
-        }
-
-
-        if (disease) {
-
-            disease.textContent =
-                data.disease ||
-                "Unknown";
-        }
-
-
-        const confidence =
-            Number(
-                data.confidence ||
-                0
-            );
-
-
-        if (confidenceText) {
-
-            confidenceText.textContent =
-                `Confidence: ${confidence}%`;
-        }
-
-
-        if (confidenceBar) {
-
-            confidenceBar.style.width =
-                `${confidence}%`;
-        }
-
-
-        // ====================================================
-        // TOP PREDICTIONS
-        // ====================================================
+        if (confidenceText) confidenceText.textContent = `Confidence: ${confidence}%`;
+        if (confidenceBar) confidenceBar.style.width = `${confidence}%`;
 
         if (topPredictions) {
-
-            topPredictions.innerHTML =
-                "";
+            topPredictions.innerHTML = "";
         }
 
+        if (data.top_predictions && data.top_predictions.length && topPredictions) {
 
-        if (
-            data.top_predictions &&
-            data.top_predictions.length &&
-            topPredictions
-        ) {
+            data.top_predictions.forEach(function (item) {
 
-            data.top_predictions.forEach(
-                function (item) {
+                const div = document.createElement("div");
+                div.className = "prediction-item";
 
-                    const div =
-                        document.createElement(
-                            "div"
-                        );
+                const diseaseName = document.createElement("span");
+                diseaseName.textContent = item.disease;
 
+                const confidenceValue = document.createElement("strong");
+                confidenceValue.textContent = `${item.confidence}%`;
 
-                    div.className =
-                        "prediction-item";
+                div.appendChild(diseaseName);
+                div.appendChild(confidenceValue);
 
-
-                    const diseaseName =
-                        document.createElement(
-                            "span"
-                        );
-
-
-                    diseaseName.textContent =
-                        item.disease;
-
-
-                    const confidenceValue =
-                        document.createElement(
-                            "strong"
-                        );
-
-
-                    confidenceValue.textContent =
-                        `${item.confidence}%`;
-
-
-                    div.appendChild(
-                        diseaseName
-                    );
-
-
-                    div.appendChild(
-                        confidenceValue
-                    );
-
-
-                    topPredictions.appendChild(
-                        div
-                    );
-                }
-            );
+                topPredictions.appendChild(div);
+            });
         }
-
-
-        // ====================================================
-        // RESULT MESSAGE
-        // ====================================================
 
         if (message) {
-
-            message.textContent =
-                data.message ||
-                "Educational ML prediction only.";
+            message.textContent = data.message || "Educational ML prediction only.";
         }
 
+        await savePrediction(selectedSymptoms, data);
 
-        // ====================================================
-        // SAVE PREDICTION
-        // ====================================================
-
-        await savePrediction(
-            selectedSymptoms,
-            data
-        );
-
-
-        // ====================================================
-        // SCROLL TO RESULT
-        // ====================================================
+        if (latestDisease) latestDisease.textContent = data.disease || "—";
+        if (dashboardLatest) dashboardLatest.textContent = `${data.disease} (${confidence}% confidence)`;
 
         if (result) {
-
-            result.scrollIntoView(
-                {
-                    behavior: "smooth",
-                    block: "start"
-                }
-            );
+            result.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-
 
     } catch (error) {
 
-        console.error(
-            "Prediction error:",
-            error
-        );
-
-
-        alert(
-            "Prediction failed: " +
-            error.message
-        );
-
+        console.error("Prediction error:", error);
+        alert("Prediction failed: " + error.message);
 
     } finally {
 
         if (predictBtn) {
-
-            predictBtn.disabled =
-                false;
-
-            predictBtn.textContent =
-                "Predict Possible Disease";
+            predictBtn.disabled = false;
+            predictBtn.textContent = "Analyze Symptoms";
         }
     }
 }
@@ -1215,262 +637,260 @@ async function makePrediction() {
 // SAVE PREDICTION TO FIRESTORE
 // ============================================================
 
-async function savePrediction(
-    selectedSymptoms,
-    data
-) {
+async function savePrediction(selectedSymptoms, data) {
 
-    const user =
-        auth.currentUser;
-
-
-    // --------------------------------------------------------
-    // USER MUST BE LOGGED IN
-    // --------------------------------------------------------
+    const user = auth.currentUser;
 
     if (!user) {
-
-        console.log(
-            "User not logged in. Prediction not saved."
-        );
-
+        console.log("User not logged in. Prediction not saved.");
         return;
     }
 
-
     try {
 
-        await addDoc(
-            collection(
-                db,
-                "predictions"
-            ),
-            {
+        await addDoc(collection(db, "predictions"), {
+            userId: user.uid,
+            userEmail: user.email || null,
+            symptoms: selectedSymptoms,
+            disease: data.disease || null,
+            confidence: data.confidence || 0,
+            topPredictions: data.top_predictions || [],
+            createdAt: serverTimestamp()
+        });
 
-                userId:
-                    user.uid,
-
-                userEmail:
-                    user.email ||
-                    null,
-
-                symptoms:
-                    selectedSymptoms,
-
-                disease:
-                    data.disease ||
-                    null,
-
-                confidence:
-                    data.confidence ||
-                    0,
-
-                topPredictions:
-                    data.top_predictions ||
-                    [],
-
-                createdAt:
-                    serverTimestamp()
-            }
-        );
-
-
-        console.log(
-            "Prediction saved to Firestore."
-        );
-
+        console.log("Prediction saved to Firestore.");
 
     } catch (error) {
 
-        console.error(
-            "Firestore save error:",
-            error
-        );
+        console.error("Firestore save error:", error);
     }
 }
 
 
 // ============================================================
-// LOGIN BUTTON
+// LOAD HISTORY FROM FIRESTORE
 // ============================================================
 
-if (loginBtn) {
+async function loadHistory() {
 
-    loginBtn.addEventListener(
-        "click",
-        function () {
+    const user = auth.currentUser;
 
-            console.log(
-                "Login button clicked"
-            );
+    if (!user || !historyList) return;
 
+    try {
 
-            openAuthModal(
-                "login"
-            );
+        const q = query(
+            collection(db, "predictions"),
+            where("userId", "==", user.uid),
+            orderBy("createdAt", "desc"),
+            limit(20)
+        );
+
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            historyList.innerHTML = '<p class="muted">No predictions yet.</p>';
+            if (predictionCount) predictionCount.textContent = "0";
+            return;
         }
-    );
+
+        historyList.innerHTML = "";
+
+        let items = 0;
+
+        snapshot.forEach(function (docSnap) {
+
+            const entry = docSnap.data();
+            items++;
+
+            const div = document.createElement("div");
+            div.className = "history-item";
+            div.textContent = `${entry.disease || "Unknown"} — ${entry.confidence || 0}% confidence`;
+
+            historyList.appendChild(div);
+        });
+
+        if (predictionCount) predictionCount.textContent = String(items);
+
+    } catch (error) {
+
+        console.error("History load error:", error);
+        historyList.innerHTML = '<p class="muted">Could not load history.</p>';
+    }
+}
+
+
+async function loadDashboardStats() {
+    // Reuses loadHistory, which also populates predictionCount
+    await loadHistory();
 }
 
 
 // ============================================================
-// SIGN UP BUTTON
+// DOCTORS
 // ============================================================
 
-if (signupBtn) {
+async function loadDoctors() {
 
-    signupBtn.addEventListener(
-        "click",
-        function () {
+    if (!doctorList) return;
 
-            console.log(
-                "Sign Up button clicked"
-            );
+    try {
+
+        const response = await fetch("/doctors");
+        const data = await response.json();
+
+        doctorList.innerHTML = "";
+
+        (data.doctors || []).forEach(function (doctor) {
+
+            const card = document.createElement("div");
+            card.className = "doctor-card";
+
+            card.innerHTML = `
+                <strong>${doctor.name}</strong>
+                <span>${doctor.specialization}</span>
+                <span>${doctor.hospital}, ${doctor.location}</span>
+                <span>${doctor.experience} experience</span>
+            `;
+
+            doctorList.appendChild(card);
+        });
+
+    } catch (error) {
+
+        console.error("Doctors load error:", error);
+    }
+}
 
 
-            openAuthModal(
-                "signup"
-            );
+// ============================================================
+// PERFORMANCE
+// ============================================================
+
+async function loadPerformance() {
+
+    try {
+
+        const response = await fetch("/performance");
+        const data = await response.json();
+
+        if (metricAccuracy) metricAccuracy.textContent = `${data.accuracy}%`;
+        if (metricPrecision) metricPrecision.textContent = `${data.precision}%`;
+        if (metricRecall) metricRecall.textContent = `${data.recall}%`;
+        if (metricF1) metricF1.textContent = `${data.f1}%`;
+
+        if (trainingSamples) trainingSamples.textContent = data.training_samples;
+        if (testingSamples) testingSamples.textContent = data.testing_samples;
+        if (symptomTotal) symptomTotal.textContent = data.number_of_symptoms;
+        if (diseaseTotal) diseaseTotal.textContent = data.number_of_diseases;
+        if (rfAccuracy) rfAccuracy.textContent = `${data.accuracy}%`;
+
+    } catch (error) {
+
+        console.error("Performance load error:", error);
+    }
+}
+
+
+// ============================================================
+// QUANTUM ANALYSIS
+// ============================================================
+
+if (quantumBtn) {
+
+    quantumBtn.addEventListener("click", async function () {
+
+        const selectedSymptoms = getSelectedSymptoms();
+
+        if (selectedSymptoms.length === 0) {
+            alert("Please select symptoms on the Prediction page first.");
+            return;
         }
-    );
-}
 
+        quantumBtn.disabled = true;
+        quantumBtn.textContent = "Running...";
 
-// ============================================================
-// LOGOUT BUTTON
-// ============================================================
+        try {
 
-if (logoutBtn) {
+            const response = await fetch("/quantum", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ symptoms: selectedSymptoms })
+            });
 
-    logoutBtn.addEventListener(
-        "click",
-        logoutUser
-    );
-}
+            const data = await response.json();
 
-
-// ============================================================
-// CLOSE MODAL
-// ============================================================
-
-if (closeModal) {
-
-    closeModal.addEventListener(
-        "click",
-        closeAuthModal
-    );
-}
-
-
-// ============================================================
-// CLICK OUTSIDE MODAL
-// ============================================================
-
-if (authModal) {
-
-    authModal.addEventListener(
-        "click",
-        function (event) {
-
-            if (
-                event.target ===
-                authModal
-            ) {
-
-                closeAuthModal();
+            if (!response.ok) {
+                throw new Error(data.error || "Quantum analysis failed.");
             }
+
+            if (quantumResult) {
+
+                quantumResult.innerHTML = `
+                    <p><strong>Qubits used:</strong> ${data.qubits}</p>
+                    <p><strong>Circuit depth:</strong> ${data.circuit_depth}</p>
+                    <p><strong>Quantum score:</strong> ${data.quantum_score}%</p>
+                    <p>${data.interpretation}</p>
+                `;
+            }
+
+        } catch (error) {
+
+            console.error("Quantum error:", error);
+
+            if (quantumResult) {
+                quantumResult.textContent = "Quantum analysis failed: " + error.message;
+            }
+
+        } finally {
+
+            quantumBtn.disabled = false;
+            quantumBtn.textContent = "Run Quantum Analysis";
         }
-    );
+    });
 }
 
 
 // ============================================================
-// EMAIL TAB
+// EVENT WIRING
 // ============================================================
 
-if (emailTab) {
-
-    emailTab.addEventListener(
-        "click",
-        showEmailAuth
-    );
+if (loginTab) {
+    loginTab.addEventListener("click", function () { setAuthMode("login"); });
 }
 
-
-// ============================================================
-// EMAIL SUBMIT
-// ============================================================
+if (signupTab) {
+    signupTab.addEventListener("click", function () { setAuthMode("signup"); });
+}
 
 if (authSubmit) {
-
-    authSubmit.addEventListener(
-        "click",
-        handleEmailAuthentication
-    );
+    authSubmit.addEventListener("click", handleEmailAuthentication);
 }
-
-
-// ============================================================
-// ENTER KEY - EMAIL
-// ============================================================
 
 if (authPassword) {
 
-    authPassword.addEventListener(
-        "keydown",
-        function (event) {
+    authPassword.addEventListener("keydown", function (event) {
 
-            if (
-                event.key ===
-                "Enter"
-            ) {
-
-                handleEmailAuthentication();
-            }
+        if (event.key === "Enter") {
+            handleEmailAuthentication();
         }
-    );
+    });
 }
 
-
-// ============================================================
-// PREDICT BUTTON
-// ============================================================
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", logoutUser);
+}
 
 if (predictBtn) {
-
-    predictBtn.addEventListener(
-        "click",
-        makePrediction
-    );
+    predictBtn.addEventListener("click", makePrediction);
 }
 
 
 // ============================================================
-// INITIALIZE SYMPTOMS
+// INITIALIZE
 // ============================================================
 
 setupSymptomEvents();
+setAuthMode("login");
 
-
-// ============================================================
-// INITIALIZE EMAIL AUTH UI
-// ============================================================
-
-showEmailAuth();
-
-
-// ============================================================
-// FINAL DEBUG MESSAGE
-// ============================================================
-
-console.log(
-    "QuantumDiagnose JavaScript loaded successfully."
-);
-
-console.log(
-    "Email/password authentication enabled."
-);
-
-console.log(
-    "Phone OTP authentication disabled."
-);
+console.log("QuantumDiagnose JavaScript loaded successfully.");
