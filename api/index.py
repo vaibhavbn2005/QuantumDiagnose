@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from pathlib import Path
@@ -10,49 +10,60 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-TRAINING_PATH = BASE_DIR / "data" / "Training.csv"
-TESTING_PATH = BASE_DIR / "data" / "Testing.csv"
-
-TEMPLATE_DIR = BASE_DIR / "templates"
-STATIC_DIR = BASE_DIR / "static"
+DATA_PATH = BASE_DIR / "data" / "Training.csv"
 
 
 # ============================================================
 # FLASK APP
 # ============================================================
 
-app = Flask(
-    __name__,
-    template_folder=str(TEMPLATE_DIR),
-    static_folder=str(STATIC_DIR),
-    static_url_path="/static"
-)
+app = Flask(__name__)
 
 
 # ============================================================
-# LOAD DATASETS
+# LOAD DATASET
 # ============================================================
 
-training_df = pd.read_csv(TRAINING_PATH)
-testing_df = pd.read_csv(TESTING_PATH)
+try:
+    df = pd.read_csv(DATA_PATH)
+
+    # Remove accidental spaces from column names
+    df.columns = df.columns.str.strip()
+
+except Exception as error:
+    raise RuntimeError(
+        f"Could not load Training.csv: {error}"
+    )
 
 
 # ============================================================
-# CLEAN DATASET
+# FIND TARGET COLUMN
 # ============================================================
 
-TARGET_COLUMN = "prognosis"
+possible_targets = [
+    "disease",
+    "Disease",
+    "prognosis",
+    "Prognosis",
+    "diagnosis",
+    "Diagnosis"
+]
 
-# Remove unwanted automatically generated columns
-training_df = training_df.drop(
-    columns=["Unnamed: 133"],
-    errors="ignore"
-)
+TARGET_COLUMN = None
 
-testing_df = testing_df.drop(
-    columns=["Unnamed: 133"],
-    errors="ignore"
-)
+for column in possible_targets:
+    if column in df.columns:
+        TARGET_COLUMN = column
+        break
+
+
+if TARGET_COLUMN is None:
+
+    raise RuntimeError(
+        "Target column not found. "
+        "Expected one of: disease, prognosis, diagnosis. "
+        f"Available columns: {list(df.columns)}"
+    )
 
 
 # ============================================================
@@ -61,25 +72,37 @@ testing_df = testing_df.drop(
 
 symptom_columns = [
     column
-    for column in training_df.columns
+    for column in df.columns
     if column != TARGET_COLUMN
 ]
+
+
+# ============================================================
+# CLEAN DATA
+# ============================================================
+
+# Convert symptom columns to numeric values
+for column in symptom_columns:
+
+    df[column] = pd.to_numeric(
+        df[column],
+        errors="coerce"
+    ).fillna(0)
+
+
+# Remove rows with missing target
+df = df.dropna(
+    subset=[TARGET_COLUMN]
+)
 
 
 # ============================================================
 # TRAINING DATA
 # ============================================================
 
-X_train = training_df[symptom_columns]
-y_train = training_df[TARGET_COLUMN]
+X = df[symptom_columns]
 
-
-# ============================================================
-# TESTING DATA
-# ============================================================
-
-X_test = testing_df[symptom_columns]
-y_test = testing_df[TARGET_COLUMN]
+y = df[TARGET_COLUMN]
 
 
 # ============================================================
@@ -89,67 +112,87 @@ y_test = testing_df[TARGET_COLUMN]
 model = RandomForestClassifier(
     n_estimators=500,
     random_state=42,
-    n_jobs=-1
+    class_weight="balanced",
+    max_features="sqrt",
+    n_jobs=1
 )
 
-model.fit(
-    X_train,
-    y_train
-)
-
-
-# ============================================================
-# MODEL ACCURACY
-# ============================================================
-
-test_accuracy = model.score(
-    X_test,
-    y_test
-)
+model.fit(X, y)
 
 
 # ============================================================
 # HOME
 # ============================================================
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
 
-    return render_template(
-        "index.html",
-        symptoms=symptom_columns
-    )
+    return jsonify({
+        "status": "QuantumDiagnose ML API is running",
+        "target_column": TARGET_COLUMN,
+        "number_of_symptoms": len(symptom_columns),
+        "number_of_diseases": len(model.classes_)
+    })
+
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.route("/health", methods=["GET"])
+def health():
+
+    return jsonify({
+        "status": "ok",
+        "model": "Random Forest",
+        "target_column": TARGET_COLUMN
+    })
+
+
+# ============================================================
+# GET SYMPTOMS
+# ============================================================
+
+@app.route("/symptoms", methods=["GET"])
+def get_symptoms():
+
+    return jsonify({
+        "symptoms": symptom_columns
+    })
 
 
 # ============================================================
 # PREDICTION
 # ============================================================
 
-@app.route(
-    "/predict",
-    methods=["POST"]
-)
+@app.route("/predict", methods=["POST"])
 def predict():
 
     try:
 
-        data = request.get_json()
+        # ----------------------------------------------------
+        # READ JSON
+        # ----------------------------------------------------
 
-        if not data:
+        data = request.get_json(
+            silent=True
+        )
+
+        if data is None:
 
             return jsonify({
-                "error": "No request data received."
+                "error": "Invalid JSON request."
             }), 400
 
 
-        if "symptoms" not in data:
+        # ----------------------------------------------------
+        # CHECK SYMPTOMS
+        # ----------------------------------------------------
 
-            return jsonify({
-                "error": "No symptoms provided."
-            }), 400
-
-
-        selected_symptoms = data["symptoms"]
+        selected_symptoms = data.get(
+            "symptoms",
+            []
+        )
 
 
         if not isinstance(
@@ -158,11 +201,12 @@ def predict():
         ):
 
             return jsonify({
-                "error": "Symptoms must be a list."
+                "error":
+                    "Symptoms must be provided as a list."
             }), 400
 
 
-        if not selected_symptoms:
+        if len(selected_symptoms) == 0:
 
             return jsonify({
                 "error":
@@ -170,9 +214,19 @@ def predict():
             }), 400
 
 
-        # ====================================================
+        # ----------------------------------------------------
+        # NORMALIZE SYMPTOMS
+        # ----------------------------------------------------
+
+        selected_symptoms = [
+            str(symptom).strip()
+            for symptom in selected_symptoms
+        ]
+
+
+        # ----------------------------------------------------
         # CREATE INPUT VECTOR
-        # ====================================================
+        # ----------------------------------------------------
 
         input_data = {
             symptom: 0
@@ -180,9 +234,9 @@ def predict():
         }
 
 
-        # ====================================================
-        # SET SELECTED SYMPTOMS
-        # ====================================================
+        # ----------------------------------------------------
+        # SET SELECTED SYMPTOMS = 1
+        # ----------------------------------------------------
 
         valid_symptoms = []
 
@@ -192,21 +246,25 @@ def predict():
 
                 input_data[symptom] = 1
 
-                valid_symptoms.append(symptom)
+                valid_symptoms.append(
+                    symptom
+                )
 
 
-        if not valid_symptoms:
+        if len(valid_symptoms) == 0:
 
             return jsonify({
                 "error":
                     "None of the selected symptoms "
-                    "were recognized by the model."
+                    "exist in the training dataset.",
+                "available_symptoms":
+                    symptom_columns
             }), 400
 
 
-        # ====================================================
+        # ----------------------------------------------------
         # CREATE DATAFRAME
-        # ====================================================
+        # ----------------------------------------------------
 
         input_df = pd.DataFrame(
             [input_data],
@@ -214,52 +272,54 @@ def predict():
         )
 
 
-        # ====================================================
+        # ----------------------------------------------------
         # PREDICTION
-        # ====================================================
+        # ----------------------------------------------------
 
         prediction = model.predict(
             input_df
         )[0]
 
 
-        # ====================================================
-        # PREDICTION PROBABILITIES
-        # ====================================================
+        # ----------------------------------------------------
+        # PROBABILITIES
+        # ----------------------------------------------------
 
         probabilities = model.predict_proba(
             input_df
         )[0]
 
+
         classes = model.classes_
 
 
-        # ====================================================
-        # SORT PREDICTIONS
-        # ====================================================
+        # ----------------------------------------------------
+        # SORT ALL PREDICTIONS
+        # ----------------------------------------------------
 
         results = sorted(
             zip(
                 classes,
                 probabilities
             ),
-            key=lambda item: item[1],
+            key=lambda x: x[1],
             reverse=True
         )
 
 
-        # ====================================================
+        # ----------------------------------------------------
         # TOP 5 PREDICTIONS
-        # ====================================================
+        # ----------------------------------------------------
 
         top_predictions = []
+
 
         for disease, probability in results[:5]:
 
             top_predictions.append({
 
                 "disease":
-                    disease,
+                    str(disease),
 
                 "confidence":
                     round(
@@ -270,38 +330,35 @@ def predict():
             })
 
 
-        # ====================================================
-        # PRIMARY CONFIDENCE
-        # ====================================================
+        # ----------------------------------------------------
+        # MAIN CONFIDENCE
+        # ----------------------------------------------------
 
-        confidence = (
-            top_predictions[0]["confidence"]
+        confidence = round(
+            float(probabilities.max()) * 100,
+            2
         )
 
 
-        # ====================================================
+        # ----------------------------------------------------
         # RESPONSE
-        # ====================================================
+        # ----------------------------------------------------
 
         return jsonify({
 
+            "success": True,
+
             "disease":
-                prediction,
+                str(prediction),
 
             "confidence":
                 confidence,
 
-            "top_predictions":
-                top_predictions,
-
             "selected_symptoms":
                 valid_symptoms,
 
-            "model_accuracy":
-                round(
-                    test_accuracy * 100,
-                    2
-                ),
+            "top_predictions":
+                top_predictions,
 
             "message":
                 (
@@ -318,10 +375,12 @@ def predict():
 
         print(
             "Prediction error:",
-            error
+            str(error)
         )
 
         return jsonify({
+
+            "success": False,
 
             "error":
                 str(error)
@@ -330,61 +389,8 @@ def predict():
 
 
 # ============================================================
-# MODEL PERFORMANCE
+# VERCEL ENTRY POINT
 # ============================================================
 
-@app.route("/model-performance")
-def model_performance():
-
-    return jsonify({
-
-        "model":
-            "Random Forest",
-
-        "training_samples":
-            len(training_df),
-
-        "testing_samples":
-            len(testing_df),
-
-        "number_of_symptoms":
-            len(symptom_columns),
-
-        "number_of_diseases":
-            y_train.nunique(),
-
-        "accuracy":
-            round(
-                test_accuracy * 100,
-                2
-            )
-
-    })
-
-
-# ============================================================
-# HEALTH CHECK
-# ============================================================
-
-@app.route("/health")
-def health():
-
-    return jsonify({
-
-        "status":
-            "ok"
-
-    })
-
-
-# ============================================================
-# LOCAL DEVELOPMENT
-# ============================================================
-
-if __name__ == "__main__":
-
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+# Vercel will automatically use the Flask
+# application object named "app".
