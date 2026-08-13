@@ -1,7 +1,6 @@
 // ============================================================
 // QuantumDiagnose
-// Firebase Authentication + Phone OTP + Firestore
-// + Random Forest Prediction
+// Complete Firebase + Symptom Prediction JavaScript
 // ============================================================
 
 
@@ -9,55 +8,48 @@
 // FIREBASE IMPORTS
 // ============================================================
 
-import { initializeApp } from
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  RecaptchaVerifier,
-  signInWithPhoneNumber
-} from
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    RecaptchaVerifier,
+    signInWithPhoneNumber
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
-  getFirestore,
-  collection,
-  addDoc,
-  serverTimestamp
-} from
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    getFirestore,
+    collection,
+    addDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
 // ============================================================
-// FIREBASE CONFIG
+// FIREBASE CONFIGURATION
 // ============================================================
 
 const firebaseConfig = {
 
-  apiKey:
-    "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
+    apiKey: "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
 
-  authDomain:
-    "quantumdiagnose.firebaseapp.com",
+    authDomain: "quantumdiagnose.firebaseapp.com",
 
-  projectId:
-    "quantumdiagnose",
+    projectId: "quantumdiagnose",
 
-  storageBucket:
-    "quantumdiagnose.firebasestorage.app",
+    storageBucket: "quantumdiagnose.firebasestorage.app",
 
-  messagingSenderId:
-    "727641186346",
+    messagingSenderId: "727641186346",
 
-  appId:
-    "1:727641186346:web:c8eed6274fd1582169e353",
+    appId: "1:727641186346",
 
-  measurementId:
-    "G-DSDM1YM4WB"
+    measurementId: "G-DSDM1YM4WB"
+
 };
 
 
@@ -66,194 +58,226 @@ const firebaseConfig = {
 // ============================================================
 
 const firebaseApp =
-  initializeApp(firebaseConfig);
+    initializeApp(firebaseConfig);
 
 const auth =
-  getAuth(firebaseApp);
+    getAuth(firebaseApp);
 
 const db =
-  getFirestore(firebaseApp);
+    getFirestore(firebaseApp);
 
 
 // ============================================================
-// DOM ELEMENTS
+// MAKE FIREBASE AVAILABLE GLOBALLY
 // ============================================================
 
-// Symptoms
+window.firebaseAuth = auth;
+
+window.firebaseDB = db;
+
+window.firebaseCreateUser =
+    createUserWithEmailAndPassword;
+
+window.firebaseSignIn =
+    signInWithEmailAndPassword;
+
+window.firebaseSignOut =
+    signOut;
+
+window.firebaseOnAuthStateChanged =
+    onAuthStateChanged;
+
+
+// ============================================================
+// HTML ELEMENTS
+// ============================================================
 
 const boxes =
-  [...document.querySelectorAll(".symptom input")];
+    [...document.querySelectorAll(".symptom input")];
 
 const count =
-  document.getElementById("count");
+    document.getElementById("count");
 
 const result =
-  document.getElementById("result");
+    document.getElementById("result");
 
 const disease =
-  document.getElementById("disease");
+    document.getElementById("disease");
 
 const confidenceBar =
-  document.getElementById("confidenceBar");
+    document.getElementById("confidenceBar");
 
 const confidenceText =
-  document.getElementById("confidenceText");
+    document.getElementById("confidenceText");
 
 const message =
-  document.getElementById("message");
+    document.getElementById("message");
 
 const topPredictions =
-  document.getElementById("topPredictions");
+    document.getElementById("topPredictions");
 
-
-// Buttons
-
-const loginBtn =
-  document.getElementById("loginBtn");
-
-const signupBtn =
-  document.getElementById("signupBtn");
-
-const logoutBtn =
-  document.getElementById("logoutBtn");
+const searchInput =
+    document.getElementById("search");
 
 const clearBtn =
-  document.getElementById("clearBtn");
+    document.getElementById("clearBtn");
 
 const predictBtn =
-  document.getElementById("predictBtn");
+    document.getElementById("predictBtn");
 
 
-// Authentication modal
+// ============================================================
+// AUTH ELEMENTS
+// ============================================================
+
+const loginBtn =
+    document.getElementById("loginBtn");
+
+const signupBtn =
+    document.getElementById("signupBtn");
+
+const logoutBtn =
+    document.getElementById("logoutBtn");
 
 const authModal =
-  document.getElementById("authModal");
+    document.getElementById("authModal");
 
 const closeModal =
-  document.getElementById("closeModal");
+    document.getElementById("closeModal");
 
 const authTitle =
-  document.getElementById("authTitle");
+    document.getElementById("authTitle");
 
 const authEmail =
-  document.getElementById("authEmail");
+    document.getElementById("authEmail");
 
 const authPassword =
-  document.getElementById("authPassword");
+    document.getElementById("authPassword");
 
 const authSubmit =
-  document.getElementById("authSubmit");
+    document.getElementById("authSubmit");
 
 const authMessage =
-  document.getElementById("authMessage");
-
-
-// Phone authentication
-
-const phoneAuthArea =
-  document.getElementById("phoneAuthArea");
-
-const authPhone =
-  document.getElementById("authPhone");
-
-const sendOTP =
-  document.getElementById("sendOTP");
-
-const authOTP =
-  document.getElementById("authOTP");
-
-const verifyOTP =
-  document.getElementById("verifyOTP");
+    document.getElementById("authMessage");
 
 
 // ============================================================
-// VARIABLES
+// PHONE AUTH ELEMENTS
 // ============================================================
 
-let authMode =
-  "login";
+const emailTab =
+    document.getElementById("emailTab");
 
-let confirmationResult =
-  null;
+const phoneTab =
+    document.getElementById("phoneTab");
 
-let recaptchaVerifier =
-  null;
+const emailAuth =
+    document.getElementById("emailAuth");
+
+const phoneAuth =
+    document.getElementById("phoneAuth");
+
+const phoneNumber =
+    document.getElementById("phoneNumber");
+
+const sendOtpBtn =
+    document.getElementById("sendOtpBtn");
+
+const verifyOtpBtn =
+    document.getElementById("verifyOtpBtn");
+
+const otpCode =
+    document.getElementById("otpCode");
 
 
 // ============================================================
-// SYMPTOM COUNT
+// AUTH STATE
+// ============================================================
+
+let authMode = "login";
+
+let authMethod = "email";
+
+let confirmationResult = null;
+
+let recaptchaVerifier = null;
+
+
+// ============================================================
+// UPDATE SYMPTOM COUNT
 // ============================================================
 
 function updateCount() {
 
-  count.textContent =
-    boxes.filter(
-      box => box.checked
-    ).length;
+    if (!count) {
+        return;
+    }
 
+    const selected =
+        boxes.filter(
+            box => box.checked
+        ).length;
+
+    count.textContent = selected;
 }
 
 
 // ============================================================
-// CHECKBOX EVENTS
+// SYMPTOM CHECKBOX EVENTS
 // ============================================================
 
 boxes.forEach(box => {
 
-  box.addEventListener(
-    "change",
-    updateCount
-  );
+    box.addEventListener(
+        "change",
+        updateCount
+    );
 
 });
 
 
 // ============================================================
-// SYMPTOM SEARCH
+// SEARCH SYMPTOMS
 // ============================================================
-
-const searchInput =
-  document.getElementById("search");
 
 if (searchInput) {
 
-  searchInput.addEventListener(
-    "input",
-    function () {
+    searchInput.addEventListener(
+        "input",
+        function () {
 
-      const query =
-        this.value
-          .toLowerCase()
-          .trim();
+            const searchText =
+                this.value
+                    .toLowerCase()
+                    .trim();
 
+            document
+                .querySelectorAll(".symptom")
+                .forEach(symptom => {
 
-      document
-        .querySelectorAll(".symptom")
-        .forEach(item => {
+                    const name =
+                        (
+                            symptom.dataset.name || ""
+                        ).toLowerCase();
 
-          const name =
-            item.dataset.name
-              .toLowerCase();
+                    if (
+                        name.includes(searchText)
+                    ) {
 
+                        symptom.style.display =
+                            "";
 
-          if (
-            name.includes(query)
-          ) {
+                    } else {
 
-            item.style.display =
-              "";
+                        symptom.style.display =
+                            "none";
 
-          } else {
+                    }
 
-            item.style.display =
-              "none";
+                });
 
-          }
-
-        });
-
-    }
-  );
+        }
+    );
 
 }
 
@@ -264,30 +288,301 @@ if (searchInput) {
 
 if (clearBtn) {
 
-  clearBtn.addEventListener(
-    "click",
-    function () {
+    clearBtn.addEventListener(
+        "click",
+        function () {
 
-      boxes.forEach(
-        box => {
-          box.checked = false;
+            boxes.forEach(
+                box => box.checked = false
+            );
+
+            updateCount();
+
+            if (result) {
+                result.classList.add("hidden");
+            }
+
         }
-      );
+    );
+
+}
 
 
-      updateCount();
+// ============================================================
+// SAVE PREDICTION TO FIRESTORE
+// ============================================================
 
+async function savePrediction(
+    symptoms,
+    prediction,
+    confidence,
+    topPredictions
+) {
 
-      if (result) {
+    const user =
+        auth.currentUser;
 
-        result.classList.add(
-          "hidden"
+    if (!user) {
+
+        console.log(
+            "User not logged in. Prediction will not be saved."
         );
 
-      }
+        return;
 
     }
-  );
+
+    try {
+
+        await addDoc(
+            collection(
+                db,
+                "predictions"
+            ),
+            {
+
+                userId:
+                    user.uid,
+
+                userEmail:
+                    user.email || null,
+
+                phoneNumber:
+                    user.phoneNumber || null,
+
+                symptoms:
+                    symptoms,
+
+                disease:
+                    prediction,
+
+                confidence:
+                    confidence,
+
+                topPredictions:
+                    topPredictions,
+
+                createdAt:
+                    serverTimestamp()
+
+            }
+        );
+
+        console.log(
+            "Prediction saved successfully."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error saving prediction:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// PREDICT BUTTON
+// ============================================================
+
+if (predictBtn) {
+
+    predictBtn.addEventListener(
+        "click",
+        async function () {
+
+            const symptoms =
+                boxes
+                    .filter(
+                        box => box.checked
+                    )
+                    .map(
+                        box => box.value
+                    );
+
+
+            // No symptoms
+
+            if (!symptoms.length) {
+
+                alert(
+                    "Please select at least one symptom."
+                );
+
+                return;
+
+            }
+
+
+            // Loading state
+
+            predictBtn.disabled =
+                true;
+
+            predictBtn.textContent =
+                "Analyzing...";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/predict",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    symptoms:
+                                        symptoms
+                                })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Prediction failed."
+                    );
+
+                }
+
+
+                // Disease
+
+                disease.textContent =
+                    String(
+                        data.disease
+                    ).replaceAll(
+                        "_",
+                        " "
+                    );
+
+
+                // Confidence
+
+                const confidence =
+                    Number(
+                        data.confidence || 0
+                    );
+
+                confidenceBar.style.width =
+                    `${confidence}%`;
+
+                confidenceText.textContent =
+                    `Model confidence: ${confidence}%`;
+
+
+                // Top predictions
+
+                const predictions =
+                    Array.isArray(
+                        data.top_predictions
+                    )
+                        ? data.top_predictions
+                        : [];
+
+
+                topPredictions.innerHTML =
+                    predictions
+                        .map(
+                            item => {
+
+                                const diseaseName =
+                                    String(
+                                        item.disease
+                                    ).replaceAll(
+                                        "_",
+                                        " "
+                                    );
+
+                                return `
+                                    <div class="top-item">
+                                        <span>
+                                            ${diseaseName}
+                                        </span>
+
+                                        <strong>
+                                            ${item.confidence}%
+                                        </strong>
+                                    </div>
+                                `;
+
+                            }
+                        )
+                        .join("");
+
+
+                // Message
+
+                message.textContent =
+                    data.message ||
+                    "Educational ML prediction only.";
+
+
+                // Show result
+
+                result.classList.remove(
+                    "hidden"
+                );
+
+
+                // Scroll
+
+                result.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+
+
+                // Save if logged in
+
+                await savePrediction(
+                    symptoms,
+                    data.disease,
+                    confidence,
+                    predictions
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Prediction error:",
+                    error
+                );
+
+                alert(
+                    error.message ||
+                    "Prediction failed."
+                );
+
+            } finally {
+
+                predictBtn.disabled =
+                    false;
+
+                predictBtn.textContent =
+                    "Predict Possible Disease";
+
+            }
+
+        }
+    );
 
 }
 
@@ -296,16 +591,25 @@ if (clearBtn) {
 // OPEN LOGIN
 // ============================================================
 
-if (loginBtn) {
+function openLogin() {
 
-  loginBtn.addEventListener(
-    "click",
-    function () {
+    authMode =
+        "login";
 
-      openAuthModal("login");
+    authTitle.textContent =
+        "Login";
 
-    }
-  );
+    authSubmit.textContent =
+        "Login";
+
+    authMessage.textContent =
+        "";
+
+    authModal.classList.remove(
+        "hidden"
+    );
+
+    switchToEmail();
 
 }
 
@@ -314,186 +618,53 @@ if (loginBtn) {
 // OPEN SIGNUP
 // ============================================================
 
+function openSignup() {
+
+    authMode =
+        "signup";
+
+    authTitle.textContent =
+        "Create Account";
+
+    authSubmit.textContent =
+        "Sign Up";
+
+    authMessage.textContent =
+        "";
+
+    authModal.classList.remove(
+        "hidden"
+    );
+
+    switchToEmail();
+
+}
+
+
+// ============================================================
+// LOGIN BUTTON
+// ============================================================
+
+if (loginBtn) {
+
+    loginBtn.addEventListener(
+        "click",
+        openLogin
+    );
+
+}
+
+
+// ============================================================
+// SIGNUP BUTTON
+// ============================================================
+
 if (signupBtn) {
 
-  signupBtn.addEventListener(
-    "click",
-    function () {
-
-      openAuthModal("signup");
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// OPEN AUTH MODAL
-// ============================================================
-
-function openAuthModal(mode) {
-
-  authMode =
-    mode;
-
-
-  authModal.classList.remove(
-    "hidden"
-  );
-
-
-  authMessage.textContent =
-    "";
-
-
-  authEmail.value =
-    "";
-
-  authPassword.value =
-    "";
-
-
-  // Show email authentication
-
-  authEmail.style.display =
-    "block";
-
-  authPassword.style.display =
-    "block";
-
-  authSubmit.style.display =
-    "block";
-
-
-  // Hide phone authentication initially
-
-  phoneAuthArea.style.display =
-    "none";
-
-
-  if (mode === "login") {
-
-    authTitle.textContent =
-      "Login";
-
-    authSubmit.textContent =
-      "Login";
-
-  } else {
-
-    authTitle.textContent =
-      "Create Account";
-
-    authSubmit.textContent =
-      "Sign Up";
-
-  }
-
-
-  // Create/use phone button
-
-  createPhoneButton();
-
-}
-
-
-// ============================================================
-// PHONE BUTTON
-// ============================================================
-
-function createPhoneButton() {
-
-  let phoneButton =
-    document.getElementById(
-      "phoneLoginButton"
+    signupBtn.addEventListener(
+        "click",
+        openSignup
     );
-
-
-  if (!phoneButton) {
-
-    phoneButton =
-      document.createElement(
-        "button"
-      );
-
-    phoneButton.id =
-      "phoneLoginButton";
-
-    phoneButton.textContent =
-      "Use Phone Number";
-
-    phoneButton.className =
-      "secondary";
-
-
-    phoneButton.style.width =
-      "100%";
-
-    phoneButton.style.marginTop =
-      "10px";
-
-
-    authSubmit.parentNode.insertBefore(
-      phoneButton,
-      phoneAuthArea
-    );
-
-
-    phoneButton.addEventListener(
-      "click",
-      openPhoneAuthentication
-    );
-
-  }
-
-
-  phoneButton.style.display =
-    "block";
-
-}
-
-
-// ============================================================
-// OPEN PHONE AUTHENTICATION
-// ============================================================
-
-function openPhoneAuthentication() {
-
-  authEmail.style.display =
-    "none";
-
-  authPassword.style.display =
-    "none";
-
-  authSubmit.style.display =
-    "none";
-
-
-  const phoneButton =
-    document.getElementById(
-      "phoneLoginButton"
-    );
-
-
-  if (phoneButton) {
-
-    phoneButton.style.display =
-      "none";
-
-  }
-
-
-  phoneAuthArea.style.display =
-    "block";
-
-
-  authTitle.textContent =
-    "Phone Authentication";
-
-
-  authMessage.textContent =
-    "Enter your phone number with country code.";
 
 }
 
@@ -504,227 +675,133 @@ function openPhoneAuthentication() {
 
 if (closeModal) {
 
-  closeModal.addEventListener(
-    "click",
-    closeAuthModal
-  );
+    closeModal.addEventListener(
+        "click",
+        function () {
 
-}
+            authModal.classList.add(
+                "hidden"
+            );
 
+            authMessage.textContent =
+                "";
 
-function closeAuthModal() {
-
-  authModal.classList.add(
-    "hidden"
-  );
-
-
-  authMessage.textContent =
-    "";
-
-
-  // Reset phone area
-
-  phoneAuthArea.style.display =
-    "none";
-
-
-  authEmail.style.display =
-    "block";
-
-  authPassword.style.display =
-    "block";
-
-  authSubmit.style.display =
-    "block";
-
-
-  const phoneButton =
-    document.getElementById(
-      "phoneLoginButton"
+        }
     );
-
-
-  if (phoneButton) {
-
-    phoneButton.style.display =
-      "block";
-
-  }
-
-
-  if (recaptchaVerifier) {
-
-    try {
-
-      recaptchaVerifier.clear();
-
-    } catch (error) {
-
-      console.log(
-        error
-      );
-
-    }
-
-
-    recaptchaVerifier =
-      null;
-
-  }
 
 }
 
 
 // ============================================================
-// CLOSE MODAL BY CLICKING OUTSIDE
+// CLOSE WHEN CLICKING OUTSIDE
 // ============================================================
 
 if (authModal) {
 
-  authModal.addEventListener(
-    "click",
-    function (event) {
+    authModal.addEventListener(
+        "click",
+        function (event) {
 
-      if (
-        event.target === authModal
-      ) {
+            if (
+                event.target ===
+                authModal
+            ) {
 
-        closeAuthModal();
+                authModal.classList.add(
+                    "hidden"
+                );
 
-      }
+            }
 
-    }
-  );
+        }
+    );
 
 }
 
 
 // ============================================================
-// EMAIL LOGIN / SIGNUP
+// EMAIL TAB
 // ============================================================
 
-if (authSubmit) {
+function switchToEmail() {
 
-  authSubmit.addEventListener(
-    "click",
-    async function () {
+    authMethod =
+        "email";
 
-      const email =
-        authEmail.value.trim();
+    emailTab.classList.add(
+        "active"
+    );
 
-      const password =
-        authPassword.value;
+    phoneTab.classList.remove(
+        "active"
+    );
 
+    emailAuth.classList.remove(
+        "hidden"
+    );
 
-      // Validate email
+    phoneAuth.classList.add(
+        "hidden"
+    );
 
-      if (!email) {
+    authMessage.textContent =
+        "";
 
-        authMessage.textContent =
-          "Please enter your email.";
-
-        return;
-
-      }
-
-
-      // Validate password
-
-      if (!password) {
-
-        authMessage.textContent =
-          "Please enter your password.";
-
-        return;
-
-      }
+}
 
 
-      if (password.length < 6) {
+// ============================================================
+// PHONE TAB
+// ============================================================
 
-        authMessage.textContent =
-          "Password must contain at least 6 characters.";
+function switchToPhone() {
 
-        return;
+    authMethod =
+        "phone";
 
-      }
+    phoneTab.classList.add(
+        "active"
+    );
 
+    emailTab.classList.remove(
+        "active"
+    );
 
-      authSubmit.disabled =
-        true;
+    emailAuth.classList.add(
+        "hidden"
+    );
 
+    phoneAuth.classList.remove(
+        "hidden"
+    );
 
-      authSubmit.textContent =
-        "Please wait...";
+    authMessage.textContent =
+        "";
 
+    createRecaptcha();
 
-      try {
-
-        if (
-          authMode === "signup"
-        ) {
-
-          await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-
-
-          authMessage.textContent =
-            "Account created successfully!";
+}
 
 
-        } else {
+// ============================================================
+// TAB EVENTS
+// ============================================================
 
-          await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
+if (emailTab) {
 
+    emailTab.addEventListener(
+        "click",
+        switchToEmail
+    );
 
-          authMessage.textContent =
-            "Login successful!";
+}
 
-        }
+if (phoneTab) {
 
-
-        setTimeout(
-          closeAuthModal,
-          1000
-        );
-
-
-      } catch (error) {
-
-        console.error(
-          "Authentication error:",
-          error
-        );
-
-
-        authMessage.textContent =
-          firebaseErrorMessage(
-            error
-          );
-
-      } finally {
-
-        authSubmit.disabled =
-          false;
-
-
-        authSubmit.textContent =
-          authMode === "signup"
-            ? "Sign Up"
-            : "Login";
-
-      }
-
-    }
-  );
+    phoneTab.addEventListener(
+        "click",
+        switchToPhone
+    );
 
 }
 
@@ -735,81 +812,218 @@ if (authSubmit) {
 
 function firebaseErrorMessage(error) {
 
-  switch (error.code) {
-
-    case "auth/email-already-in-use":
-
-      return "This email is already registered. Please login.";
-
-
-    case "auth/invalid-email":
-
-      return "Please enter a valid email address.";
+    console.error(
+        "Firebase error:",
+        error
+    );
 
 
-    case "auth/weak-password":
-
-      return "Password must contain at least 6 characters.";
-
-
-    case "auth/user-not-found":
-
-      return "No account found with this email.";
+    const code =
+        error?.code || "";
 
 
-    case "auth/wrong-password":
+    switch (code) {
 
-      return "Incorrect password.";
+        case "auth/invalid-api-key":
+
+            return "Firebase API key is invalid. Check the Firebase configuration.";
+
+        case "auth/api-key-not-valid.-please-pass-a-valid-api-key.":
+
+            return "Firebase API key is invalid. Check your Firebase Web App configuration.";
+
+        case "auth/email-already-in-use":
+
+            return "This email is already registered. Please login.";
+
+        case "auth/invalid-email":
+
+            return "Please enter a valid email address.";
+
+        case "auth/weak-password":
+
+            return "Password should be at least 6 characters.";
+
+        case "auth/invalid-credential":
+
+            return "Incorrect email or password.";
+
+        case "auth/user-not-found":
+
+            return "No account was found with this email.";
+
+        case "auth/wrong-password":
+
+            return "Incorrect password.";
+
+        case "auth/too-many-requests":
+
+            return "Too many attempts. Please try again later.";
+
+        case "auth/operation-not-allowed":
+
+            return "This authentication method is not enabled in Firebase.";
+
+        case "auth/quota-exceeded":
+
+            return "Firebase SMS quota has been exceeded.";
+
+        case "auth/invalid-phone-number":
+
+            return "Enter the phone number in international format, for example +919876543210.";
+
+        case "auth/missing-phone-number":
+
+            return "Please enter a phone number.";
+
+        case "auth/code-expired":
+
+            return "The OTP has expired. Please request a new OTP.";
+
+        case "auth/invalid-verification-code":
+
+            return "The OTP is incorrect.";
+
+        case "auth/captcha-check-failed":
+
+            return "reCAPTCHA verification failed. Please try again.";
+
+        case "auth/network-request-failed":
+
+            return "Network error. Please check your internet connection.";
+
+        default:
+
+            return (
+                error?.message ||
+                "Authentication failed."
+            );
+
+    }
+
+}
 
 
-    case "auth/invalid-credential":
+// ============================================================
+// EMAIL LOGIN / SIGNUP
+// ============================================================
 
-      return "Incorrect email or password.";
+if (authSubmit) {
 
+    authSubmit.addEventListener(
+        "click",
+        async function () {
 
-    case "auth/too-many-requests":
+            const email =
+                authEmail.value.trim();
 
-      return "Too many attempts. Please try again later.";
-
-
-    case "auth/network-request-failed":
-
-      return "Network error. Check your internet connection.";
-
-
-    case "auth/invalid-phone-number":
-
-      return "Invalid phone number. Use +91XXXXXXXXXX.";
+            const password =
+                authPassword.value;
 
 
-    case "auth/invalid-verification-code":
+            if (!email) {
 
-      return "Incorrect OTP.";
+                authMessage.textContent =
+                    "Please enter your email.";
 
+                return;
 
-    case "auth/code-expired":
-
-      return "OTP expired. Please request a new OTP.";
-
-
-    case "auth/captcha-check-failed":
-
-      return "reCAPTCHA verification failed. Please try again.";
+            }
 
 
-    case "auth/quota-exceeded":
+            if (!password) {
 
-      return "Firebase SMS quota has been exceeded.";
+                authMessage.textContent =
+                    "Please enter your password.";
+
+                return;
+
+            }
 
 
-    default:
+            authSubmit.disabled =
+                true;
 
-      return (
-        error.message ||
-        "Authentication failed."
-      );
+            authSubmit.textContent =
+                "Please wait...";
 
-  }
+
+            try {
+
+                let userCredential;
+
+
+                if (
+                    authMode ===
+                    "signup"
+                ) {
+
+                    userCredential =
+                        await createUserWithEmailAndPassword(
+                            auth,
+                            email,
+                            password
+                        );
+
+                    authMessage.textContent =
+                        "Account created successfully!";
+
+
+                } else {
+
+                    userCredential =
+                        await signInWithEmailAndPassword(
+                            auth,
+                            email,
+                            password
+                        );
+
+                    authMessage.textContent =
+                        "Login successful!";
+
+                }
+
+
+                console.log(
+                    "Authenticated user:",
+                    userCredential.user
+                );
+
+
+                setTimeout(
+                    () => {
+
+                        authModal.classList.add(
+                            "hidden"
+                        );
+
+                    },
+                    1000
+                );
+
+
+            } catch (error) {
+
+                authMessage.textContent =
+                    firebaseErrorMessage(
+                        error
+                    );
+
+            } finally {
+
+                authSubmit.disabled =
+                    false;
+
+                authSubmit.textContent =
+                    authMode ===
+                    "signup"
+                        ? "Sign Up"
+                        : "Login";
+
+            }
+
+        }
+    );
 
 }
 
@@ -820,45 +1034,57 @@ function firebaseErrorMessage(error) {
 
 function createRecaptcha() {
 
-  if (recaptchaVerifier) {
+    if (
+        recaptchaVerifier !==
+        null
+    ) {
+        return;
+    }
 
-    return recaptchaVerifier;
 
-  }
+    try {
 
+        recaptchaVerifier =
+            new RecaptchaVerifier(
+                auth,
+                "recaptcha-container",
+                {
+                    size: "normal",
 
-  recaptchaVerifier =
-    new RecaptchaVerifier(
-      auth,
-      "recaptcha-container",
-      {
+                    callback: function () {
 
-        size:
-          "invisible",
+                        console.log(
+                            "reCAPTCHA verified."
+                        );
 
-        callback:
-          function () {
+                    },
 
-            console.log(
-              "reCAPTCHA completed."
+                    "expired-callback":
+                        function () {
+
+                            authMessage.textContent =
+                                "reCAPTCHA expired. Please verify again.";
+
+                        }
+
+                }
             );
 
-          },
 
-        "expired-callback":
-          function () {
-
-            console.log(
-              "reCAPTCHA expired."
-            );
-
-          }
-
-      }
-    );
+        recaptchaVerifier.render();
 
 
-  return recaptchaVerifier;
+    } catch (error) {
+
+        console.error(
+            "reCAPTCHA error:",
+            error
+        );
+
+        authMessage.textContent =
+            "Could not load reCAPTCHA.";
+
+    }
 
 }
 
@@ -867,121 +1093,117 @@ function createRecaptcha() {
 // SEND PHONE OTP
 // ============================================================
 
-if (sendOTP) {
+if (sendOtpBtn) {
 
-  sendOTP.addEventListener(
-    "click",
-    async function () {
+    sendOtpBtn.addEventListener(
+        "click",
+        async function () {
 
-      const phoneNumber =
-        authPhone.value.trim();
-
-
-      if (!phoneNumber) {
-
-        authMessage.textContent =
-          "Please enter your phone number.";
-
-        return;
-
-      }
+            const number =
+                phoneNumber.value.trim();
 
 
-      if (
-        !phoneNumber.startsWith("+")
-      ) {
+            if (!number) {
 
-        authMessage.textContent =
-          "Use country code. Example: +919876543210";
+                authMessage.textContent =
+                    "Please enter your phone number.";
 
-        return;
+                return;
 
-      }
+            }
 
 
-      sendOTP.disabled =
-        true;
+            if (
+                !number.startsWith("+")
+            ) {
+
+                authMessage.textContent =
+                    "Use international format, for example +919876543210.";
+
+                return;
+
+            }
 
 
-      sendOTP.textContent =
-        "Sending OTP...";
+            try {
+
+                sendOtpBtn.disabled =
+                    true;
+
+                sendOtpBtn.textContent =
+                    "Sending OTP...";
 
 
-      try {
+                if (
+                    !recaptchaVerifier
+                ) {
 
-        const verifier =
-          createRecaptcha();
+                    createRecaptcha();
 
+                    await new Promise(
+                        resolve =>
+                            setTimeout(
+                                resolve,
+                                1000
+                            )
+                    );
 
-        confirmationResult =
-          await signInWithPhoneNumber(
-            auth,
-            phoneNumber,
-            verifier
-          );
-
-
-        authMessage.textContent =
-          "OTP sent successfully. Enter the OTP below.";
-
-
-        authOTP.style.display =
-          "block";
+                }
 
 
-        verifyOTP.style.display =
-          "block";
+                confirmationResult =
+                    await signInWithPhoneNumber(
+                        auth,
+                        number,
+                        recaptchaVerifier
+                    );
 
 
-        sendOTP.textContent =
-          "OTP Sent";
+                authMessage.textContent =
+                    "OTP sent successfully. Check your phone.";
+
+                console.log(
+                    "OTP sent."
+                );
 
 
-      } catch (error) {
+            } catch (error) {
 
-        console.error(
-          "Phone OTP error:",
-          error
-        );
-
-
-        authMessage.textContent =
-          firebaseErrorMessage(
-            error
-          );
+                authMessage.textContent =
+                    firebaseErrorMessage(
+                        error
+                    );
 
 
-        if (recaptchaVerifier) {
+                // Reset reCAPTCHA
 
-          try {
+                if (
+                    recaptchaVerifier
+                ) {
 
-            recaptchaVerifier.clear();
+                    try {
 
-          } catch (e) {
+                        recaptchaVerifier.clear();
 
-            console.log(e);
+                    } catch (_) {}
 
-          }
+                    recaptchaVerifier =
+                        null;
 
+                }
 
-          recaptchaVerifier =
-            null;
+            } finally {
+
+                sendOtpBtn.disabled =
+                    false;
+
+                sendOtpBtn.textContent =
+                    "Send OTP";
+
+            }
 
         }
-
-
-        sendOTP.textContent =
-          "Send OTP";
-
-      } finally {
-
-        sendOTP.disabled =
-          false;
-
-      }
-
-    }
-  );
+    );
 
 }
 
@@ -990,94 +1212,100 @@ if (sendOTP) {
 // VERIFY PHONE OTP
 // ============================================================
 
-if (verifyOTP) {
+if (verifyOtpBtn) {
 
-  verifyOTP.addEventListener(
-    "click",
-    async function () {
+    verifyOtpBtn.addEventListener(
+        "click",
+        async function () {
 
-      const otp =
-        authOTP.value.trim();
-
-
-      if (!confirmationResult) {
-
-        authMessage.textContent =
-          "Please request an OTP first.";
-
-        return;
-
-      }
+            const code =
+                otpCode.value.trim();
 
 
-      if (!otp) {
+            if (
+                !confirmationResult
+            ) {
 
-        authMessage.textContent =
-          "Please enter the OTP.";
+                authMessage.textContent =
+                    "Please request an OTP first.";
 
-        return;
+                return;
 
-      }
-
-
-      verifyOTP.disabled =
-        true;
+            }
 
 
-      verifyOTP.textContent =
-        "Verifying...";
+            if (
+                code.length !== 6
+            ) {
+
+                authMessage.textContent =
+                    "Please enter the 6-digit OTP.";
+
+                return;
+
+            }
 
 
-      try {
+            try {
 
-        const result =
-          await confirmationResult.confirm(
-            otp
-          );
+                verifyOtpBtn.disabled =
+                    true;
 
-
-        console.log(
-          "Phone login successful:",
-          result.user
-        );
+                verifyOtpBtn.textContent =
+                    "Verifying...";
 
 
-        authMessage.textContent =
-          "Phone authentication successful!";
+                const result =
+                    await confirmationResult.confirm(
+                        code
+                    );
 
 
-        setTimeout(
-          closeAuthModal,
-          1000
-        );
+                console.log(
+                    "Phone authenticated:",
+                    result.user
+                );
 
 
-      } catch (error) {
-
-        console.error(
-          "OTP verification error:",
-          error
-        );
+                authMessage.textContent =
+                    "Phone authentication successful!";
 
 
-        authMessage.textContent =
-          firebaseErrorMessage(
-            error
-          );
-
-      } finally {
-
-        verifyOTP.disabled =
-          false;
+                confirmationResult =
+                    null;
 
 
-        verifyOTP.textContent =
-          "Verify OTP";
+                setTimeout(
+                    () => {
 
-      }
+                        authModal.classList.add(
+                            "hidden"
+                        );
 
-    }
-  );
+                    },
+                    1000
+                );
+
+
+            } catch (error) {
+
+                authMessage.textContent =
+                    firebaseErrorMessage(
+                        error
+                    );
+
+            } finally {
+
+                verifyOtpBtn.disabled =
+                    false;
+
+                verifyOtpBtn.textContent =
+                    "Verify OTP";
+
+            }
+
+        }
+    );
 
 }
 
@@ -1088,37 +1316,32 @@ if (verifyOTP) {
 
 if (logoutBtn) {
 
-  logoutBtn.addEventListener(
-    "click",
-    async function () {
+    logoutBtn.addEventListener(
+        "click",
+        async function () {
 
-      try {
+            try {
 
-        await signOut(auth);
+                await signOut(
+                    auth
+                );
 
-        console.log(
-          "User logged out."
-        );
+                alert(
+                    "Logged out successfully."
+                );
 
+            } catch (error) {
 
-      } catch (error) {
+                alert(
+                    firebaseErrorMessage(
+                        error
+                    )
+                );
 
-        console.error(
-          "Logout error:",
-          error
-        );
+            }
 
-
-        alert(
-          firebaseErrorMessage(
-            error
-          )
-        );
-
-      }
-
-    }
-  );
+        }
+    );
 
 }
 
@@ -1128,399 +1351,67 @@ if (logoutBtn) {
 // ============================================================
 
 onAuthStateChanged(
-  auth,
-  function (user) {
+    auth,
+    function (user) {
 
-    if (user) {
+        if (user) {
 
-      console.log(
-        "Logged in:",
-        user.email ||
-        user.phoneNumber ||
-        user.uid
-      );
-
-
-      // Hide Login
-
-      if (loginBtn) {
-
-        loginBtn.classList.add(
-          "hidden"
-        );
-
-      }
+            console.log(
+                "User logged in:",
+                user.email ||
+                user.phoneNumber
+            );
 
 
-      // Hide Sign Up
+            loginBtn.classList.add(
+                "hidden"
+            );
 
-      if (signupBtn) {
+            signupBtn.classList.add(
+                "hidden"
+            );
 
-        signupBtn.classList.add(
-          "hidden"
-        );
-
-      }
-
-
-      // Show Logout
-
-      if (logoutBtn) {
-
-        logoutBtn.classList.remove(
-          "hidden"
-        );
-
-      }
+            logoutBtn.classList.remove(
+                "hidden"
+            );
 
 
-    } else {
+        } else {
 
-      // Show Login
-
-      if (loginBtn) {
-
-        loginBtn.classList.remove(
-          "hidden"
-        );
-
-      }
+            console.log(
+                "No user logged in."
+            );
 
 
-      // Show Sign Up
+            loginBtn.classList.remove(
+                "hidden"
+            );
 
-      if (signupBtn) {
+            signupBtn.classList.remove(
+                "hidden"
+            );
 
-        signupBtn.classList.remove(
-          "hidden"
-        );
+            logoutBtn.classList.add(
+                "hidden"
+            );
 
-      }
-
-
-      // Hide Logout
-
-      if (logoutBtn) {
-
-        logoutBtn.classList.add(
-          "hidden"
-        );
-
-      }
+        }
 
     }
-
-  }
 );
 
 
 // ============================================================
-// SAVE PREDICTION TO FIRESTORE
-// ============================================================
-
-async function savePrediction(
-  symptoms,
-  diseaseName,
-  confidence,
-  predictions
-) {
-
-  const user =
-    auth.currentUser;
-
-
-  // Only save for logged-in users
-
-  if (!user) {
-
-    console.log(
-      "Not logged in. Prediction not saved."
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    await addDoc(
-      collection(
-        db,
-        "predictions"
-      ),
-      {
-
-        userId:
-          user.uid,
-
-        email:
-          user.email ||
-          null,
-
-        phoneNumber:
-          user.phoneNumber ||
-          null,
-
-        symptoms:
-          symptoms,
-
-        disease:
-          diseaseName,
-
-        confidence:
-          confidence,
-
-        topPredictions:
-          predictions,
-
-        createdAt:
-          serverTimestamp()
-
-      }
-    );
-
-
-    console.log(
-      "Prediction saved to Firestore."
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Firestore error:",
-      error
-    );
-
-  }
-
-}
-
-
-// ============================================================
-// PREDICTION
-// ============================================================
-
-if (predictBtn) {
-
-  predictBtn.addEventListener(
-    "click",
-    async function () {
-
-      const selectedSymptoms =
-        boxes
-          .filter(
-            box => box.checked
-          )
-          .map(
-            box => box.value
-          );
-
-
-      // Check symptoms
-
-      if (
-        selectedSymptoms.length === 0
-      ) {
-
-        alert(
-          "Please select at least one symptom."
-        );
-
-        return;
-
-      }
-
-
-      predictBtn.disabled =
-        true;
-
-
-      predictBtn.textContent =
-        "Analyzing...";
-
-
-      try {
-
-        // Send request to Flask
-
-        const response =
-          await fetch(
-            "/predict",
-            {
-
-              method:
-                "POST",
-
-              headers:
-                {
-                  "Content-Type":
-                    "application/json"
-                },
-
-              body:
-                JSON.stringify({
-                  symptoms:
-                    selectedSymptoms
-                })
-
-            }
-          );
-
-
-        const data =
-          await response.json();
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            data.error ||
-            "Prediction failed."
-          );
-
-        }
-
-
-        // ==================================================
-        // DISPLAY DISEASE
-        // ==================================================
-
-        disease.textContent =
-          data.disease
-            .replaceAll(
-              "_",
-              " "
-            );
-
-
-        // ==================================================
-        // CONFIDENCE
-        // ==================================================
-
-        confidenceBar.style.width =
-          `${data.confidence}%`;
-
-
-        confidenceText.textContent =
-          `Model confidence: ${data.confidence}%`;
-
-
-        // ==================================================
-        // DISCLAIMER
-        // ==================================================
-
-        message.textContent =
-          data.message;
-
-
-        // ==================================================
-        // TOP PREDICTIONS
-        // ==================================================
-
-        topPredictions.innerHTML =
-          data.top_predictions
-            .map(
-              item => `
-
-                <div class="top-item">
-
-                  <span>
-                    ${item.disease.replaceAll(
-                      "_",
-                      " "
-                    )}
-                  </span>
-
-                  <strong>
-                    ${item.confidence}%
-                  </strong>
-
-                </div>
-
-              `
-            )
-            .join("");
-
-
-        // ==================================================
-        // SHOW RESULT
-        // ==================================================
-
-        result.classList.remove(
-          "hidden"
-        );
-
-
-        // ==================================================
-        // SAVE HISTORY
-        // ==================================================
-
-        await savePrediction(
-          selectedSymptoms,
-          data.disease,
-          data.confidence,
-          data.top_predictions
-        );
-
-
-        // ==================================================
-        // SCROLL
-        // ==================================================
-
-        result.scrollIntoView({
-          behavior:
-            "smooth",
-
-          block:
-            "center"
-
-        });
-
-
-      } catch (error) {
-
-        console.error(
-          "Prediction error:",
-          error
-        );
-
-
-        alert(
-          error.message ||
-          "Prediction failed."
-        );
-
-
-      } finally {
-
-        predictBtn.disabled =
-          false;
-
-
-        predictBtn.textContent =
-          "Predict Possible Disease";
-
-      }
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// INITIALIZE
+// INITIAL COUNT
 // ============================================================
 
 updateCount();
 
 
-console.log(
-  "QuantumDiagnose loaded successfully."
-);
+// ============================================================
+// FIREBASE TEST
+// ============================================================
 
 console.log(
-  "Firebase initialized successfully."
+    "QuantumDiagnose Firebase initialized successfully."
 );
