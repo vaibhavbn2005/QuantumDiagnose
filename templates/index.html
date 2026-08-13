@@ -2,680 +2,281 @@
 <html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta charset="UTF-8">
+    <title>QuantumDiagnose</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0">
-
-  <title>QuantumDiagnose</title>
-
-  <link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='style.css') }}">
-
-
-  <style>
-
-    /* =====================================================
-       AUTHENTICATION BUTTONS
-       ===================================================== */
-
-    .auth-buttons {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-left: auto;
-    }
-
-
-    /* =====================================================
-       MODAL
-       ===================================================== */
-
-    .modal {
-      position: fixed;
-      inset: 0;
-
-      background: rgba(0, 0, 0, 0.55);
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      z-index: 1000;
-    }
-
-
-    .modal-content {
-
-      width: min(400px, 90%);
-
-      background: white;
-
-      padding: 30px;
-
-      border-radius: 18px;
-
-      position: relative;
-
-      box-shadow:
-        0 20px 60px
-        rgba(0, 0, 0, 0.25);
-
-    }
-
-
-    .modal-content h2 {
-
-      margin-bottom: 20px;
-
-    }
-
-
-    .modal-content input {
-
-      width: 100%;
-
-      box-sizing: border-box;
-
-      padding: 12px;
-
-      margin: 8px 0;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 8px;
-
-      font-size: 15px;
-
-    }
-
-
-    .modal-content .primary {
-
-      width: 100%;
-
-      margin-top: 12px;
-
-    }
-
-
-    /* =====================================================
-       CLOSE BUTTON
-       ===================================================== */
-
-    .close-btn {
-
-      position: absolute;
-
-      right: 15px;
-
-      top: 10px;
-
-      border: none;
-
-      background: transparent;
-
-      font-size: 28px;
-
-      cursor: pointer;
-
-    }
-
-
-    /* =====================================================
-       AUTH MESSAGE
-       ===================================================== */
-
-    #authMessage {
-
-      margin-top: 15px;
-
-      font-size: 14px;
-
-    }
-
-
-    /* =====================================================
-       HIDDEN
-       ===================================================== */
-
-    .hidden {
-
-      display: none !important;
-
-    }
-
-
-    /* =====================================================
-       PHONE AUTH
-       ===================================================== */
-
-    #phoneAuthArea {
-
-      margin-top: 15px;
-
-    }
-
-
-    #phoneAuthArea input {
-
-      width: 100%;
-
-      box-sizing: border-box;
-
-      padding: 12px;
-
-      margin: 8px 0;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 8px;
-
-      font-size: 15px;
-
-    }
-
-
-    #phoneAuthArea button {
-
-      width: 100%;
-
-      margin-top: 8px;
-
-    }
-
-
-    #recaptcha-container {
-
-      margin-top: 10px;
-
-    }
-
-
-    /* =====================================================
-       RESPONSIVE DESIGN
-       ===================================================== */
-
-    @media (max-width: 800px) {
-
-      .auth-buttons {
-
-        margin-left: 0;
-
-        margin-top: 10px;
-
-      }
-
-
-      .hero {
-
-        flex-wrap: wrap;
-
-      }
-
-    }
-
-  </style>
-
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 
 <body>
 
+<div class="background"></div>
 
-  <!-- =====================================================
-       BACKGROUND
-       ===================================================== -->
+<main class="container">
 
-  <div class="background"></div>
-
-
-  <main class="container">
-
-
-    <!-- =====================================================
-         HEADER
-         ===================================================== -->
+    <!-- ================= HEADER ================= -->
 
     <header class="hero">
 
+        <div class="logo">Q</div>
 
-      <!-- LOGO -->
+        <div class="brand">
+            <h1>QuantumDiagnose</h1>
+            <p>Machine-learning based symptom analysis</p>
+        </div>
 
-      <div class="logo">
+        <span class="badge">ML Prototype</span>
 
-        Q
+        <div class="auth-buttons">
 
-      </div>
+            <button id="loginBtn"
+                    class="secondary">
+                Login
+            </button>
 
+            <button id="signupBtn"
+                    class="primary">
+                Sign Up
+            </button>
 
-      <!-- TITLE -->
+            <button id="logoutBtn"
+                    class="secondary hidden">
+                Logout
+            </button>
 
-      <div>
-
-        <h1>
-          QuantumDiagnose
-        </h1>
-
-        <p>
-          Machine-learning based symptom analysis
-        </p>
-
-      </div>
-
-
-      <!-- PROJECT BADGE -->
-
-      <span class="badge">
-
-        ML Prototype
-
-      </span>
-
-
-      <!-- AUTH BUTTONS -->
-
-      <div class="auth-buttons">
-
-
-        <button
-          id="loginBtn"
-          class="secondary">
-
-          Login
-
-        </button>
-
-
-        <button
-          id="signupBtn"
-          class="primary">
-
-          Sign Up
-
-        </button>
-
-
-        <button
-          id="logoutBtn"
-          class="secondary hidden">
-
-          Logout
-
-        </button>
-
-
-      </div>
-
+        </div>
 
     </header>
 
 
-
-    <!-- =====================================================
-         SYMPTOM ANALYSIS
-         ===================================================== -->
+    <!-- ================= SYMPTOMS ================= -->
 
     <section class="card">
 
+        <div class="section-head">
 
-      <!-- SECTION HEADER -->
+            <div>
+                <h2>Enter symptoms</h2>
 
-      <div class="section-head">
+                <p>
+                    Select the symptoms reported by the patient.
+                </p>
+            </div>
 
-
-        <div>
-
-          <h2>
-            Enter symptoms
-          </h2>
-
-          <p>
-            Select the symptoms reported by the patient.
-          </p>
+            <button id="clearBtn"
+                    class="secondary">
+                Clear
+            </button>
 
         </div>
 
 
-        <button
-          id="clearBtn"
-          class="secondary">
+        <div class="search-wrap">
 
-          Clear
+            <input
+                id="search"
+                type="search"
+                placeholder="Search symptoms...">
 
-        </button>
-
-
-      </div>
+        </div>
 
 
+        <div id="symptomGrid"
+             class="symptom-grid">
 
-      <!-- SEARCH -->
+            {% for symptom in symptoms %}
 
-      <div class="search-wrap">
+            <label
+                class="symptom"
+                data-name="{{ symptom|replace('_', ' ')|lower }}">
 
-        <input
-          id="search"
-          type="search"
-          placeholder="Search symptoms...">
+                <input
+                    type="checkbox"
+                    value="{{ symptom }}">
 
-      </div>
+                <span>
+                    {{ symptom|replace('_', ' ')|title }}
+                </span>
 
+            </label>
 
+            {% endfor %}
 
-      <!-- =================================================
-           SYMPTOM GRID
-           ================================================= -->
-
-      <div
-        id="symptomGrid"
-        class="symptom-grid">
-
-
-        {% for symptom in symptoms %}
+        </div>
 
 
-        <label
-          class="symptom"
-          data-name="{{ symptom|replace('_', ' ') }}">
+        <div class="selected-line">
 
+            <span>
+                <strong id="count">0</strong>
+                symptoms selected
+            </span>
 
-          <input
-            type="checkbox"
-            value="{{ symptom }}">
+            <button id="predictBtn"
+                    class="primary">
+                Predict Possible Disease
+            </button>
 
-
-          <span>
-
-            {{ symptom|replace('_', ' ')|title }}
-
-          </span>
-
-
-        </label>
-
-
-        {% endfor %}
-
-
-      </div>
-
-
-
-      <!-- =================================================
-           SELECTED SYMPTOMS + PREDICT
-           ================================================= -->
-
-      <div class="selected-line">
-
-
-        <span>
-
-          <strong id="count">
-            0
-          </strong>
-
-          symptoms selected
-
-        </span>
-
-
-        <button
-          id="predictBtn"
-          class="primary">
-
-          Predict Possible Disease
-
-        </button>
-
-
-      </div>
-
+        </div>
 
     </section>
 
 
+    <!-- ================= RESULT ================= -->
 
-    <!-- =====================================================
-         PREDICTION RESULT
-         ===================================================== -->
+    <section id="result"
+             class="card result hidden">
 
-    <section
-      id="result"
-      class="card result hidden">
+        <div class="result-label">
+            Prediction
+        </div>
 
-
-      <div class="result-label">
-
-        Prediction
-
-      </div>
-
-
-      <h2 id="disease">
-
-        —
-
-      </h2>
-
-
-      <!-- CONFIDENCE BAR -->
-
-      <div class="confidence-bar">
-
-        <span
-          id="confidenceBar">
-        </span>
-
-      </div>
-
-
-      <p
-        id="confidenceText">
-      </p>
-
-
-      <!-- TOP PREDICTIONS -->
-
-      <div
-        id="topPredictions"
-        class="top-list">
-      </div>
-
-
-      <!-- DISCLAIMER -->
-
-      <p
-        class="disclaimer"
-        id="message">
-      </p>
-
-
-    </section>
-
-
-
-    <!-- =====================================================
-         LOGIN / SIGNUP MODAL
-         ===================================================== -->
-
-    <div
-      id="authModal"
-      class="modal hidden">
-
-
-      <div class="modal-content">
-
-
-        <!-- CLOSE -->
-
-        <button
-          id="closeModal"
-          class="close-btn">
-
-          ×
-
-        </button>
-
-
-        <!-- AUTH TITLE -->
-
-        <h2 id="authTitle">
-
-          Login
-
+        <h2 id="disease">
+            —
         </h2>
 
-
-
-        <!-- EMAIL -->
-
-        <input
-          id="authEmail"
-          type="email"
-          placeholder="Email">
-
-
-        <!-- PASSWORD -->
-
-        <input
-          id="authPassword"
-          type="password"
-          placeholder="Password">
-
-
-        <!-- EMAIL LOGIN / SIGNUP -->
-
-        <button
-          id="authSubmit"
-          class="primary">
-
-          Login
-
-        </button>
-
-
-        <!-- =================================================
-             PHONE AUTH AREA
-             ================================================= -->
-
-        <div
-          id="phoneAuthArea"
-          style="display:none;">
-
-
-          <!-- PHONE -->
-
-          <input
-            id="authPhone"
-            type="tel"
-            placeholder="+919876543210">
-
-
-          <!-- SEND OTP -->
-
-          <button
-            id="sendOTP"
-            class="primary">
-
-            Send OTP
-
-          </button>
-
-
-          <!-- OTP -->
-
-          <input
-            id="authOTP"
-            type="text"
-            placeholder="Enter OTP"
-            style="display:none;">
-
-
-          <!-- VERIFY OTP -->
-
-          <button
-            id="verifyOTP"
-            class="primary"
-            style="display:none;">
-
-            Verify OTP
-
-          </button>
-
-
-          <!-- FIREBASE RECAPTCHA -->
-
-          <div
-            id="recaptcha-container">
-          </div>
-
-
+        <div class="confidence-bar">
+            <span id="confidenceBar"></span>
         </div>
 
+        <p id="confidenceText"></p>
 
+        <h3>Top Predictions</h3>
 
-        <!-- AUTH MESSAGE -->
+        <div id="topPredictions"
+             class="top-list">
+        </div>
 
-        <p
-          id="authMessage">
+        <p id="message"
+           class="disclaimer">
         </p>
 
+    </section>
 
-      </div>
+
+    <!-- ================= AUTH MODAL ================= -->
+
+    <div id="authModal"
+         class="modal hidden">
+
+        <div class="modal-content">
+
+            <button id="closeModal"
+                    class="close-btn">
+                ×
+            </button>
+
+            <h2 id="authTitle">
+                Login
+            </h2>
+
+
+            <!-- Authentication method -->
+
+            <div class="auth-tabs">
+
+                <button id="emailTab"
+                        class="auth-tab active">
+                    Email
+                </button>
+
+                <button id="phoneTab"
+                        class="auth-tab">
+                    Phone
+                </button>
+
+            </div>
+
+
+            <!-- EMAIL AUTH -->
+
+            <div id="emailAuth">
+
+                <input
+                    id="authEmail"
+                    type="email"
+                    placeholder="Email">
+
+                <input
+                    id="authPassword"
+                    type="password"
+                    placeholder="Password">
+
+                <button id="authSubmit"
+                        class="primary">
+                    Login
+                </button>
+
+            </div>
+
+
+            <!-- PHONE AUTH -->
+
+            <div id="phoneAuth"
+                 class="hidden">
+
+                <input
+                    id="phoneNumber"
+                    type="tel"
+                    placeholder="+91XXXXXXXXXX">
+
+                <div id="recaptcha-container"></div>
+
+                <button id="sendOtpBtn"
+                        class="primary">
+                    Send OTP
+                </button>
+
+                <input
+                    id="otpCode"
+                    type="text"
+                    placeholder="Enter OTP"
+                    maxlength="6">
+
+                <button id="verifyOtpBtn"
+                        class="primary">
+                    Verify OTP
+                </button>
+
+            </div>
+
+
+            <p id="authMessage"></p>
+
+        </div>
 
     </div>
 
 
-
-    <!-- =====================================================
-         FOOTER
-         ===================================================== -->
+    <!-- ================= FOOTER ================= -->
 
     <footer>
 
+        <span>
+            QuantumDiagnose • Educational project
+        </span>
 
-      <span>
-
-        QuantumDiagnose • Educational project
-
-      </span>
-
-
-      <a
-        href="/health"
-        target="_blank">
-
-        System status
-
-      </a>
-
+        <a href="/health"
+           target="_blank">
+            System status
+        </a>
 
     </footer>
 
-
-  </main>
-
+</main>
 
 
-  <!-- =====================================================
-       FIREBASE + QUANTUMDIAGNOSE JAVASCRIPT
-       
-       IMPORTANT:
-       This MUST be at the bottom of the page.
-       ===================================================== -->
+<!-- ==================================================
+     FIREBASE + APPLICATION JAVASCRIPT
+     IMPORTANT: THIS IS THE ONLY SCRIPT TAG NEEDED
+     ================================================== -->
 
-  <script
-    type="module"
-    src="{{ url_for('static', filename='script.js') }}">
-  </script>
-
+<script type="module"
+        src="{{ url_for('static', filename='script.js') }}">
+</script>
 
 </body>
-
 </html>
