@@ -150,20 +150,11 @@ def predict():
         # Prediction
         # ----------------------------------------------------
 
-        prediction =
-            model.predict(
-                input_df
-            )[0]
+        prediction = model.predict(input_df)[0]
 
+        probabilities = model.predict_proba(input_df)[0]
 
-        probabilities =
-            model.predict_proba(
-                input_df
-            )[0]
-
-
-        classes =
-            model.classes_
+        classes = model.classes_
 
 
         # ----------------------------------------------------
@@ -205,10 +196,7 @@ def predict():
         ]
 
 
-        confidence =
-            top_predictions[0][
-                "confidence"
-            ]
+        confidence = top_predictions[0]["confidence"]
 
 
         # ----------------------------------------------------
