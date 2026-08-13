@@ -1,2026 +1,532 @@
-/* ============================================================
+/* =====================================================
    QUANTUMDIAGNOSE
-   Complete Stylesheet
-============================================================ */
-
-
-/* ============================================================
-   RESET
-============================================================ */
+   ===================================================== */
 
 * {
-
     box-sizing: border-box;
-
-    margin: 0;
-
-    padding: 0;
-
 }
-
-
-html {
-
-    scroll-behavior: smooth;
-
-}
-
 
 body {
+    margin: 0;
 
     min-height: 100vh;
 
     font-family:
-        Inter,
         Arial,
         Helvetica,
         sans-serif;
 
-    background:
-        #07111f;
+    background: #f5f7fb;
 
-    color:
-        #e8eef7;
-
-}
-
-
-/* ============================================================
-   BACKGROUND
-============================================================ */
-
-.background {
-
-    position: fixed;
-
-    inset: 0;
-
-    z-index: -1;
-
-    background:
-
-        radial-gradient(
-            circle at 15% 15%,
-            rgba(0, 210, 255, 0.12),
-            transparent 30%
-        ),
-
-        radial-gradient(
-            circle at 85% 20%,
-            rgba(91, 90, 255, 0.12),
-            transparent 30%
-        ),
-
-        linear-gradient(
-            135deg,
-            #07111f,
-            #0b1728
-        );
-
-}
-
-
-/* ============================================================
-   HIDDEN
-============================================================ */
-
-.hidden {
-
-    display: none !important;
-
-}
-
-
-/* ============================================================
-   AUTH SCREEN
-============================================================ */
-
-.auth-screen {
-
-    min-height: 100vh;
-
-    width: 100%;
+    color: #182238;
 
     display: flex;
 
+    justify-content: center;
+
     align-items: center;
+
+    padding: 30px;
+}
+
+
+/* =====================================================
+   MAIN CONTAINER
+   ===================================================== */
+
+.app-container {
+
+    width: 100%;
+
+    max-width: 850px;
+
+    background: white;
+
+    border-radius: 30px;
+
+    padding: 70px 80px;
+
+    box-shadow:
+        0 20px 60px rgba(30, 50, 90, 0.12);
+
+}
+
+
+/* =====================================================
+   LOGO
+   ===================================================== */
+
+.logo {
+
+    width: 130px;
+
+    height: 130px;
+
+    margin: 0 auto 35px;
+
+    border-radius: 35px;
+
+    background: #3560f5;
+
+    display: flex;
 
     justify-content: center;
 
-    padding: 24px;
-
+    align-items: center;
 }
 
 
-.auth-card {
+.logo span {
 
-    width: min(
-        430px,
-        100%
-    );
+    color: white;
 
-    padding: 42px;
+    font-size: 70px;
 
-    border:
-        1px solid
-        rgba(255,255,255,0.08);
+    font-weight: 800;
+}
 
-    border-radius: 24px;
 
-    background:
-        rgba(12, 26, 44, 0.92);
+/* =====================================================
+   TITLE
+   ===================================================== */
 
-    backdrop-filter:
-        blur(20px);
-
-    box-shadow:
-        0 30px 80px
-        rgba(0,0,0,0.45);
+h1 {
 
     text-align: center;
 
-}
+    font-size: 54px;
 
+    margin: 0 0 15px;
 
-.auth-card h1 {
+    font-weight: 750;
 
-    margin-top: 18px;
-
-    font-size: 30px;
-
+    letter-spacing: -2px;
 }
 
 
 .subtitle {
 
-    margin-top: 8px;
+    text-align: center;
 
-    color:
-        #8fa4bd;
+    font-size: 25px;
 
+    color: #70798a;
+
+    margin: 0 0 55px;
 }
 
 
-/* ============================================================
-   LOGO
-============================================================ */
+/* =====================================================
+   TABS
+   ===================================================== */
 
-.logo {
-
-    width: 44px;
-
-    height: 44px;
+.tabs {
 
     display: flex;
 
-    align-items: center;
+    background: #f1f2f5;
 
-    justify-content: center;
+    padding: 7px;
 
-    border-radius: 13px;
+    border-radius: 25px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #00c6ff,
-            #635bff
-        );
-
-    color: white;
-
-    font-weight: 800;
-
-    font-size: 20px;
-
-    flex-shrink: 0;
-
+    margin-bottom: 35px;
 }
 
 
-.logo.large {
+.tab {
 
-    width: 70px;
+    flex: 1;
 
-    height: 70px;
-
-    margin: auto;
-
-    border-radius: 20px;
-
-    font-size: 32px;
-
-}
-
-
-/* ============================================================
-   AUTH TABS
-============================================================ */
-
-.auth-tabs {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    margin: 28px 0 20px;
-
-    padding: 4px;
-
-    border-radius: 12px;
-
-    background:
-        #081525;
-
-}
-
-
-.auth-tab {
-
-    border: 0;
+    border: none;
 
     background: transparent;
 
-    color:
-        #8296ad;
+    padding: 22px;
 
-    padding: 12px;
+    border-radius: 20px;
 
-    border-radius: 9px;
+    font-size: 26px;
+
+    color: #737b8b;
 
     cursor: pointer;
 
-    font-weight: 700;
-
+    transition: 0.2s;
 }
 
 
-.auth-tab.active {
+.tab.active {
 
-    background:
-        #172c46;
+    background: white;
 
-    color:
-        white;
+    color: #182238;
 
+    box-shadow:
+        0 5px 20px rgba(0, 0, 0, 0.08);
 }
 
 
-/* ============================================================
+/* =====================================================
    INPUTS
-============================================================ */
+   ===================================================== */
 
 input,
-select {
+textarea {
 
     width: 100%;
 
-    border:
-        1px solid
-        #233b55;
+    border: 2px solid #e1e4ea;
 
-    background:
-        #091828;
+    border-radius: 20px;
 
-    color:
-        #edf4ff;
+    padding: 22px;
 
-    border-radius: 12px;
+    margin-bottom: 20px;
 
-    padding: 14px 15px;
+    font-size: 22px;
+
+    font-family: inherit;
 
     outline: none;
 
-    font-size: 14px;
-
-}
-
-
-.auth-card input {
-
-    margin-bottom: 14px;
-
+    transition: 0.2s;
 }
 
 
 input:focus,
-select:focus {
+textarea:focus {
 
-    border-color:
-        #39bff7;
+    border-color: #3560f5;
 
     box-shadow:
-        0 0 0 3px
-        rgba(57,191,247,0.10);
-
+        0 0 0 4px rgba(53, 96, 245, 0.1);
 }
 
 
-::placeholder {
+textarea {
 
-    color:
-        #60748a;
+    resize: vertical;
 
+    min-height: 150px;
 }
 
 
-/* ============================================================
-   BUTTONS
-============================================================ */
+/* =====================================================
+   MAIN BUTTON
+   ===================================================== */
 
-button {
-
-    font-family:
-        inherit;
-
-}
-
-
-.primary,
-.secondary,
-.logout {
-
-    border: 0;
-
-    border-radius: 11px;
-
-    padding: 12px 18px;
-
-    cursor: pointer;
-
-    font-weight: 700;
-
-    transition:
-        transform .18s ease,
-        opacity .18s ease,
-        background .18s ease;
-
-}
-
-
-.primary {
-
-    background:
-        linear-gradient(
-            135deg,
-            #00bdf2,
-            #635bff
-        );
-
-    color:
-        white;
-
-}
-
-
-.primary:hover {
-
-    transform:
-        translateY(-1px);
-
-    opacity:
-        .92;
-
-}
-
-
-.primary:disabled {
-
-    opacity:
-        .55;
-
-    cursor:
-        not-allowed;
-
-}
-
-
-.secondary {
-
-    background:
-        #13283e;
-
-    color:
-        #b9cbe0;
-
-    border:
-        1px solid
-        #28425d;
-
-}
-
-
-.secondary:hover {
-
-    background:
-        #19334d;
-
-}
-
-
-.full {
+.main-button {
 
     width: 100%;
 
-}
+    border: none;
 
+    border-radius: 20px;
 
-/* ============================================================
-   AUTH MESSAGE
-============================================================ */
+    padding: 22px;
 
-#authMessage {
+    background: #3560f5;
 
-    min-height: 22px;
-
-    margin-top: 14px;
-
-    color:
-        #66d9ff;
-
-    font-size: 14px;
-
-}
-
-
-/* ============================================================
-   APP
-============================================================ */
-
-.app {
-
-    min-height: 100vh;
-
-    display: flex;
-
-}
-
-
-/* ============================================================
-   SIDEBAR
-============================================================ */
-
-.sidebar {
-
-    width: 250px;
-
-    min-height: 100vh;
-
-    position: fixed;
-
-    left: 0;
-
-    top: 0;
-
-    bottom: 0;
-
-    padding: 24px 16px;
-
-    background:
-        rgba(5, 15, 27, 0.96);
-
-    border-right:
-        1px solid
-        rgba(255,255,255,0.07);
-
-    display: flex;
-
-    flex-direction: column;
-
-    z-index: 10;
-
-}
-
-
-.sidebar-brand {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-    padding:
-        0 8px 26px;
-
-}
-
-
-.sidebar-brand strong {
-
-    display: block;
-
-    font-size: 15px;
-
-}
-
-
-.sidebar-brand small {
-
-    display: block;
-
-    margin-top: 4px;
-
-    color:
-        #6f849b;
-
-    font-size: 11px;
-
-}
-
-
-/* ============================================================
-   NAV
-============================================================ */
-
-.sidebar nav {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 5px;
-
-}
-
-
-.nav-item {
-
-    width: 100%;
-
-    padding: 12px 13px;
-
-    text-align: left;
-
-    border: 0;
-
-    border-radius: 10px;
-
-    background: transparent;
-
-    color:
-        #8298af;
-
-    cursor: pointer;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-}
-
-
-.nav-item:hover {
-
-    background:
-        #0d2034;
-
-    color:
-        white;
-
-}
-
-
-.nav-item.active {
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(0,190,242,.18),
-            rgba(99,91,255,.18)
-        );
-
-    color:
-        #67d8ff;
-
-}
-
-
-/* ============================================================
-   LOGOUT
-============================================================ */
-
-.logout {
-
-    margin-top: auto;
-
-    width: 100%;
-
-    background:
-        #121f2f;
-
-    color:
-        #b7c8da;
-
-}
-
-
-.logout:hover {
-
-    background:
-        #1a2b40;
-
-}
-
-
-/* ============================================================
-   MAIN
-============================================================ */
-
-.main {
-
-    margin-left: 250px;
-
-    width:
-        calc(100% - 250px);
-
-    min-height: 100vh;
-
-    padding:
-        28px 32px 40px;
-
-}
-
-
-/* ============================================================
-   TOPBAR
-============================================================ */
-
-.topbar {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 20px;
-
-    margin-bottom: 30px;
-
-}
-
-
-.topbar h2 {
+    color: white;
 
     font-size: 25px;
 
-}
-
-
-.topbar p {
-
-    margin-top: 5px;
-
-    color:
-        #71869c;
-
-    font-size: 13px;
-
-}
-
-
-.user-chip {
-
-    padding:
-        10px 14px;
-
-    border:
-        1px solid
-        #203a55;
-
-    border-radius: 999px;
-
-    color:
-        #a8bed5;
-
-    font-size: 13px;
-
-    background:
-        rgba(10,25,42,.7);
-
-    max-width: 280px;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-}
-
-
-/* ============================================================
-   PAGE
-============================================================ */
-
-.page {
-
-    display: none;
-
-}
-
-
-.page.active-page {
-
-    display: block;
-
-}
-
-
-/* ============================================================
-   WELCOME
-============================================================ */
-
-.welcome {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 30px;
-
-    padding: 30px;
-
-    border-radius: 22px;
-
-    margin-bottom: 22px;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(0,190,242,.12),
-            rgba(99,91,255,.10)
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.07);
-
-}
-
-
-.welcome h1 {
-
-    font-size: 32px;
-
-    margin:
-        8px 0 10px;
-
-}
-
-
-.welcome p {
-
-    max-width: 650px;
-
-    color:
-        #8ca1b7;
-
-    line-height:
-        1.6;
-
-}
-
-
-/* ============================================================
-   EYEBROW
-============================================================ */
-
-.eyebrow {
-
-    color:
-        #54cdf5;
-
-    font-size: 11px;
-
-    font-weight: 800;
-
-    letter-spacing:
-        1.5px;
-
-}
-
-
-/* ============================================================
-   CARDS
-============================================================ */
-
-.card {
-
-    padding: 26px;
-
-    border:
-        1px solid
-        rgba(255,255,255,.07);
-
-    border-radius: 18px;
-
-    background:
-        rgba(10,25,42,.76);
-
-    box-shadow:
-        0 12px 35px
-        rgba(0,0,0,.12);
-
-}
-
-
-.card h2 {
-
-    margin:
-        8px 0 8px;
-
-    font-size: 25px;
-
-}
-
-
-.card h3 {
-
-    margin-bottom: 18px;
-
-}
-
-
-.muted {
-
-    color:
-        #7e93a9;
-
-    line-height:
-        1.55;
-
-}
-
-
-/* ============================================================
-   STATS
-============================================================ */
-
-.stats-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
-    gap: 15px;
-
-    margin-bottom: 20px;
-
-}
-
-
-.stat-card {
-
-    padding: 20px;
-
-    border:
-        1px solid
-        rgba(255,255,255,.06);
-
-    border-radius: 15px;
-
-    background:
-        #0b1b2d;
-
-}
-
-
-.stat-card span {
-
-    display: block;
-
-    color:
-        #71869c;
-
-    font-size: 12px;
-
-    margin-bottom: 10px;
-
-}
-
-
-.stat-card strong {
-
-    font-size: 21px;
-
-    color:
-        #eef6ff;
-
-    word-break: break-word;
-
-}
-
-
-/* ============================================================
-   DASHBOARD GRID
-============================================================ */
-
-.dashboard-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 18px;
-
-}
-
-
-.quick-actions {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 10px;
-
-}
-
-
-.quick {
-
-    border:
-        1px solid
-        #1e3851;
-
-    border-radius: 12px;
-
-    background:
-        #0a1a2c;
-
-    color:
-        #c6d6e7;
-
-    padding: 18px;
-
     cursor: pointer;
 
-    text-align: left;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
+    transition: 0.2s;
 }
 
 
-.quick:hover {
+.main-button:hover {
 
-    background:
-        #102740;
+    background: #284fd4;
 
-    border-color:
-        #2d587d;
-
+    transform: translateY(-1px);
 }
 
 
-/* ============================================================
-   FORMS
-============================================================ */
+.main-button:disabled {
 
-.form-grid {
+    opacity: 0.6;
 
-    display: grid;
+    cursor: not-allowed;
 
-    grid-template-columns:
-        repeat(2, 1fr);
-
-    gap: 18px;
-
-    margin:
-        22px 0;
-
+    transform: none;
 }
 
 
-.form-grid label {
+/* =====================================================
+   MESSAGES
+   ===================================================== */
 
-    display: block;
+#message {
 
-    margin-bottom: 8px;
+    text-align: center;
 
-    color:
-        #94a9be;
+    font-size: 20px;
 
-    font-size: 13px;
+    margin: 18px 0 0;
 
+    min-height: 28px;
 }
 
-
-/* ============================================================
-   SECTION HEAD
-============================================================ */
-
-.section-head {
-
-    display: flex;
-
-    align-items: flex-start;
-
-    justify-content: space-between;
-
-    gap: 20px;
-
-    margin-bottom: 20px;
-
-}
-
-
-#search {
-
-    margin-bottom: 18px;
-
-}
-
-
-/* ============================================================
-   SYMPTOMS
-============================================================ */
-
-.symptom-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            auto-fill,
-            minmax(190px, 1fr)
-        );
-
-    gap: 10px;
-
-    max-height: 480px;
-
-    overflow-y: auto;
-
-    padding-right: 4px;
-
-}
-
-
-.symptom {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    padding: 12px;
-
-    border:
-        1px solid
-        #1d354d;
-
-    border-radius: 10px;
-
-    background:
-        #091827;
-
-    color:
-        #9eb1c5;
-
-    cursor: pointer;
-
-    font-size: 13px;
-
-}
-
-
-.symptom:hover {
-
-    border-color:
-        #2e6387;
-
-}
-
-
-.symptom.selected {
-
-    background:
-        rgba(0,190,242,.10);
-
-    border-color:
-        #239bc6;
-
-    color:
-        #d9f6ff;
-
-}
-
-
-.symptom input {
-
-    width: auto;
-
-    accent-color:
-        #00bdf2;
-
-}
-
-
-/* ============================================================
-   PREDICTION ACTION
-============================================================ */
-
-.prediction-action {
-
-    margin-top: 22px;
-
-    padding-top: 20px;
-
-    border-top:
-        1px solid
-        rgba(255,255,255,.06);
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 15px;
-
-}
-
-
-/* ============================================================
-   RESULT
-============================================================ */
-
-.result {
-
-    margin-top: 20px;
-
-}
-
-
-.result h2 {
-
-    font-size: 31px;
-
-    margin:
-        10px 0 25px;
-
-}
-
-
-/* ============================================================
-   CONFIDENCE
-============================================================ */
-
-.confidence {
-
-    margin-bottom: 25px;
-
-}
-
-
-.confidence-head {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    margin-bottom: 8px;
-
-    color:
-        #91a6ba;
-
-}
-
-
-.confidence-head strong {
-
-    color:
-        #61d4ff;
-
-}
-
-
-.confidence-bar {
-
-    height: 10px;
-
-    background:
-        #14283d;
-
-    border-radius: 999px;
-
-    overflow: hidden;
-
-}
-
-
-.confidence-bar span {
-
-    display: block;
-
-    height: 100%;
-
-    width: 0;
-
-    background:
-        linear-gradient(
-            90deg,
-            #00bdf2,
-            #635bff
-        );
-
-    border-radius: inherit;
-
-    transition:
-        width .5s ease;
-
-}
-
-
-/* ============================================================
-   TOP PREDICTIONS
-============================================================ */
-
-.top-list {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 8px;
-
-}
-
-
-.top-row {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    padding: 13px 15px;
-
-    background:
-        #0a1a2b;
-
-    border:
-        1px solid
-        #1a334b;
-
-    border-radius: 10px;
-
-}
-
-
-.top-row strong {
-
-    color:
-        #64d7ff;
-
-}
-
-
-/* ============================================================
-   RECOMMENDATION
-============================================================ */
-
-.recommendation {
-
-    margin-top: 20px;
-
-    padding: 18px;
-
-    border-radius: 13px;
-
-    background:
-        rgba(99,91,255,.10);
-
-    border:
-        1px solid
-        rgba(99,91,255,.22);
-
-}
-
-
-.recommendation strong {
-
-    color:
-        #c6c1ff;
-
-}
-
-
-.recommendation p {
-
-    margin:
-        8px 0;
-
-    color:
-        #e5eaff;
-
-}
-
-
-.recommendation small {
-
-    color:
-        #8398ae;
-
-    line-height:
-        1.5;
-
-}
-
-
-/* ============================================================
-   DISCLAIMER
-============================================================ */
-
-.disclaimer {
-
-    margin-top: 18px;
-
-    color:
-        #71869c;
-
-    font-size: 12px;
-
-    line-height:
-        1.5;
-
-}
-
-
-/* ============================================================
-   HISTORY
-============================================================ */
-
-.history-list {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
-
-    margin-top: 20px;
-
-}
-
-
-.history-item {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 20px;
-
-    padding: 16px;
-
-    border-radius: 12px;
-
-    border:
-        1px solid
-        #1c344b;
-
-    background:
-        #091928;
-
-}
-
-
-.history-item strong {
-
-    display: block;
-
-    color:
-        #e8f2ff;
-
-}
-
-
-.history-item small {
-
-    display: block;
-
-    margin-top: 5px;
-
-    color:
-        #71879d;
-
-}
-
-
-/* ============================================================
-   DOCTORS
-============================================================ */
-
-.doctor-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            auto-fill,
-            minmax(250px, 1fr)
-        );
-
-    gap: 15px;
-
-    margin-top: 22px;
-
-}
-
-
-.doctor-card {
-
-    padding: 20px;
-
-    border:
-        1px solid
-        #1e3851;
-
-    border-radius: 15px;
-
-    background:
-        #0a1a2b;
-
-}
-
-
-.doctor-card h3 {
-
-    margin-bottom: 8px;
-
-}
-
-
-.doctor-card .specialty {
-
-    color:
-        #61d5ff;
-
-    font-weight: 700;
-
-    margin-bottom: 14px;
-
-}
-
-
-.doctor-card p {
-
-    color:
-        #8095aa;
-
-    margin:
-        6px 0;
-
-    font-size: 13px;
-
-}
-
-
-/* ============================================================
-   QUANTUM
-============================================================ */
-
-.quantum-result {
-
-    margin-top: 20px;
-
-    min-height: 180px;
-
-    padding: 18px;
-
-    border:
-        1px solid
-        #203b55;
-
-    border-radius: 12px;
-
-    background:
-        #061321;
-
-    color:
-        #9edcff;
-
-    white-space:
-        pre-wrap;
-
-    overflow-x:
-        auto;
-
-    font-family:
-        Consolas,
-        monospace;
-
-    line-height:
-        1.55;
-
-}
-
-
-/* ============================================================
-   COMPARISON
-============================================================ */
-
-.comparison-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 18px;
-
-    margin-top: 25px;
-
-}
-
-
-.model-box {
-
-    padding: 25px;
-
-    border:
-        1px solid
-        #203b55;
-
-    border-radius: 15px;
-
-    background:
-        #091a2b;
-
-}
-
-
-.model-box h3 {
-
-    margin-bottom: 20px;
-
-}
-
-
-.model-box strong {
-
-    display: block;
-
-    font-size: 27px;
-
-    color:
-        #61d4ff;
-
-}
-
-
-.model-box span {
-
-    display: block;
-
-    margin-top: 7px;
-
-    color:
-        #758ba0;
-
-    font-size: 13px;
-
-}
-
-
-.notice {
-
-    margin-top: 20px;
-
-    padding: 15px;
-
-    border-radius: 10px;
-
-    background:
-        rgba(255,190,70,.07);
-
-    border:
-        1px solid
-        rgba(255,190,70,.15);
-
-    color:
-        #a9a38c;
-
-    font-size: 13px;
-
-    line-height:
-        1.5;
-
-}
-
-
-/* ============================================================
-   PERFORMANCE
-============================================================ */
-
-.metric-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
-    gap: 15px;
-
-    margin-top: 25px;
-
-}
-
-
-.metric {
-
-    padding: 20px;
-
-    background:
-        #091a2b;
-
-    border:
-        1px solid
-        #1e3851;
-
-    border-radius: 13px;
-
-}
-
-
-.metric span {
-
-    display: block;
-
-    color:
-        #778da3;
-
-    font-size: 12px;
-
-    margin-bottom: 9px;
-
-}
-
-
-.metric strong {
-
-    font-size: 25px;
-
-    color:
-        #62d5ff;
-
-}
-
-
-.performance-info {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
-    gap: 12px;
-
-    margin-top: 20px;
-
-}
-
-
-.performance-info > div {
-
-    padding: 15px;
-
-    background:
-        #0b1c2e;
-
-    border-radius: 10px;
-
-    color:
-        #7d92a7;
-
-    font-size: 13px;
-
-}
-
-
-.performance-info strong {
-
-    display: block;
-
-    color:
-        #dce9f7;
-
-    margin-top: 5px;
-
-}
-
-
-/* ============================================================
-   SUCCESS
-============================================================ */
 
 .success-message {
 
-    color:
-        #55d69a;
-
-    margin-top: 12px;
-
+    color: #26853a;
 }
 
 
-/* ============================================================
-   FOOTER
-============================================================ */
+.error-message {
 
-footer {
+    color: #d93025;
+}
+
+
+/* =====================================================
+   HIDDEN
+   ===================================================== */
+
+.hidden {
+
+    display: none !important;
+}
+
+
+/* =====================================================
+   DASHBOARD
+   ===================================================== */
+
+.dashboard-header {
 
     display: flex;
 
     justify-content: space-between;
 
+    align-items: center;
+
     gap: 20px;
 
-    margin-top: 35px;
-
-    padding:
-        18px 4px;
-
-    color:
-        #536b83;
-
-    font-size: 12px;
-
+    margin-bottom: 35px;
 }
 
 
-footer a {
+.dashboard-header h1 {
 
-    color:
-        #5ebce1;
+    text-align: left;
 
-    text-decoration: none;
+    font-size: 40px;
 
+    margin: 0 0 8px;
 }
 
 
-/* ============================================================
-   SCROLLBAR
-============================================================ */
+.dashboard-header p {
 
-::-webkit-scrollbar {
+    color: #70798a;
 
-    width: 8px;
+    font-size: 18px;
 
+    margin: 0;
 }
 
 
-::-webkit-scrollbar-track {
+.logout-button {
 
-    background:
-        #07111f;
+    border: none;
 
+    background: #eef1f7;
+
+    color: #182238;
+
+    padding: 14px 24px;
+
+    border-radius: 14px;
+
+    font-size: 17px;
+
+    cursor: pointer;
 }
 
 
-::-webkit-scrollbar-thumb {
+.logout-button:hover {
 
-    background:
-        #1d3b55;
-
-    border-radius: 10px;
-
+    background: #e1e5ee;
 }
 
 
-/* ============================================================
-   RESPONSIVE
-============================================================ */
+/* =====================================================
+   CARDS
+   ===================================================== */
 
-@media (
-    max-width: 1000px
-) {
+.welcome-card,
+.analysis-card {
 
-    .sidebar {
+    border: 1px solid #e2e6ee;
 
-        width: 210px;
+    border-radius: 24px;
 
-    }
+    padding: 30px;
 
+    margin-bottom: 25px;
 
-    .main {
-
-        margin-left: 210px;
-
-        width:
-            calc(100% - 210px);
-
-    }
-
-
-    .stats-grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
-    }
-
-
-    .metric-grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
-    }
-
-
-    .performance-info {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
-    }
-
+    background: #ffffff;
 }
 
 
-@media (
-    max-width: 760px
-) {
+.welcome-card h2,
+.analysis-card h2 {
 
-    .sidebar {
+    margin-top: 0;
 
-        position: relative;
+    font-size: 28px;
+}
 
-        width: 100%;
 
-        min-height: auto;
+.welcome-card p,
+.analysis-card p {
 
+    color: #687285;
+
+    font-size: 18px;
+
+    line-height: 1.6;
+}
+
+
+/* =====================================================
+   RESULT
+   ===================================================== */
+
+.result-box {
+
+    margin-top: 25px;
+
+    padding: 25px;
+
+    background: #f5f7fb;
+
+    border-radius: 18px;
+
+    font-size: 18px;
+
+    line-height: 1.6;
+}
+
+
+.result-box h3 {
+
+    margin-top: 0;
+}
+
+
+.disclaimer {
+
+    font-size: 14px !important;
+
+    color: #8a92a0 !important;
+
+    margin-top: 20px;
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 700px) {
+
+    body {
+
+        padding: 15px;
+
+        align-items: flex-start;
     }
 
 
-    .app {
-
-        flex-direction: column;
-
-    }
-
-
-    .sidebar nav {
-
-        display: grid;
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
-    }
-
-
-    .logout {
+    .app-container {
 
         margin-top: 15px;
 
+        padding: 40px 25px;
+
+        border-radius: 24px;
     }
 
 
-    .main {
+    .logo {
 
-        margin-left: 0;
+        width: 100px;
 
-        width: 100%;
+        height: 100px;
 
-        padding: 20px;
-
+        border-radius: 28px;
     }
 
 
-    .topbar {
+    .logo span {
+
+        font-size: 55px;
+    }
+
+
+    h1 {
+
+        font-size: 38px;
+    }
+
+
+    .subtitle {
+
+        font-size: 19px;
+
+        margin-bottom: 35px;
+    }
+
+
+    .tab {
+
+        font-size: 20px;
+
+        padding: 18px 10px;
+    }
+
+
+    input,
+    textarea {
+
+        font-size: 18px;
+
+        padding: 18px;
+    }
+
+
+    .main-button {
+
+        font-size: 20px;
+
+        padding: 19px;
+    }
+
+
+    .dashboard-header {
 
         align-items: flex-start;
 
         flex-direction: column;
-
     }
 
 
-    .welcome {
+    .dashboard-header h1 {
 
-        flex-direction: column;
-
-        align-items: flex-start;
-
+        font-size: 32px;
     }
 
 
-    .dashboard-grid,
-
-    .comparison-grid {
-
-        grid-template-columns:
-            1fr;
-
-    }
-
-
-    .form-grid {
-
-        grid-template-columns:
-            1fr;
-
-    }
-
-
-    .stats-grid {
-
-        grid-template-columns:
-            1fr 1fr;
-
-    }
-
-
-    .metric-grid {
-
-        grid-template-columns:
-            1fr 1fr;
-
-    }
-
-}
-
-
-@media (
-    max-width: 500px
-) {
-
-    .auth-card {
-
-        padding: 28px 20px;
-
-    }
-
-
-    .stats-grid,
-
-    .metric-grid,
-
-    .performance-info {
-
-        grid-template-columns:
-            1fr;
-
-    }
-
-
-    .quick-actions {
-
-        grid-template-columns:
-            1fr;
-
-    }
-
-
-    .prediction-action {
-
-        flex-direction: column;
-
-        align-items:
-            stretch;
-
-    }
-
-
-    .prediction-action .primary {
+    .logout-button {
 
         width: 100%;
-
-    }
-
-
-    .sidebar nav {
-
-        grid-template-columns:
-            1fr;
-
-    }
-
-
-    .history-item {
-
-        flex-direction: column;
-
-        align-items:
-            flex-start;
-
     }
 
 }
