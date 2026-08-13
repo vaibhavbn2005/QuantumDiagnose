@@ -1,1178 +1,874 @@
 // ============================================================
-// QuantumDiagnose - Complete script.js
+// QUANTUMDIAGNOSE - COMPLETE JAVASCRIPT
+// Firebase Authentication + Symptom Prediction
 // ============================================================
 
-// ------------------------------------------------------------
-// FIREBASE IMPORTS
-// ------------------------------------------------------------
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+// ============================================================
+// 1. FIREBASE IMPORTS
+// ============================================================
+
+import { initializeApp } from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-// ------------------------------------------------------------
-// FIREBASE CONFIGURATION
-// ------------------------------------------------------------
-// IMPORTANT:
-// Copy these values EXACTLY from:
-// Firebase Console
-// → Project Settings
-// → General
-// → Your apps
-// → QuantumDiagnose Web
-// → SDK setup and configuration
-//
-// Do NOT use the old/incorrect API key.
-//
+// ============================================================
+// 2. FIREBASE CONFIGURATION
+// ============================================================
 
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_REAL_FIREBASE_API_KEY_HERE",
-  authDomain: "quantumdiagnose.firebaseapp.com",
-  projectId: "quantumdiagnose",
-  storageBucket: "quantumdiagnose.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+    apiKey: "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
+    authDomain: "quantumdiagnose.firebaseapp.com",
+    projectId: "quantumdiagnose",
+    storageBucket: "quantumdiagnose.firebasestorage.app",
+    messagingSenderId: "727641186346",
+    appId: "1:727641186346:web:c8eed6274fd1582169e353",
+    measurementId: "G-DSDM1YM4WB"
 };
 
 
-// ------------------------------------------------------------
-// INITIALIZE FIREBASE
-// ------------------------------------------------------------
+// ============================================================
+// 3. INITIALIZE FIREBASE
+// ============================================================
 
 const firebaseApp = initializeApp(firebaseConfig);
 
 const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
-
-
-// ------------------------------------------------------------
-// MAKE FIREBASE AVAILABLE TO OTHER SCRIPTS
-// ------------------------------------------------------------
-
-window.firebaseAuth = auth;
-window.firebaseDB = db;
-
-window.firebaseCreateUser =
-  createUserWithEmailAndPassword;
-
-window.firebaseSignIn =
-  signInWithEmailAndPassword;
-
-window.firebaseSignOut =
-  signOut;
-
-window.firebaseOnAuthStateChanged =
-  onAuthStateChanged;
 
 
 // ============================================================
-// EXISTING SYMPTOM ANALYSIS
+// 4. GET HTML ELEMENTS
 // ============================================================
 
+// Authentication buttons
+const loginBtn = document.getElementById("loginBtn");
+const signupBtn = document.getElementById("signupBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+// Authentication modal
+const authModal = document.getElementById("authModal");
+const closeModal = document.getElementById("closeModal");
+
+const authTitle = document.getElementById("authTitle");
+const authEmail = document.getElementById("authEmail");
+const authPassword = document.getElementById("authPassword");
+
+const authSubmit = document.getElementById("authSubmit");
+const authMessage = document.getElementById("authMessage");
+
+
+// Symptom elements
 const boxes = [
-  ...document.querySelectorAll(".symptom input")
+    ...document.querySelectorAll(".symptom input")
 ];
 
 const count = document.getElementById("count");
 
-const result =
-  document.getElementById("result");
+const search = document.getElementById("search");
 
-const disease =
-  document.getElementById("disease");
+const clearBtn = document.getElementById("clearBtn");
+
+const predictBtn = document.getElementById("predictBtn");
+
+
+// Prediction result elements
+const result = document.getElementById("result");
+
+const disease = document.getElementById("disease");
 
 const confidenceBar =
-  document.getElementById("confidenceBar");
+    document.getElementById("confidenceBar");
 
 const confidenceText =
-  document.getElementById("confidenceText");
+    document.getElementById("confidenceText");
 
 const message =
-  document.getElementById("message");
+    document.getElementById("message");
 
 const topPredictions =
-  document.getElementById("topPredictions");
+    document.getElementById("topPredictions");
 
 
-// ------------------------------------------------------------
-// UPDATE SYMPTOM COUNT
-// ------------------------------------------------------------
+// ============================================================
+// 5. AUTHENTICATION MODE
+// ============================================================
 
-function updateCount() {
+// true  = Sign Up
+// false = Login
 
-  count.textContent =
-    boxes.filter(
-      b => b.checked
-    ).length;
-
-}
+let isSignupMode = false;
 
 
-// ------------------------------------------------------------
-// SYMPTOM CHECKBOX EVENTS
-// ------------------------------------------------------------
+// ============================================================
+// 6. OPEN AUTHENTICATION MODAL
+// ============================================================
 
-boxes.forEach(box => {
+function openAuthModal(signupMode) {
 
-  box.addEventListener(
-    "change",
-    updateCount
-  );
+    isSignupMode = signupMode;
 
-});
+    // Clear previous values
+    authEmail.value = "";
+    authPassword.value = "";
+
+    authMessage.textContent = "";
+
+    authMessage.style.color = "";
 
 
-// ------------------------------------------------------------
-// SYMPTOM SEARCH
-// ------------------------------------------------------------
+    if (isSignupMode) {
 
-const searchInput =
-  document.getElementById("search");
+        authTitle.textContent = "Create Account";
 
-if (searchInput) {
+        authSubmit.textContent = "Sign Up";
 
-  searchInput.addEventListener(
-    "input",
-    event => {
+    } else {
 
-      const searchText =
-        event.target.value
-          .toLowerCase()
-          .trim();
+        authTitle.textContent = "Login";
 
-      document
-        .querySelectorAll(".symptom")
-        .forEach(symptom => {
-
-          const name =
-            symptom.dataset.name
-              .toLowerCase();
-
-          if (name.includes(searchText)) {
-
-            symptom.style.display = "";
-
-          } else {
-
-            symptom.style.display = "none";
-
-          }
-
-        });
-
+        authSubmit.textContent = "Login";
     }
-  );
 
+
+    authModal.classList.remove("hidden");
 }
 
 
 // ============================================================
-// CLEAR BUTTON
+// 7. CLOSE AUTHENTICATION MODAL
 // ============================================================
 
-const clearBtn =
-  document.getElementById("clearBtn");
+function closeAuthModal() {
 
-if (clearBtn) {
+    authModal.classList.add("hidden");
 
-  clearBtn.addEventListener(
-    "click",
-    () => {
+    authEmail.value = "";
+    authPassword.value = "";
 
-      boxes.forEach(
-        box => box.checked = false
-      );
-
-      updateCount();
-
-      if (result) {
-        result.classList.add("hidden");
-      }
-
-    }
-  );
-
+    authMessage.textContent = "";
 }
 
 
 // ============================================================
-// SAVE PREDICTION TO FIRESTORE
-// ============================================================
-
-async function savePrediction(
-  symptoms,
-  prediction,
-  confidence,
-  topPredictions
-) {
-
-  const user =
-    auth.currentUser;
-
-  // If user is not logged in,
-  // don't save history.
-
-  if (!user) {
-
-    console.log(
-      "User not logged in. Prediction not saved."
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    await addDoc(
-      collection(
-        db,
-        "predictions"
-      ),
-      {
-
-        userId: user.uid,
-
-        userEmail: user.email,
-
-        symptoms: symptoms,
-
-        disease: prediction,
-
-        confidence: confidence,
-
-        topPredictions: topPredictions,
-
-        createdAt:
-          serverTimestamp()
-
-      }
-    );
-
-    console.log(
-      "Prediction saved successfully."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Error saving prediction:",
-      error
-    );
-
-  }
-
-}
-
-
-// ============================================================
-// PREDICT BUTTON
-// ============================================================
-
-const predictBtn =
-  document.getElementById(
-    "predictBtn"
-  );
-
-
-if (predictBtn) {
-
-  predictBtn.addEventListener(
-    "click",
-    async () => {
-
-      const symptoms =
-        boxes
-          .filter(
-            box => box.checked
-          )
-          .map(
-            box => box.value
-          );
-
-
-      // ------------------------------------------------------
-      // NO SYMPTOMS
-      // ------------------------------------------------------
-
-      if (!symptoms.length) {
-
-        alert(
-          "Please select at least one symptom."
-        );
-
-        return;
-
-      }
-
-
-      // ------------------------------------------------------
-      // BUTTON LOADING
-      // ------------------------------------------------------
-
-      predictBtn.disabled = true;
-
-      predictBtn.textContent =
-        "Analyzing...";
-
-
-      try {
-
-        // ----------------------------------------------------
-        // SEND REQUEST TO FLASK
-        // ----------------------------------------------------
-
-        const response =
-          await fetch(
-            "/predict",
-            {
-
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body:
-                JSON.stringify({
-                  symptoms: symptoms
-                })
-
-            }
-          );
-
-
-        const data =
-          await response.json();
-
-
-        // ----------------------------------------------------
-        // ERROR
-        // ----------------------------------------------------
-
-        if (!response.ok) {
-
-          throw new Error(
-            data.error ||
-            "Prediction failed"
-          );
-
-        }
-
-
-        // ----------------------------------------------------
-        // DISPLAY MAIN PREDICTION
-        // ----------------------------------------------------
-
-        disease.textContent =
-          data.disease
-            .replaceAll(
-              "_",
-              " "
-            );
-
-
-        // ----------------------------------------------------
-        // CONFIDENCE BAR
-        // ----------------------------------------------------
-
-        confidenceBar.style.width =
-          `${data.confidence}%`;
-
-
-        confidenceText.textContent =
-          `Model confidence: ${data.confidence}%`;
-
-
-        // ----------------------------------------------------
-        // DISCLAIMER
-        // ----------------------------------------------------
-
-        message.textContent =
-          data.message;
-
-
-        // ----------------------------------------------------
-        // TOP 5 PREDICTIONS
-        // ----------------------------------------------------
-
-        topPredictions.innerHTML =
-          data.top_predictions
-            .map(
-              prediction => {
-
-                return `
-                  <div class="top-item">
-                    <span>
-                      ${prediction.disease
-                        .replaceAll("_", " ")}
-                    </span>
-
-                    <strong>
-                      ${prediction.confidence}%
-                    </strong>
-                  </div>
-                `;
-
-              }
-            )
-            .join("");
-
-
-        // ----------------------------------------------------
-        // SHOW RESULT
-        // ----------------------------------------------------
-
-        result.classList.remove(
-          "hidden"
-        );
-
-
-        // ----------------------------------------------------
-        // SAVE TO FIRESTORE
-        // ----------------------------------------------------
-
-        await savePrediction(
-
-          symptoms,
-
-          data.disease,
-
-          data.confidence,
-
-          data.top_predictions
-
-        );
-
-
-        // ----------------------------------------------------
-        // SCROLL TO RESULT
-        // ----------------------------------------------------
-
-        result.scrollIntoView({
-
-          behavior: "smooth",
-
-          block: "center"
-
-        });
-
-
-      } catch (error) {
-
-        console.error(
-          "Prediction error:",
-          error
-        );
-
-        alert(
-          error.message
-        );
-
-      } finally {
-
-        predictBtn.disabled =
-          false;
-
-        predictBtn.textContent =
-          "Predict Possible Disease";
-
-      }
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// FIREBASE AUTHENTICATION UI
-// ============================================================
-
-
-// ------------------------------------------------------------
-// FIND AUTH BUTTONS
-// ------------------------------------------------------------
-
-const loginBtn =
-  document.getElementById(
-    "loginBtn"
-  );
-
-const signupBtn =
-  document.getElementById(
-    "signupBtn"
-  );
-
-const logoutBtn =
-  document.getElementById(
-    "logoutBtn"
-  );
-
-
-// ------------------------------------------------------------
-// AUTH MODAL ELEMENTS
-// ------------------------------------------------------------
-
-const loginModal =
-  document.getElementById(
-    "loginModal"
-  );
-
-const signupModal =
-  document.getElementById(
-    "signupModal"
-  );
-
-
-// ------------------------------------------------------------
-// LOGIN FORM
-// ------------------------------------------------------------
-
-const loginForm =
-  document.getElementById(
-    "loginForm"
-  );
-
-
-// ------------------------------------------------------------
-// SIGNUP FORM
-// ------------------------------------------------------------
-
-const signupForm =
-  document.getElementById(
-    "signupForm"
-  );
-
-
-// ============================================================
-// OPEN LOGIN
+// 8. LOGIN BUTTON
 // ============================================================
 
 if (loginBtn) {
 
-  loginBtn.addEventListener(
-    "click",
-    () => {
+    loginBtn.addEventListener("click", function () {
 
-      if (loginModal) {
+        openAuthModal(false);
 
-        loginModal.classList.remove(
-          "hidden"
-        );
-
-      }
-
-    }
-  );
-
+    });
 }
 
 
 // ============================================================
-// OPEN SIGNUP
+// 9. SIGN UP BUTTON
 // ============================================================
 
 if (signupBtn) {
 
-  signupBtn.addEventListener(
-    "click",
-    () => {
+    signupBtn.addEventListener("click", function () {
 
-      if (signupModal) {
+        openAuthModal(true);
 
-        signupModal.classList.remove(
-          "hidden"
-        );
-
-      }
-
-    }
-  );
-
+    });
 }
 
 
 // ============================================================
-// CLOSE MODALS
+// 10. CLOSE BUTTON
 // ============================================================
 
-document
-  .querySelectorAll(
-    ".close-modal"
-  )
-  .forEach(
-    button => {
+if (closeModal) {
 
-      button.addEventListener(
-        "click",
-        () => {
+    closeModal.addEventListener("click", function () {
 
-          if (loginModal) {
+        closeAuthModal();
 
-            loginModal.classList.add(
-              "hidden"
+    });
+}
+
+
+// ============================================================
+// 11. CLOSE MODAL WHEN CLICKING OUTSIDE
+// ============================================================
+
+if (authModal) {
+
+    authModal.addEventListener("click", function (event) {
+
+        if (event.target === authModal) {
+
+            closeAuthModal();
+
+        }
+
+    });
+}
+
+
+// ============================================================
+// 12. FIREBASE ERROR MESSAGE
+// ============================================================
+
+function getFirebaseErrorMessage(error) {
+
+    switch (error.code) {
+
+        case "auth/email-already-in-use":
+            return "This email is already registered. Please login.";
+
+        case "auth/invalid-email":
+            return "Please enter a valid email address.";
+
+        case "auth/weak-password":
+            return "Password must be at least 6 characters.";
+
+        case "auth/user-not-found":
+            return "No account found with this email.";
+
+        case "auth/wrong-password":
+            return "Incorrect password.";
+
+        case "auth/invalid-credential":
+            return "Incorrect email or password.";
+
+        case "auth/too-many-requests":
+            return "Too many attempts. Please try again later.";
+
+        case "auth/network-request-failed":
+            return "Network error. Please check your internet connection.";
+
+        case "auth/api-key-not-valid":
+            return "Firebase API key is invalid. Please check the Firebase configuration.";
+
+        case "auth/operation-not-allowed":
+            return "Email/Password authentication is not enabled in Firebase.";
+
+        default:
+            return error.message || "Authentication failed.";
+    }
+}
+
+
+// ============================================================
+// 13. LOGIN / SIGNUP
+// ============================================================
+
+if (authSubmit) {
+
+    authSubmit.addEventListener("click", async function () {
+
+        const email = authEmail.value.trim();
+
+        const password = authPassword.value;
+
+
+        // Validate email
+        if (!email) {
+
+            authMessage.textContent =
+                "Please enter your email.";
+
+            authMessage.style.color = "red";
+
+            return;
+        }
+
+
+        // Validate password
+        if (!password) {
+
+            authMessage.textContent =
+                "Please enter your password.";
+
+            authMessage.style.color = "red";
+
+            return;
+        }
+
+
+        // Firebase requires at least 6 characters
+        if (password.length < 6) {
+
+            authMessage.textContent =
+                "Password must be at least 6 characters.";
+
+            authMessage.style.color = "red";
+
+            return;
+        }
+
+
+        // Disable button while processing
+        authSubmit.disabled = true;
+
+        authSubmit.textContent =
+            isSignupMode ? "Creating Account..." : "Logging in...";
+
+
+        try {
+
+            if (isSignupMode) {
+
+                // ====================================================
+                // CREATE ACCOUNT
+                // ====================================================
+
+                const userCredential =
+                    await createUserWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+
+                console.log(
+                    "Account created:",
+                    userCredential.user.email
+                );
+
+
+                authMessage.textContent =
+                    "Account created successfully!";
+
+                authMessage.style.color = "green";
+
+
+                // Close modal after short delay
+                setTimeout(() => {
+
+                    closeAuthModal();
+
+                }, 1000);
+
+
+            } else {
+
+                // ====================================================
+                // LOGIN
+                // ====================================================
+
+                const userCredential =
+                    await signInWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+
+                console.log(
+                    "Logged in:",
+                    userCredential.user.email
+                );
+
+
+                authMessage.textContent =
+                    "Login successful!";
+
+                authMessage.style.color = "green";
+
+
+                setTimeout(() => {
+
+                    closeAuthModal();
+
+                }, 700);
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Firebase authentication error:",
+                error
             );
 
-          }
 
-          if (signupModal) {
+            authMessage.textContent =
+                getFirebaseErrorMessage(error);
 
-            signupModal.classList.add(
-              "hidden"
-            );
+            authMessage.style.color = "red";
 
-          }
+        } finally {
 
-        }
-      );
+            authSubmit.disabled = false;
 
-    }
-  );
-
-
-// ============================================================
-// SIGN UP
-// ============================================================
-
-if (signupForm) {
-
-  signupForm.addEventListener(
-    "submit",
-    async event => {
-
-      event.preventDefault();
-
-
-      const email =
-        document.getElementById(
-          "signupEmail"
-        ).value.trim();
-
-
-      const password =
-        document.getElementById(
-          "signupPassword"
-        ).value;
-
-
-      if (!email || !password) {
-
-        alert(
-          "Please enter email and password."
-        );
-
-        return;
-
-      }
-
-
-      try {
-
-        await createUserWithEmailAndPassword(
-
-          auth,
-
-          email,
-
-          password
-
-        );
-
-
-        alert(
-          "Account created successfully!"
-        );
-
-
-        signupForm.reset();
-
-
-        if (signupModal) {
-
-          signupModal.classList.add(
-            "hidden"
-          );
-
+            authSubmit.textContent =
+                isSignupMode ? "Sign Up" : "Login";
         }
 
-
-      } catch (error) {
-
-        console.error(
-          "Firebase signup error:",
-          error
-        );
-
-
-        alert(
-          "Firebase: " +
-          error.message
-        );
-
-      }
-
-    }
-  );
-
+    });
 }
 
 
 // ============================================================
-// LOGIN
-// ============================================================
-
-if (loginForm) {
-
-  loginForm.addEventListener(
-    "submit",
-    async event => {
-
-      event.preventDefault();
-
-
-      const email =
-        document.getElementById(
-          "loginEmail"
-        ).value.trim();
-
-
-      const password =
-        document.getElementById(
-          "loginPassword"
-        ).value;
-
-
-      if (!email || !password) {
-
-        alert(
-          "Please enter email and password."
-        );
-
-        return;
-
-      }
-
-
-      try {
-
-        await signInWithEmailAndPassword(
-
-          auth,
-
-          email,
-
-          password
-
-        );
-
-
-        alert(
-          "Login successful!"
-        );
-
-
-        loginForm.reset();
-
-
-        if (loginModal) {
-
-          loginModal.classList.add(
-            "hidden"
-          );
-
-        }
-
-
-      } catch (error) {
-
-        console.error(
-          "Firebase login error:",
-          error
-        );
-
-
-        alert(
-          "Firebase: " +
-          error.message
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// LOGOUT
+// 14. LOGOUT
 // ============================================================
 
 if (logoutBtn) {
 
-  logoutBtn.addEventListener(
-    "click",
-    async () => {
+    logoutBtn.addEventListener("click", async function () {
 
-      try {
+        try {
 
-        await signOut(auth);
+            await signOut(auth);
 
-        alert(
-          "Logged out successfully."
-        );
+            console.log("User logged out.");
 
-      } catch (error) {
+        } catch (error) {
 
-        console.error(
-          "Logout error:",
-          error
-        );
+            console.error(
+                "Logout error:",
+                error
+            );
 
-        alert(
-          error.message
-        );
+            alert(
+                "Logout failed: " +
+                getFirebaseErrorMessage(error)
+            );
 
-      }
+        }
 
-    }
-  );
-
+    });
 }
 
 
 // ============================================================
-// AUTH STATE
+// 15. AUTHENTICATION STATE
 // ============================================================
 
-onAuthStateChanged(
-  auth,
-  user => {
+onAuthStateChanged(auth, function (user) {
 
     if (user) {
 
-      console.log(
-        "Logged in:",
-        user.email
-      );
+        // ========================================================
+        // USER IS LOGGED IN
+        // ========================================================
 
-
-      // Show logout
-      if (logoutBtn) {
-
-        logoutBtn.classList.remove(
-          "hidden"
+        console.log(
+            "Current user:",
+            user.email
         );
 
-      }
+
+        if (loginBtn) {
+
+            loginBtn.classList.add("hidden");
+
+        }
 
 
-      // Hide login/signup
-      if (loginBtn) {
+        if (signupBtn) {
 
-        loginBtn.classList.add(
-          "hidden"
-        );
+            signupBtn.classList.add("hidden");
 
-      }
-
-      if (signupBtn) {
-
-        signupBtn.classList.add(
-          "hidden"
-        );
-
-      }
+        }
 
 
-      // Display user email if element exists
-      const userEmail =
-        document.getElementById(
-          "userEmail"
-        );
+        if (logoutBtn) {
 
-      if (userEmail) {
+            logoutBtn.classList.remove("hidden");
 
-        userEmail.textContent =
-          user.email;
-
-      }
+        }
 
 
     } else {
 
-      console.log(
-        "No user logged in."
-      );
+        // ========================================================
+        // USER IS LOGGED OUT
+        // ========================================================
+
+        console.log("No user is logged in.");
 
 
-      // Show login/signup
-      if (loginBtn) {
+        if (loginBtn) {
 
-        loginBtn.classList.remove(
-          "hidden"
-        );
+            loginBtn.classList.remove("hidden");
 
-      }
-
-      if (signupBtn) {
-
-        signupBtn.classList.remove(
-          "hidden"
-        );
-
-      }
+        }
 
 
-      // Hide logout
-      if (logoutBtn) {
+        if (signupBtn) {
 
-        logoutBtn.classList.add(
-          "hidden"
-        );
+            signupBtn.classList.remove("hidden");
 
-      }
+        }
 
 
-      const userEmail =
-        document.getElementById(
-          "userEmail"
-        );
+        if (logoutBtn) {
 
-      if (userEmail) {
+            logoutBtn.classList.add("hidden");
 
-        userEmail.textContent =
-          "";
-
-      }
+        }
 
     }
 
-  }
-);
+});
 
 
 // ============================================================
-// LOAD USER PREDICTION HISTORY
+// 16. UPDATE SYMPTOM COUNT
 // ============================================================
 
-async function loadPredictionHistory() {
+function updateCount() {
 
-  const user =
-    auth.currentUser;
-
-
-  if (!user) {
-
-    console.log(
-      "Login required to view history."
-    );
-
-    return [];
-
-  }
+    const selectedCount =
+        boxes.filter(
+            box => box.checked
+        ).length;
 
 
-  try {
+    if (count) {
 
-    const predictionsRef =
-      collection(
-        db,
-        "predictions"
-      );
+        count.textContent = selectedCount;
 
-
-    const predictionsQuery =
-      query(
-
-        predictionsRef,
-
-        where(
-          "userId",
-          "==",
-          user.uid
-        ),
-
-        orderBy(
-          "createdAt",
-          "desc"
-        )
-
-      );
-
-
-    const snapshot =
-      await getDocs(
-        predictionsQuery
-      );
-
-
-    const history = [];
-
-
-    snapshot.forEach(
-      document => {
-
-        history.push({
-
-          id: document.id,
-
-          ...document.data()
-
-        });
-
-      }
-    );
-
-
-    return history;
-
-
-  } catch (error) {
-
-    console.error(
-      "Error loading history:",
-      error
-    );
-
-
-    return [];
-
-  }
+    }
 
 }
 
 
-// ============================================================
-// DISPLAY HISTORY
-// ============================================================
+// Add change event to every symptom checkbox
 
-async function displayPredictionHistory() {
+boxes.forEach(function (box) {
 
-  const historyContainer =
-    document.getElementById(
-      "predictionHistory"
+    box.addEventListener(
+        "change",
+        updateCount
     );
 
-
-  if (!historyContainer) {
-
-    return;
-
-  }
+});
 
 
-  const history =
-    await loadPredictionHistory();
+// ============================================================
+// 17. SEARCH SYMPTOMS
+// ============================================================
+
+if (search) {
+
+    search.addEventListener(
+        "input",
+        function (event) {
+
+            const query =
+                event.target.value
+                    .toLowerCase()
+                    .trim();
 
 
-  if (!history.length) {
+            document
+                .querySelectorAll(".symptom")
+                .forEach(function (element) {
 
-    historyContainer.innerHTML = `
-      <p>
-        No prediction history found.
-      </p>
-    `;
-
-    return;
-
-  }
+                    const name =
+                        element.dataset.name
+                            .toLowerCase();
 
 
-  historyContainer.innerHTML =
-    history
-      .map(
-        item => {
+                    if (name.includes(query)) {
 
-          const symptoms =
-            Array.isArray(
-              item.symptoms
-            )
-              ? item.symptoms
-                  .map(
-                    symptom =>
-                      symptom.replaceAll(
-                        "_",
-                        " "
-                      )
-                  )
-                  .join(", ")
-              : "";
+                        element.style.display = "";
 
+                    } else {
 
-          return `
-            <div class="history-item">
+                        element.style.display = "none";
 
-              <h3>
-                ${item.disease
-                  .replaceAll(
-                    "_",
-                    " "
-                  )}
-              </h3>
+                    }
 
-              <p>
-                Confidence:
-                <strong>
-                  ${item.confidence}%
-                </strong>
-              </p>
-
-              <p>
-                Symptoms:
-                ${symptoms}
-              </p>
-
-            </div>
-          `;
+                });
 
         }
-      )
-      .join("");
+    );
 
 }
 
 
 // ============================================================
-// EXPOSE HISTORY FUNCTION
+// 18. CLEAR ALL SYMPTOMS
 // ============================================================
 
-window.loadPredictionHistory =
-  loadPredictionHistory;
+if (clearBtn) {
 
-window.displayPredictionHistory =
-  displayPredictionHistory;
+    clearBtn.addEventListener(
+        "click",
+        function () {
+
+            boxes.forEach(function (box) {
+
+                box.checked = false;
+
+            });
+
+
+            updateCount();
+
+
+            if (result) {
+
+                result.classList.add("hidden");
+
+            }
+
+
+            if (search) {
+
+                search.value = "";
+
+            }
+
+
+            document
+                .querySelectorAll(".symptom")
+                .forEach(function (element) {
+
+                    element.style.display = "";
+
+                });
+
+        }
+    );
+
+}
 
 
 // ============================================================
-// INITIALIZE
+// 19. PREDICT DISEASE
+// ============================================================
+
+if (predictBtn) {
+
+    predictBtn.addEventListener(
+        "click",
+        async function () {
+
+            // Get selected symptoms
+
+            const selectedSymptoms =
+                boxes
+                    .filter(
+                        box => box.checked
+                    )
+                    .map(
+                        box => box.value
+                    );
+
+
+            // Check if user selected anything
+
+            if (!selectedSymptoms.length) {
+
+                alert(
+                    "Please select at least one symptom."
+                );
+
+                return;
+
+            }
+
+
+            // Disable button
+
+            predictBtn.disabled = true;
+
+            predictBtn.textContent =
+                "Analyzing...";
+
+
+            try {
+
+                // ==================================================
+                // SEND DATA TO FLASK BACKEND
+                // ==================================================
+
+                const response =
+                    await fetch(
+                        "/predict",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                symptoms:
+                                    selectedSymptoms
+                            })
+                        }
+                    );
+
+
+                // Convert response to JSON
+
+                const data =
+                    await response.json();
+
+
+                // Check backend error
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Prediction failed."
+                    );
+
+                }
+
+
+                // ==================================================
+                // DISPLAY MAIN PREDICTION
+                // ==================================================
+
+                if (disease) {
+
+                    disease.textContent =
+                        data.disease
+                            .replaceAll("_", " ")
+                            .replace(/\b\w/g, c =>
+                                c.toUpperCase()
+                            );
+
+                }
+
+
+                // ==================================================
+                // DISPLAY CONFIDENCE
+                // ==================================================
+
+                if (confidenceBar) {
+
+                    confidenceBar.style.width =
+                        `${data.confidence}%`;
+
+                }
+
+
+                if (confidenceText) {
+
+                    confidenceText.textContent =
+                        `Model confidence: ${data.confidence}%`;
+
+                }
+
+
+                // ==================================================
+                // DISPLAY TOP PREDICTIONS
+                // ==================================================
+
+                if (topPredictions) {
+
+                    topPredictions.innerHTML =
+                        data.top_predictions
+                            .map(function (item) {
+
+                                const formattedDisease =
+                                    item.disease
+                                        .replaceAll("_", " ")
+                                        .replace(/\b\w/g, c =>
+                                            c.toUpperCase()
+                                        );
+
+
+                                return `
+                                    <div class="top-item">
+                                        <span>
+                                            ${formattedDisease}
+                                        </span>
+
+                                        <strong>
+                                            ${item.confidence}%
+                                        </strong>
+                                    </div>
+                                `;
+
+                            })
+                            .join("");
+
+                }
+
+
+                // ==================================================
+                // DISPLAY DISCLAIMER
+                // ==================================================
+
+                if (message) {
+
+                    message.textContent =
+                        data.message ||
+                        "This is an educational ML prediction and should not be used as a medical diagnosis.";
+
+                }
+
+
+                // ==================================================
+                // SHOW RESULT
+                // ==================================================
+
+                if (result) {
+
+                    result.classList.remove("hidden");
+
+
+                    result.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "Prediction error:",
+                    error
+                );
+
+
+                alert(
+                    error.message ||
+                    "Unable to get prediction."
+                );
+
+
+            } finally {
+
+                predictBtn.disabled = false;
+
+                predictBtn.textContent =
+                    "Predict Possible Disease";
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// 20. INITIALIZE
 // ============================================================
 
 updateCount();
 
 console.log(
-  "QuantumDiagnose initialized successfully."
+    "QuantumDiagnose JavaScript loaded successfully."
+);
+
+console.log(
+    "Firebase initialized successfully."
 );
