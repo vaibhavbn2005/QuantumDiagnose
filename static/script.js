@@ -1,28 +1,27 @@
 // ============================================================
-// QUANTUMDIAGNOSE - COMPLETE JAVASCRIPT
-// Firebase Authentication + Symptom Prediction
+// QUANTUMDIAGNOSE - COMPLETE FIREBASE + APP JAVASCRIPT
+// Email/Password + Phone Number OTP Authentication
 // ============================================================
 
-
-// ============================================================
-// 1. FIREBASE IMPORTS
-// ============================================================
-
-import { initializeApp } from
-    "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+// Firebase imports
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
     getAuth,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
-} from
-    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    onAuthStateChanged,
+    RecaptchaVerifier,
+    signInWithPhoneNumber,
+    updateProfile,
+    linkWithCredential,
+    PhoneAuthProvider
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 
 // ============================================================
-// 2. FIREBASE CONFIGURATION
+// FIREBASE CONFIGURATION
 // ============================================================
 
 const firebaseConfig = {
@@ -37,511 +36,161 @@ const firebaseConfig = {
 
 
 // ============================================================
-// 3. INITIALIZE FIREBASE
+// INITIALIZE FIREBASE
 // ============================================================
 
 const firebaseApp = initializeApp(firebaseConfig);
-
 const auth = getAuth(firebaseApp);
 
 
 // ============================================================
-// 4. GET HTML ELEMENTS
+// GET HTML ELEMENTS
 // ============================================================
 
-// Authentication buttons
+const boxes = [...document.querySelectorAll(".symptom input")];
+
+const count = document.getElementById("count");
+
+const result = document.getElementById("result");
+const disease = document.getElementById("disease");
+const confidenceBar = document.getElementById("confidenceBar");
+const confidenceText = document.getElementById("confidenceText");
+const message = document.getElementById("message");
+const topPredictions = document.getElementById("topPredictions");
+
 const loginBtn = document.getElementById("loginBtn");
 const signupBtn = document.getElementById("signupBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
-// Authentication modal
 const authModal = document.getElementById("authModal");
 const closeModal = document.getElementById("closeModal");
 
 const authTitle = document.getElementById("authTitle");
 const authEmail = document.getElementById("authEmail");
 const authPassword = document.getElementById("authPassword");
-
 const authSubmit = document.getElementById("authSubmit");
 const authMessage = document.getElementById("authMessage");
 
 
-// Symptom elements
-const boxes = [
-    ...document.querySelectorAll(".symptom input")
-];
+// ============================================================
+// AUTH VARIABLES
+// ============================================================
 
-const count = document.getElementById("count");
+let authMode = "login";
 
-const search = document.getElementById("search");
+let recaptchaVerifier = null;
+let phoneConfirmationResult = null;
 
-const clearBtn = document.getElementById("clearBtn");
-
-const predictBtn = document.getElementById("predictBtn");
-
-
-// Prediction result elements
-const result = document.getElementById("result");
-
-const disease = document.getElementById("disease");
-
-const confidenceBar =
-    document.getElementById("confidenceBar");
-
-const confidenceText =
-    document.getElementById("confidenceText");
-
-const message =
-    document.getElementById("message");
-
-const topPredictions =
-    document.getElementById("topPredictions");
+let currentEmailUser = null;
 
 
 // ============================================================
-// 5. AUTHENTICATION MODE
+// CREATE PHONE INPUTS AUTOMATICALLY
+// NO HTML CHANGE REQUIRED
 // ============================================================
 
-// true  = Sign Up
-// false = Login
+const phoneInput = document.createElement("input");
 
-let isSignupMode = false;
+phoneInput.id = "authPhone";
+phoneInput.type = "tel";
+phoneInput.placeholder = "Phone number e.g. +919876543210";
 
-
-// ============================================================
-// 6. OPEN AUTHENTICATION MODAL
-// ============================================================
-
-function openAuthModal(signupMode) {
-
-    isSignupMode = signupMode;
-
-    // Clear previous values
-    authEmail.value = "";
-    authPassword.value = "";
-
-    authMessage.textContent = "";
-
-    authMessage.style.color = "";
+phoneInput.style.width = "100%";
+phoneInput.style.boxSizing = "border-box";
+phoneInput.style.padding = "12px";
+phoneInput.style.margin = "8px 0";
+phoneInput.style.border = "1px solid #ddd";
+phoneInput.style.borderRadius = "8px";
+phoneInput.style.fontSize = "15px";
 
 
-    if (isSignupMode) {
+// OTP input
 
-        authTitle.textContent = "Create Account";
+const otpInput = document.createElement("input");
 
-        authSubmit.textContent = "Sign Up";
+otpInput.id = "authOTP";
+otpInput.type = "text";
+otpInput.placeholder = "Enter OTP";
 
-    } else {
-
-        authTitle.textContent = "Login";
-
-        authSubmit.textContent = "Login";
-    }
-
-
-    authModal.classList.remove("hidden");
-}
-
-
-// ============================================================
-// 7. CLOSE AUTHENTICATION MODAL
-// ============================================================
-
-function closeAuthModal() {
-
-    authModal.classList.add("hidden");
-
-    authEmail.value = "";
-    authPassword.value = "";
-
-    authMessage.textContent = "";
-}
+otpInput.style.width = "100%";
+otpInput.style.boxSizing = "border-box";
+otpInput.style.padding = "12px";
+otpInput.style.margin = "8px 0";
+otpInput.style.border = "1px solid #ddd";
+otpInput.style.borderRadius = "8px";
+otpInput.style.fontSize = "15px";
 
 
-// ============================================================
-// 8. LOGIN BUTTON
-// ============================================================
+// Send OTP button
 
-if (loginBtn) {
+const sendOtpBtn = document.createElement("button");
 
-    loginBtn.addEventListener("click", function () {
+sendOtpBtn.type = "button";
+sendOtpBtn.textContent = "Send OTP";
 
-        openAuthModal(false);
+sendOtpBtn.className = "secondary";
 
-    });
-}
-
-
-// ============================================================
-// 9. SIGN UP BUTTON
-// ============================================================
-
-if (signupBtn) {
-
-    signupBtn.addEventListener("click", function () {
-
-        openAuthModal(true);
-
-    });
-}
+sendOtpBtn.style.width = "100%";
+sendOtpBtn.style.marginTop = "8px";
 
 
-// ============================================================
-// 10. CLOSE BUTTON
-// ============================================================
+// Verify OTP button
 
-if (closeModal) {
+const verifyOtpBtn = document.createElement("button");
 
-    closeModal.addEventListener("click", function () {
+verifyOtpBtn.type = "button";
+verifyOtpBtn.textContent = "Verify OTP";
 
-        closeAuthModal();
+verifyOtpBtn.className = "primary";
 
-    });
-}
+verifyOtpBtn.style.width = "100%";
+verifyOtpBtn.style.marginTop = "8px";
+
+
+// Recaptcha container
+
+const recaptchaContainer = document.createElement("div");
+
+recaptchaContainer.id = "recaptcha-container";
+
+recaptchaContainer.style.marginTop = "10px";
+
+
+// Insert elements into modal
+
+authEmail.insertAdjacentElement("afterend", phoneInput);
+
+phoneInput.insertAdjacentElement("afterend", sendOtpBtn);
+
+sendOtpBtn.insertAdjacentElement("afterend", otpInput);
+
+otpInput.insertAdjacentElement("afterend", verifyOtpBtn);
+
+verifyOtpBtn.insertAdjacentElement(
+    "afterend",
+    recaptchaContainer
+);
+
+
+// Initially hide phone/OTP controls
+
+phoneInput.classList.add("hidden");
+sendOtpBtn.classList.add("hidden");
+otpInput.classList.add("hidden");
+verifyOtpBtn.classList.add("hidden");
 
 
 // ============================================================
-// 11. CLOSE MODAL WHEN CLICKING OUTSIDE
-// ============================================================
-
-if (authModal) {
-
-    authModal.addEventListener("click", function (event) {
-
-        if (event.target === authModal) {
-
-            closeAuthModal();
-
-        }
-
-    });
-}
-
-
-// ============================================================
-// 12. FIREBASE ERROR MESSAGE
-// ============================================================
-
-function getFirebaseErrorMessage(error) {
-
-    switch (error.code) {
-
-        case "auth/email-already-in-use":
-            return "This email is already registered. Please login.";
-
-        case "auth/invalid-email":
-            return "Please enter a valid email address.";
-
-        case "auth/weak-password":
-            return "Password must be at least 6 characters.";
-
-        case "auth/user-not-found":
-            return "No account found with this email.";
-
-        case "auth/wrong-password":
-            return "Incorrect password.";
-
-        case "auth/invalid-credential":
-            return "Incorrect email or password.";
-
-        case "auth/too-many-requests":
-            return "Too many attempts. Please try again later.";
-
-        case "auth/network-request-failed":
-            return "Network error. Please check your internet connection.";
-
-        case "auth/api-key-not-valid":
-            return "Firebase API key is invalid. Please check the Firebase configuration.";
-
-        case "auth/operation-not-allowed":
-            return "Email/Password authentication is not enabled in Firebase.";
-
-        default:
-            return error.message || "Authentication failed.";
-    }
-}
-
-
-// ============================================================
-// 13. LOGIN / SIGNUP
-// ============================================================
-
-if (authSubmit) {
-
-    authSubmit.addEventListener("click", async function () {
-
-        const email = authEmail.value.trim();
-
-        const password = authPassword.value;
-
-
-        // Validate email
-        if (!email) {
-
-            authMessage.textContent =
-                "Please enter your email.";
-
-            authMessage.style.color = "red";
-
-            return;
-        }
-
-
-        // Validate password
-        if (!password) {
-
-            authMessage.textContent =
-                "Please enter your password.";
-
-            authMessage.style.color = "red";
-
-            return;
-        }
-
-
-        // Firebase requires at least 6 characters
-        if (password.length < 6) {
-
-            authMessage.textContent =
-                "Password must be at least 6 characters.";
-
-            authMessage.style.color = "red";
-
-            return;
-        }
-
-
-        // Disable button while processing
-        authSubmit.disabled = true;
-
-        authSubmit.textContent =
-            isSignupMode ? "Creating Account..." : "Logging in...";
-
-
-        try {
-
-            if (isSignupMode) {
-
-                // ====================================================
-                // CREATE ACCOUNT
-                // ====================================================
-
-                const userCredential =
-                    await createUserWithEmailAndPassword(
-                        auth,
-                        email,
-                        password
-                    );
-
-
-                console.log(
-                    "Account created:",
-                    userCredential.user.email
-                );
-
-
-                authMessage.textContent =
-                    "Account created successfully!";
-
-                authMessage.style.color = "green";
-
-
-                // Close modal after short delay
-                setTimeout(() => {
-
-                    closeAuthModal();
-
-                }, 1000);
-
-
-            } else {
-
-                // ====================================================
-                // LOGIN
-                // ====================================================
-
-                const userCredential =
-                    await signInWithEmailAndPassword(
-                        auth,
-                        email,
-                        password
-                    );
-
-
-                console.log(
-                    "Logged in:",
-                    userCredential.user.email
-                );
-
-
-                authMessage.textContent =
-                    "Login successful!";
-
-                authMessage.style.color = "green";
-
-
-                setTimeout(() => {
-
-                    closeAuthModal();
-
-                }, 700);
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Firebase authentication error:",
-                error
-            );
-
-
-            authMessage.textContent =
-                getFirebaseErrorMessage(error);
-
-            authMessage.style.color = "red";
-
-        } finally {
-
-            authSubmit.disabled = false;
-
-            authSubmit.textContent =
-                isSignupMode ? "Sign Up" : "Login";
-        }
-
-    });
-}
-
-
-// ============================================================
-// 14. LOGOUT
-// ============================================================
-
-if (logoutBtn) {
-
-    logoutBtn.addEventListener("click", async function () {
-
-        try {
-
-            await signOut(auth);
-
-            console.log("User logged out.");
-
-        } catch (error) {
-
-            console.error(
-                "Logout error:",
-                error
-            );
-
-            alert(
-                "Logout failed: " +
-                getFirebaseErrorMessage(error)
-            );
-
-        }
-
-    });
-}
-
-
-// ============================================================
-// 15. AUTHENTICATION STATE
-// ============================================================
-
-onAuthStateChanged(auth, function (user) {
-
-    if (user) {
-
-        // ========================================================
-        // USER IS LOGGED IN
-        // ========================================================
-
-        console.log(
-            "Current user:",
-            user.email
-        );
-
-
-        if (loginBtn) {
-
-            loginBtn.classList.add("hidden");
-
-        }
-
-
-        if (signupBtn) {
-
-            signupBtn.classList.add("hidden");
-
-        }
-
-
-        if (logoutBtn) {
-
-            logoutBtn.classList.remove("hidden");
-
-        }
-
-
-    } else {
-
-        // ========================================================
-        // USER IS LOGGED OUT
-        // ========================================================
-
-        console.log("No user is logged in.");
-
-
-        if (loginBtn) {
-
-            loginBtn.classList.remove("hidden");
-
-        }
-
-
-        if (signupBtn) {
-
-            signupBtn.classList.remove("hidden");
-
-        }
-
-
-        if (logoutBtn) {
-
-            logoutBtn.classList.add("hidden");
-
-        }
-
-    }
-
-});
-
-
-// ============================================================
-// 16. UPDATE SYMPTOM COUNT
+// UPDATE SYMPTOM COUNT
 // ============================================================
 
 function updateCount() {
 
-    const selectedCount =
-        boxes.filter(
-            box => box.checked
-        ).length;
-
-
-    if (count) {
-
-        count.textContent = selectedCount;
-
-    }
-
+    count.textContent =
+        boxes.filter(box => box.checked).length;
 }
 
-
-// Add change event to every symptom checkbox
-
-boxes.forEach(function (box) {
+boxes.forEach(box => {
 
     box.addEventListener(
         "change",
@@ -552,144 +201,94 @@ boxes.forEach(function (box) {
 
 
 // ============================================================
-// 17. SEARCH SYMPTOMS
+// SEARCH SYMPTOMS
 // ============================================================
 
-if (search) {
+const searchBox =
+    document.getElementById("search");
 
-    search.addEventListener(
-        "input",
-        function (event) {
+searchBox.addEventListener(
+    "input",
+    event => {
 
-            const query =
-                event.target.value
-                    .toLowerCase()
-                    .trim();
+        const query =
+            event.target.value.toLowerCase();
 
+        document
+            .querySelectorAll(".symptom")
+            .forEach(element => {
 
-            document
-                .querySelectorAll(".symptom")
-                .forEach(function (element) {
+                const name =
+                    element.dataset.name.toLowerCase();
 
-                    const name =
-                        element.dataset.name
-                            .toLowerCase();
-
-
-                    if (name.includes(query)) {
-
-                        element.style.display = "";
-
-                    } else {
-
-                        element.style.display = "none";
-
-                    }
-
-                });
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// 18. CLEAR ALL SYMPTOMS
-// ============================================================
-
-if (clearBtn) {
-
-    clearBtn.addEventListener(
-        "click",
-        function () {
-
-            boxes.forEach(function (box) {
-
-                box.checked = false;
+                element.style.display =
+                    name.includes(query)
+                        ? ""
+                        : "none";
 
             });
 
-
-            updateCount();
-
-
-            if (result) {
-
-                result.classList.add("hidden");
-
-            }
-
-
-            if (search) {
-
-                search.value = "";
-
-            }
-
-
-            document
-                .querySelectorAll(".symptom")
-                .forEach(function (element) {
-
-                    element.style.display = "";
-
-                });
-
-        }
-    );
-
-}
+    }
+);
 
 
 // ============================================================
-// 19. PREDICT DISEASE
+// CLEAR BUTTON
 // ============================================================
 
-if (predictBtn) {
+document
+    .getElementById("clearBtn")
+    .addEventListener("click", () => {
 
-    predictBtn.addEventListener(
+        boxes.forEach(
+            box => box.checked = false
+        );
+
+        updateCount();
+
+        result.classList.add("hidden");
+
+    });
+
+
+// ============================================================
+// PREDICT DISEASE
+// ============================================================
+
+document
+    .getElementById("predictBtn")
+    .addEventListener(
         "click",
-        async function () {
+        async () => {
 
-            // Get selected symptoms
-
-            const selectedSymptoms =
+            const symptoms =
                 boxes
-                    .filter(
-                        box => box.checked
-                    )
-                    .map(
-                        box => box.value
-                    );
+                    .filter(box => box.checked)
+                    .map(box => box.value);
 
 
-            // Check if user selected anything
-
-            if (!selectedSymptoms.length) {
+            if (!symptoms.length) {
 
                 alert(
                     "Please select at least one symptom."
                 );
 
                 return;
-
             }
 
 
-            // Disable button
+            const btn =
+                document.getElementById(
+                    "predictBtn"
+                );
 
-            predictBtn.disabled = true;
+            btn.disabled = true;
 
-            predictBtn.textContent =
+            btn.textContent =
                 "Analyzing...";
 
 
             try {
-
-                // ==================================================
-                // SEND DATA TO FLASK BACKEND
-                // ==================================================
 
                 const response =
                     await fetch(
@@ -702,153 +301,87 @@ if (predictBtn) {
                                     "application/json"
                             },
 
-                            body: JSON.stringify({
-                                symptoms:
-                                    selectedSymptoms
-                            })
+                            body:
+                                JSON.stringify({
+                                    symptoms:
+                                        symptoms
+                                })
                         }
                     );
 
-
-                // Convert response to JSON
 
                 const data =
                     await response.json();
 
 
-                // Check backend error
-
                 if (!response.ok) {
 
                     throw new Error(
                         data.error ||
-                        "Prediction failed."
+                        "Prediction failed"
                     );
 
                 }
 
 
-                // ==================================================
-                // DISPLAY MAIN PREDICTION
-                // ==================================================
-
-                if (disease) {
-
-                    disease.textContent =
-                        data.disease
-                            .replaceAll("_", " ")
-                            .replace(/\b\w/g, c =>
-                                c.toUpperCase()
-                            );
-
-                }
+                disease.textContent =
+                    data.disease
+                        .replaceAll("_", " ");
 
 
-                // ==================================================
-                // DISPLAY CONFIDENCE
-                // ==================================================
-
-                if (confidenceBar) {
-
-                    confidenceBar.style.width =
-                        `${data.confidence}%`;
-
-                }
+                confidenceBar.style.width =
+                    `${data.confidence}%`;
 
 
-                if (confidenceText) {
-
-                    confidenceText.textContent =
-                        `Model confidence: ${data.confidence}%`;
-
-                }
+                confidenceText.textContent =
+                    `Model confidence: ${data.confidence}%`;
 
 
-                // ==================================================
-                // DISPLAY TOP PREDICTIONS
-                // ==================================================
-
-                if (topPredictions) {
-
-                    topPredictions.innerHTML =
-                        data.top_predictions
-                            .map(function (item) {
-
-                                const formattedDisease =
-                                    item.disease
-                                        .replaceAll("_", " ")
-                                        .replace(/\b\w/g, c =>
-                                            c.toUpperCase()
-                                        );
+                message.textContent =
+                    data.message;
 
 
-                                return `
-                                    <div class="top-item">
-                                        <span>
-                                            ${formattedDisease}
-                                        </span>
+                topPredictions.innerHTML =
+                    data.top_predictions
+                        .map(item => {
 
-                                        <strong>
-                                            ${item.confidence}%
-                                        </strong>
-                                    </div>
-                                `;
+                            return `
+                                <div class="top-item">
+                                    <span>
+                                        ${item.disease
+                                            .replaceAll("_", " ")}
+                                    </span>
 
-                            })
-                            .join("");
+                                    <strong>
+                                        ${item.confidence}%
+                                    </strong>
+                                </div>
+                            `;
 
-                }
-
-
-                // ==================================================
-                // DISPLAY DISCLAIMER
-                // ==================================================
-
-                if (message) {
-
-                    message.textContent =
-                        data.message ||
-                        "This is an educational ML prediction and should not be used as a medical diagnosis.";
-
-                }
+                        })
+                        .join("");
 
 
-                // ==================================================
-                // SHOW RESULT
-                // ==================================================
-
-                if (result) {
-
-                    result.classList.remove("hidden");
+                result.classList.remove(
+                    "hidden"
+                );
 
 
-                    result.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center"
-                    });
-
-                }
+                result.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
 
 
             } catch (error) {
 
-                console.error(
-                    "Prediction error:",
-                    error
-                );
-
-
-                alert(
-                    error.message ||
-                    "Unable to get prediction."
-                );
-
+                alert(error.message);
 
             } finally {
 
-                predictBtn.disabled = false;
+                btn.disabled = false;
 
-                predictBtn.textContent =
+                btn.textContent =
                     "Predict Possible Disease";
 
             }
@@ -856,19 +389,880 @@ if (predictBtn) {
         }
     );
 
+
+// ============================================================
+// OPEN LOGIN
+// ============================================================
+
+loginBtn.addEventListener(
+    "click",
+    () => {
+
+        openAuthModal("login");
+
+    }
+);
+
+
+// ============================================================
+// OPEN SIGNUP
+// ============================================================
+
+signupBtn.addEventListener(
+    "click",
+    () => {
+
+        openAuthModal("signup");
+
+    }
+);
+
+
+// ============================================================
+// OPEN AUTH MODAL
+// ============================================================
+
+function openAuthModal(mode) {
+
+    authMode = mode;
+
+    authModal.classList.remove(
+        "hidden"
+    );
+
+    authEmail.value = "";
+    authPassword.value = "";
+
+    phoneInput.value = "";
+    otpInput.value = "";
+
+    authMessage.textContent = "";
+
+    phoneConfirmationResult = null;
+
+
+    if (mode === "login") {
+
+        authTitle.textContent =
+            "Login";
+
+        authSubmit.textContent =
+            "Login";
+
+        phoneInput.classList.add(
+            "hidden"
+        );
+
+        sendOtpBtn.classList.add(
+            "hidden"
+        );
+
+        otpInput.classList.add(
+            "hidden"
+        );
+
+        verifyOtpBtn.classList.add(
+            "hidden"
+        );
+
+    } else {
+
+        authTitle.textContent =
+            "Create Account";
+
+        authSubmit.textContent =
+            "Sign Up";
+
+        phoneInput.classList.remove(
+            "hidden"
+        );
+
+        sendOtpBtn.classList.remove(
+            "hidden"
+        );
+
+        otpInput.classList.remove(
+            "hidden"
+        );
+
+        verifyOtpBtn.classList.remove(
+            "hidden"
+        );
+
+        createRecaptcha();
+
+    }
+
 }
 
 
 // ============================================================
-// 20. INITIALIZE
+// CLOSE AUTH MODAL
+// ============================================================
+
+closeModal.addEventListener(
+    "click",
+    () => {
+
+        closeAuthModal();
+
+    }
+);
+
+
+authModal.addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.target === authModal
+        ) {
+
+            closeAuthModal();
+
+        }
+
+    }
+);
+
+
+function closeAuthModal() {
+
+    authModal.classList.add(
+        "hidden"
+    );
+
+    authMessage.textContent = "";
+
+    destroyRecaptcha();
+
+}
+
+
+// ============================================================
+// FIREBASE RECAPTCHA
+// ============================================================
+
+function createRecaptcha() {
+
+    destroyRecaptcha();
+
+
+    try {
+
+        recaptchaVerifier =
+            new RecaptchaVerifier(
+                auth,
+                "recaptcha-container",
+                {
+                    size: "normal",
+
+                    callback: () => {
+
+                        console.log(
+                            "reCAPTCHA verified"
+                        );
+
+                    },
+
+                    "expired-callback": () => {
+
+                        authMessage.textContent =
+                            "reCAPTCHA expired. Please verify again.";
+
+                    }
+                }
+            );
+
+
+        recaptchaVerifier.render();
+
+
+    } catch (error) {
+
+        console.error(
+            "reCAPTCHA error:",
+            error
+        );
+
+    }
+
+}
+
+
+function destroyRecaptcha() {
+
+    if (recaptchaVerifier) {
+
+        try {
+
+            recaptchaVerifier.clear();
+
+        } catch (error) {
+
+            console.log(
+                "reCAPTCHA cleanup:",
+                error
+            );
+
+        }
+
+        recaptchaVerifier = null;
+
+    }
+
+}
+
+
+// ============================================================
+// SIGNUP - EMAIL + PASSWORD
+// ============================================================
+
+authSubmit.addEventListener(
+    "click",
+    async () => {
+
+        if (authMode === "login") {
+
+            await loginUser();
+
+        } else {
+
+            await signupUser();
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// LOGIN
+// ============================================================
+
+async function loginUser() {
+
+    const email =
+        authEmail.value.trim();
+
+    const password =
+        authPassword.value;
+
+
+    if (!email || !password) {
+
+        showAuthMessage(
+            "Please enter email and password.",
+            "red"
+        );
+
+        return;
+    }
+
+
+    authSubmit.disabled = true;
+
+    authSubmit.textContent =
+        "Logging in...";
+
+
+    try {
+
+        await signInWithEmailAndPassword(
+            auth,
+            email,
+            password
+        );
+
+
+        showAuthMessage(
+            "Login successful!",
+            "green"
+        );
+
+
+        setTimeout(
+            () => {
+
+                closeAuthModal();
+
+            },
+            1000
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        showAuthMessage(
+            firebaseErrorMessage(
+                error
+            ),
+            "red"
+        );
+
+    } finally {
+
+        authSubmit.disabled = false;
+
+        authSubmit.textContent =
+            "Login";
+
+    }
+
+}
+
+
+// ============================================================
+// SIGNUP
+// ============================================================
+
+async function signupUser() {
+
+    const email =
+        authEmail.value.trim();
+
+    const password =
+        authPassword.value;
+
+    const phone =
+        phoneInput.value.trim();
+
+
+    if (!email) {
+
+        showAuthMessage(
+            "Please enter your email.",
+            "red"
+        );
+
+        return;
+
+    }
+
+
+    if (!password) {
+
+        showAuthMessage(
+            "Please enter a password.",
+            "red"
+        );
+
+        return;
+
+    }
+
+
+    if (password.length < 6) {
+
+        showAuthMessage(
+            "Password must be at least 6 characters.",
+            "red"
+        );
+
+        return;
+
+    }
+
+
+    if (!phone) {
+
+        showAuthMessage(
+            "Please enter your phone number.",
+            "red"
+        );
+
+        return;
+
+    }
+
+
+    if (!phone.startsWith("+")) {
+
+        showAuthMessage(
+            "Enter phone number with country code. Example: +919876543210",
+            "red"
+        );
+
+        return;
+
+    }
+
+
+    if (!phoneConfirmationResult) {
+
+        showAuthMessage(
+            "Please click Send OTP and verify your phone number first.",
+            "red"
+        );
+
+        return;
+
+    }
+
+
+    const otp =
+        otpInput.value.trim();
+
+
+    if (!otp) {
+
+        showAuthMessage(
+            "Please enter the OTP.",
+            "red"
+        );
+
+        return;
+
+    }
+
+
+    authSubmit.disabled = true;
+
+    authSubmit.textContent =
+        "Creating account...";
+
+
+    try {
+
+        // ----------------------------------------------------
+        // STEP 1: VERIFY PHONE OTP
+        // ----------------------------------------------------
+
+        const phoneCredential =
+            PhoneAuthProvider.credential(
+                phoneConfirmationResult.verificationId,
+                otp
+            );
+
+
+        // ----------------------------------------------------
+        // STEP 2: CREATE EMAIL/PASSWORD ACCOUNT
+        // ----------------------------------------------------
+
+        const userCredential =
+            await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
+            );
+
+
+        const user =
+            userCredential.user;
+
+
+        // ----------------------------------------------------
+        // STEP 3: LINK VERIFIED PHONE TO ACCOUNT
+        // ----------------------------------------------------
+
+        await linkWithCredential(
+            user,
+            phoneCredential
+        );
+
+
+        showAuthMessage(
+            "Account created successfully!",
+            "green"
+        );
+
+
+        setTimeout(
+            () => {
+
+                closeAuthModal();
+
+            },
+            1200
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Signup error:",
+            error
+        );
+
+
+        showAuthMessage(
+            firebaseErrorMessage(
+                error
+            ),
+            "red"
+        );
+
+    } finally {
+
+        authSubmit.disabled = false;
+
+        authSubmit.textContent =
+            "Sign Up";
+
+    }
+
+}
+
+
+// ============================================================
+// SEND PHONE OTP
+// ============================================================
+
+sendOtpBtn.addEventListener(
+    "click",
+    async () => {
+
+        const phone =
+            phoneInput.value.trim();
+
+
+        if (!phone) {
+
+            showAuthMessage(
+                "Please enter your phone number.",
+                "red"
+            );
+
+            return;
+
+        }
+
+
+        if (!phone.startsWith("+")) {
+
+            showAuthMessage(
+                "Use international format. Example: +919876543210",
+                "red"
+            );
+
+            return;
+
+        }
+
+
+        if (!recaptchaVerifier) {
+
+            createRecaptcha();
+
+        }
+
+
+        sendOtpBtn.disabled = true;
+
+        sendOtpBtn.textContent =
+            "Sending OTP...";
+
+
+        try {
+
+            phoneConfirmationResult =
+                await signInWithPhoneNumber(
+                    auth,
+                    phone,
+                    recaptchaVerifier
+                );
+
+
+            showAuthMessage(
+                "OTP sent to your phone number.",
+                "green"
+            );
+
+
+            otpInput.focus();
+
+
+        } catch (error) {
+
+            console.error(
+                "OTP error:",
+                error
+            );
+
+
+            phoneConfirmationResult =
+                null;
+
+
+            showAuthMessage(
+                firebaseErrorMessage(
+                    error
+                ),
+                "red"
+            );
+
+
+            // Recreate reCAPTCHA
+            createRecaptcha();
+
+
+        } finally {
+
+            sendOtpBtn.disabled = false;
+
+            sendOtpBtn.textContent =
+                "Send OTP";
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// VERIFY OTP BUTTON
+// ============================================================
+
+verifyOtpBtn.addEventListener(
+    "click",
+    () => {
+
+        if (!phoneConfirmationResult) {
+
+            showAuthMessage(
+                "Please send the OTP first.",
+                "red"
+            );
+
+            return;
+
+        }
+
+
+        const otp =
+            otpInput.value.trim();
+
+
+        if (!otp) {
+
+            showAuthMessage(
+                "Please enter the OTP.",
+                "red"
+            );
+
+            return;
+
+        }
+
+
+        showAuthMessage(
+            "OTP entered. Click Sign Up to finish creating your account.",
+            "green"
+        );
+
+    }
+);
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+logoutBtn.addEventListener(
+    "click",
+    async () => {
+
+        try {
+
+            await signOut(auth);
+
+            alert(
+                "You have been logged out."
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                firebaseErrorMessage(
+                    error
+                )
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// AUTH STATE
+// ============================================================
+
+onAuthStateChanged(
+    auth,
+    user => {
+
+        if (user) {
+
+            console.log(
+                "Logged in:",
+                user.email,
+                user.phoneNumber
+            );
+
+
+            loginBtn.classList.add(
+                "hidden"
+            );
+
+            signupBtn.classList.add(
+                "hidden"
+            );
+
+            logoutBtn.classList.remove(
+                "hidden"
+            );
+
+
+        } else {
+
+            console.log(
+                "No user logged in."
+            );
+
+
+            loginBtn.classList.remove(
+                "hidden"
+            );
+
+            signupBtn.classList.remove(
+                "hidden"
+            );
+
+            logoutBtn.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// FIREBASE ERROR MESSAGES
+// ============================================================
+
+function firebaseErrorMessage(
+    error
+) {
+
+    const code =
+        error?.code || "";
+
+
+    switch (code) {
+
+        case "auth/invalid-email":
+
+            return "Invalid email address.";
+
+        case "auth/email-already-in-use":
+
+            return "This email is already registered. Please login.";
+
+        case "auth/weak-password":
+
+            return "Password is too weak. Use at least 6 characters.";
+
+        case "auth/invalid-credential":
+
+            return "Invalid email or password.";
+
+        case "auth/user-not-found":
+
+            return "No account found with this email.";
+
+        case "auth/wrong-password":
+
+            return "Incorrect password.";
+
+        case "auth/too-many-requests":
+
+            return "Too many attempts. Please wait and try again.";
+
+        case "auth/invalid-phone-number":
+
+            return "Invalid phone number. Use format +919876543210.";
+
+        case "auth/missing-phone-number":
+
+            return "Please enter a phone number.";
+
+        case "auth/quota-exceeded":
+
+            return "Firebase SMS quota has been exceeded.";
+
+        case "auth/captcha-check-failed":
+
+            return "reCAPTCHA verification failed. Please try again.";
+
+        case "auth/invalid-verification-code":
+
+            return "Incorrect OTP.";
+
+        case "auth/code-expired":
+
+            return "OTP expired. Please request a new OTP.";
+
+        case "auth/provider-already-linked":
+
+            return "This phone number is already linked to this account.";
+
+        case "auth/credential-already-in-use":
+
+            return "This phone number is already associated with another account.";
+
+        case "auth/operation-not-allowed":
+
+            return "This authentication method is not enabled in Firebase.";
+
+        default:
+
+            return (
+                error?.message ||
+                "Authentication failed."
+            );
+
+    }
+
+}
+
+
+// ============================================================
+// AUTH MESSAGE
+// ============================================================
+
+function showAuthMessage(
+    text,
+    type
+) {
+
+    authMessage.textContent =
+        text;
+
+
+    if (type === "green") {
+
+        authMessage.style.color =
+            "green";
+
+    } else {
+
+        authMessage.style.color =
+            "red";
+
+    }
+
+}
+
+
+// ============================================================
+// INITIAL COUNT
 // ============================================================
 
 updateCount();
-
-console.log(
-    "QuantumDiagnose JavaScript loaded successfully."
-);
-
-console.log(
-    "Firebase initialized successfully."
-);
