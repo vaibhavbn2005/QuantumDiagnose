@@ -1,16 +1,12 @@
 // ============================================================
-// QuantumDiagnose
-// Complete Firebase + Symptom Prediction JavaScript
+// QuantumDiagnose - Complete script.js
 // ============================================================
-
 
 // ============================================================
 // FIREBASE IMPORTS
 // ============================================================
 
-import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
     getAuth,
@@ -35,21 +31,13 @@ import {
 // ============================================================
 
 const firebaseConfig = {
-
     apiKey: "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
-
     authDomain: "quantumdiagnose.firebaseapp.com",
-
     projectId: "quantumdiagnose",
-
     storageBucket: "quantumdiagnose.firebasestorage.app",
-
     messagingSenderId: "727641186346",
-
-    appId: "1:727641186346",
-
+    appId: "1:727641186346:web:c8eed6274fd1582169e353",
     measurementId: "G-DSDM1YM4WB"
-
 };
 
 
@@ -57,168 +45,94 @@ const firebaseConfig = {
 // INITIALIZE FIREBASE
 // ============================================================
 
-const firebaseApp =
-    initializeApp(firebaseConfig);
+const firebaseApp = initializeApp(firebaseConfig);
 
-const auth =
-    getAuth(firebaseApp);
+const auth = getAuth(firebaseApp);
 
-const db =
-    getFirestore(firebaseApp);
+const db = getFirestore(firebaseApp);
 
 
 // ============================================================
-// MAKE FIREBASE AVAILABLE GLOBALLY
+// GLOBAL VARIABLES
 // ============================================================
-
-window.firebaseAuth = auth;
-
-window.firebaseDB = db;
-
-window.firebaseCreateUser =
-    createUserWithEmailAndPassword;
-
-window.firebaseSignIn =
-    signInWithEmailAndPassword;
-
-window.firebaseSignOut =
-    signOut;
-
-window.firebaseOnAuthStateChanged =
-    onAuthStateChanged;
-
-
-// ============================================================
-// HTML ELEMENTS
-// ============================================================
-
-const boxes =
-    [...document.querySelectorAll(".symptom input")];
-
-const count =
-    document.getElementById("count");
-
-const result =
-    document.getElementById("result");
-
-const disease =
-    document.getElementById("disease");
-
-const confidenceBar =
-    document.getElementById("confidenceBar");
-
-const confidenceText =
-    document.getElementById("confidenceText");
-
-const message =
-    document.getElementById("message");
-
-const topPredictions =
-    document.getElementById("topPredictions");
-
-const searchInput =
-    document.getElementById("search");
-
-const clearBtn =
-    document.getElementById("clearBtn");
-
-const predictBtn =
-    document.getElementById("predictBtn");
-
-
-// ============================================================
-// AUTH ELEMENTS
-// ============================================================
-
-const loginBtn =
-    document.getElementById("loginBtn");
-
-const signupBtn =
-    document.getElementById("signupBtn");
-
-const logoutBtn =
-    document.getElementById("logoutBtn");
-
-const authModal =
-    document.getElementById("authModal");
-
-const closeModal =
-    document.getElementById("closeModal");
-
-const authTitle =
-    document.getElementById("authTitle");
-
-const authEmail =
-    document.getElementById("authEmail");
-
-const authPassword =
-    document.getElementById("authPassword");
-
-const authSubmit =
-    document.getElementById("authSubmit");
-
-const authMessage =
-    document.getElementById("authMessage");
-
-
-// ============================================================
-// PHONE AUTH ELEMENTS
-// ============================================================
-
-const emailTab =
-    document.getElementById("emailTab");
-
-const phoneTab =
-    document.getElementById("phoneTab");
-
-const emailAuth =
-    document.getElementById("emailAuth");
-
-const phoneAuth =
-    document.getElementById("phoneAuth");
-
-const phoneNumber =
-    document.getElementById("phoneNumber");
-
-const sendOtpBtn =
-    document.getElementById("sendOtpBtn");
-
-const verifyOtpBtn =
-    document.getElementById("verifyOtpBtn");
-
-const otpCode =
-    document.getElementById("otpCode");
-
-
-// ============================================================
-// AUTH STATE
-// ============================================================
-
-let authMode = "login";
-
-let authMethod = "email";
 
 let confirmationResult = null;
-
 let recaptchaVerifier = null;
 
 
 // ============================================================
-// UPDATE SYMPTOM COUNT
+// GET HTML ELEMENTS
+// ============================================================
+
+// Symptoms
+const boxes = document.querySelectorAll(".symptom-input");
+
+const count = document.getElementById("count");
+
+const result = document.getElementById("result");
+
+const disease = document.getElementById("disease");
+
+const confidenceBar = document.getElementById("confidenceBar");
+
+const confidenceText = document.getElementById("confidenceText");
+
+const message = document.getElementById("message");
+
+const topPredictions = document.getElementById("topPredictions");
+
+
+// Search
+const searchInput = document.getElementById("search");
+
+
+// Buttons
+const clearBtn = document.getElementById("clearBtn");
+
+const predictBtn = document.getElementById("predictBtn");
+
+
+// Authentication buttons
+const loginBtn = document.getElementById("loginBtn");
+
+const signupBtn = document.getElementById("signupBtn");
+
+const logoutBtn = document.getElementById("logoutBtn");
+
+
+// Email fields
+const emailInput = document.getElementById("emailInput");
+
+const passwordInput = document.getElementById("passwordInput");
+
+
+// Phone fields
+const phoneInput = document.getElementById("phoneInput");
+
+const otpInput = document.getElementById("otpInput");
+
+const sendOtpBtn = document.getElementById("sendOtpBtn");
+
+const verifyOtpBtn = document.getElementById("verifyOtpBtn");
+
+
+// Authentication message
+const authMessage = document.getElementById("authMessage");
+
+
+// ============================================================
+// SYMPTOM COUNT
 // ============================================================
 
 function updateCount() {
 
-    if (!count) {
-        return;
-    }
+    if (!count) return;
 
-    const selected =
-        boxes.filter(
-            box => box.checked
-        ).length;
+    const selected = document.querySelectorAll(
+        ".symptom-input:checked"
+    ).length;
 
-    count.textContent = selected;
+    count.textContent = `${selected} symptoms selected`;
 }
 
 
@@ -226,84 +140,97 @@ function updateCount() {
 // SYMPTOM CHECKBOX EVENTS
 // ============================================================
 
-boxes.forEach(box => {
+boxes.forEach((box) => {
 
-    box.addEventListener(
-        "change",
-        updateCount
-    );
+    box.addEventListener("change", updateCount);
 
 });
 
 
 // ============================================================
-// SEARCH SYMPTOMS
+// INITIAL COUNT
+// ============================================================
+
+updateCount();
+
+
+// ============================================================
+// SYMPTOM SEARCH
 // ============================================================
 
 if (searchInput) {
 
-    searchInput.addEventListener(
-        "input",
-        function () {
+    searchInput.addEventListener("input", function () {
 
-            const searchText =
-                this.value
-                    .toLowerCase()
-                    .trim();
+        const searchText =
+            this.value.toLowerCase().trim();
 
-            document
-                .querySelectorAll(".symptom")
-                .forEach(symptom => {
+        const allSymptoms =
+            document.querySelectorAll(".symptom-item");
 
-                    const name =
-                        (
-                            symptom.dataset.name || ""
-                        ).toLowerCase();
+        allSymptoms.forEach((symptom) => {
 
-                    if (
-                        name.includes(searchText)
-                    ) {
+            const name =
+                symptom.dataset.name ||
+                symptom.textContent.toLowerCase();
 
-                        symptom.style.display =
-                            "";
+            if (
+                name.toLowerCase().includes(searchText)
+            ) {
 
-                    } else {
+                symptom.style.display = "";
 
-                        symptom.style.display =
-                            "none";
+            } else {
 
-                    }
+                symptom.style.display = "none";
 
-                });
+            }
 
-        }
-    );
+        });
+
+    });
 
 }
 
 
 // ============================================================
-// CLEAR SYMPTOMS
+// CLEAR BUTTON
 // ============================================================
 
 if (clearBtn) {
 
-    clearBtn.addEventListener(
-        "click",
-        function () {
+    clearBtn.addEventListener("click", function () {
 
-            boxes.forEach(
-                box => box.checked = false
-            );
+        boxes.forEach((box) => {
 
-            updateCount();
+            box.checked = false;
 
-            if (result) {
-                result.classList.add("hidden");
-            }
+        });
+
+        updateCount();
+
+        if (result) {
+
+            result.classList.add("hidden");
 
         }
-    );
+
+        if (searchInput) {
+
+            searchInput.value = "";
+
+        }
+
+        const allSymptoms =
+            document.querySelectorAll(".symptom-item");
+
+        allSymptoms.forEach((symptom) => {
+
+            symptom.style.display = "";
+
+        });
+
+    });
 
 }
 
@@ -319,13 +246,13 @@ async function savePrediction(
     topPredictions
 ) {
 
-    const user =
-        auth.currentUser;
+    const user = auth.currentUser;
 
+    // Don't save if user isn't logged in
     if (!user) {
 
         console.log(
-            "User not logged in. Prediction will not be saved."
+            "User not logged in. Prediction not saved."
         );
 
         return;
@@ -335,35 +262,25 @@ async function savePrediction(
     try {
 
         await addDoc(
-            collection(
-                db,
-                "predictions"
-            ),
+            collection(db, "predictions"),
             {
 
-                userId:
-                    user.uid,
+                userId: user.uid,
 
-                userEmail:
-                    user.email || null,
+                userEmail: user.email || null,
 
                 phoneNumber:
                     user.phoneNumber || null,
 
-                symptoms:
-                    symptoms,
+                symptoms: symptoms,
 
-                disease:
-                    prediction,
+                disease: prediction,
 
-                confidence:
-                    confidence,
+                confidence: confidence,
 
-                topPredictions:
-                    topPredictions,
+                topPredictions: topPredictions,
 
-                createdAt:
-                    serverTimestamp()
+                createdAt: serverTimestamp()
 
             }
         );
@@ -394,19 +311,21 @@ if (predictBtn) {
         "click",
         async function () {
 
-            const symptoms =
-                boxes
-                    .filter(
-                        box => box.checked
+            const selectedSymptoms =
+                Array.from(
+                    document.querySelectorAll(
+                        ".symptom-input:checked"
                     )
-                    .map(
-                        box => box.value
-                    );
+                ).map(
+                    box => box.value
+                );
 
 
+            // ------------------------------------------------
             // No symptoms
+            // ------------------------------------------------
 
-            if (!symptoms.length) {
+            if (selectedSymptoms.length === 0) {
 
                 alert(
                     "Please select at least one symptom."
@@ -417,10 +336,11 @@ if (predictBtn) {
             }
 
 
-            // Loading state
+            // ------------------------------------------------
+            // Loading
+            // ------------------------------------------------
 
-            predictBtn.disabled =
-                true;
+            predictBtn.disabled = true;
 
             predictBtn.textContent =
                 "Analyzing...";
@@ -428,10 +348,15 @@ if (predictBtn) {
 
             try {
 
+                // --------------------------------------------
+                // Send request to Flask
+                // --------------------------------------------
+
                 const response =
                     await fetch(
                         "/predict",
                         {
+
                             method: "POST",
 
                             headers: {
@@ -439,11 +364,13 @@ if (predictBtn) {
                                     "application/json"
                             },
 
-                            body:
-                                JSON.stringify({
-                                    symptoms:
-                                        symptoms
-                                })
+                            body: JSON.stringify({
+
+                                symptoms:
+                                    selectedSymptoms
+
+                            })
+
                         }
                     );
 
@@ -451,6 +378,10 @@ if (predictBtn) {
                 const data =
                     await response.json();
 
+
+                // --------------------------------------------
+                // Error
+                // --------------------------------------------
 
                 if (!response.ok) {
 
@@ -462,100 +393,122 @@ if (predictBtn) {
                 }
 
 
-                // Disease
+                // --------------------------------------------
+                // Show result
+                // --------------------------------------------
 
-                disease.textContent =
-                    String(
-                        data.disease
-                    ).replaceAll(
-                        "_",
-                        " "
-                    );
+                if (disease) {
 
+                    disease.textContent =
+                        data.disease;
 
-                // Confidence
-
-                const confidence =
-                    Number(
-                        data.confidence || 0
-                    );
-
-                confidenceBar.style.width =
-                    `${confidence}%`;
-
-                confidenceText.textContent =
-                    `Model confidence: ${confidence}%`;
+                }
 
 
+                if (confidenceText) {
+
+                    confidenceText.textContent =
+                        `${data.confidence}% confidence`;
+
+                }
+
+
+                if (confidenceBar) {
+
+                    confidenceBar.style.width =
+                        `${data.confidence}%`;
+
+                }
+
+
+                if (message) {
+
+                    message.textContent =
+                        data.message ||
+                        "Prediction completed.";
+
+                }
+
+
+                // --------------------------------------------
                 // Top predictions
+                // --------------------------------------------
 
-                const predictions =
-                    Array.isArray(
-                        data.top_predictions
-                    )
-                        ? data.top_predictions
-                        : [];
+                if (topPredictions) {
 
+                    topPredictions.innerHTML = "";
 
-                topPredictions.innerHTML =
-                    predictions
-                        .map(
-                            item => {
+                    if (
+                        data.top_predictions &&
+                        data.top_predictions.length
+                    ) {
 
-                                const diseaseName =
-                                    String(
-                                        item.disease
-                                    ).replaceAll(
-                                        "_",
-                                        " "
+                        data.top_predictions.forEach(
+                            (item, index) => {
+
+                                const row =
+                                    document.createElement(
+                                        "div"
                                     );
 
-                                return `
-                                    <div class="top-item">
-                                        <span>
-                                            ${diseaseName}
-                                        </span>
+                                row.className =
+                                    "prediction-row";
 
-                                        <strong>
-                                            ${item.confidence}%
-                                        </strong>
+                                row.innerHTML = `
+                                    <div class="prediction-name">
+                                        ${index + 1}.
+                                        ${item.disease}
+                                    </div>
+
+                                    <div class="prediction-confidence">
+                                        ${item.confidence}%
                                     </div>
                                 `;
 
+                                topPredictions.appendChild(
+                                    row
+                                );
+
                             }
-                        )
-                        .join("");
+                        );
+
+                    }
+
+                }
 
 
-                // Message
+                // --------------------------------------------
+                // Display result
+                // --------------------------------------------
 
-                message.textContent =
-                    data.message ||
-                    "Educational ML prediction only.";
+                if (result) {
 
+                    result.classList.remove(
+                        "hidden"
+                    );
 
-                // Show result
+                    result.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
 
-                result.classList.remove(
-                    "hidden"
-                );
-
-
-                // Scroll
-
-                result.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
+                }
 
 
-                // Save if logged in
+                // --------------------------------------------
+                // Save to Firestore
+                // --------------------------------------------
 
                 await savePrediction(
-                    symptoms,
+
+                    selectedSymptoms,
+
                     data.disease,
-                    confidence,
-                    predictions
+
+                    data.confidence,
+
+                    data.top_predictions || []
+
                 );
 
 
@@ -568,13 +521,12 @@ if (predictBtn) {
 
                 alert(
                     error.message ||
-                    "Prediction failed."
+                    "Something went wrong while predicting."
                 );
 
             } finally {
 
-                predictBtn.disabled =
-                    false;
+                predictBtn.disabled = false;
 
                 predictBtn.textContent =
                     "Predict Possible Disease";
@@ -588,316 +540,29 @@ if (predictBtn) {
 
 
 // ============================================================
-// OPEN LOGIN
+// FIREBASE AUTHENTICATION
 // ============================================================
-
-function openLogin() {
-
-    authMode =
-        "login";
-
-    authTitle.textContent =
-        "Login";
-
-    authSubmit.textContent =
-        "Login";
-
-    authMessage.textContent =
-        "";
-
-    authModal.classList.remove(
-        "hidden"
-    );
-
-    switchToEmail();
-
-}
 
 
 // ============================================================
-// OPEN SIGNUP
+// AUTH MESSAGE
 // ============================================================
 
-function openSignup() {
+function showAuthMessage(text, isError = false) {
 
-    authMode =
-        "signup";
+    if (!authMessage) return;
 
-    authTitle.textContent =
-        "Create Account";
+    authMessage.textContent = text;
 
-    authSubmit.textContent =
-        "Sign Up";
+    authMessage.style.display = "block";
 
-    authMessage.textContent =
-        "";
+    if (isError) {
 
-    authModal.classList.remove(
-        "hidden"
-    );
+        authMessage.style.color = "#dc2626";
 
-    switchToEmail();
+    } else {
 
-}
-
-
-// ============================================================
-// LOGIN BUTTON
-// ============================================================
-
-if (loginBtn) {
-
-    loginBtn.addEventListener(
-        "click",
-        openLogin
-    );
-
-}
-
-
-// ============================================================
-// SIGNUP BUTTON
-// ============================================================
-
-if (signupBtn) {
-
-    signupBtn.addEventListener(
-        "click",
-        openSignup
-    );
-
-}
-
-
-// ============================================================
-// CLOSE MODAL
-// ============================================================
-
-if (closeModal) {
-
-    closeModal.addEventListener(
-        "click",
-        function () {
-
-            authModal.classList.add(
-                "hidden"
-            );
-
-            authMessage.textContent =
-                "";
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// CLOSE WHEN CLICKING OUTSIDE
-// ============================================================
-
-if (authModal) {
-
-    authModal.addEventListener(
-        "click",
-        function (event) {
-
-            if (
-                event.target ===
-                authModal
-            ) {
-
-                authModal.classList.add(
-                    "hidden"
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// EMAIL TAB
-// ============================================================
-
-function switchToEmail() {
-
-    authMethod =
-        "email";
-
-    emailTab.classList.add(
-        "active"
-    );
-
-    phoneTab.classList.remove(
-        "active"
-    );
-
-    emailAuth.classList.remove(
-        "hidden"
-    );
-
-    phoneAuth.classList.add(
-        "hidden"
-    );
-
-    authMessage.textContent =
-        "";
-
-}
-
-
-// ============================================================
-// PHONE TAB
-// ============================================================
-
-function switchToPhone() {
-
-    authMethod =
-        "phone";
-
-    phoneTab.classList.add(
-        "active"
-    );
-
-    emailTab.classList.remove(
-        "active"
-    );
-
-    emailAuth.classList.add(
-        "hidden"
-    );
-
-    phoneAuth.classList.remove(
-        "hidden"
-    );
-
-    authMessage.textContent =
-        "";
-
-    createRecaptcha();
-
-}
-
-
-// ============================================================
-// TAB EVENTS
-// ============================================================
-
-if (emailTab) {
-
-    emailTab.addEventListener(
-        "click",
-        switchToEmail
-    );
-
-}
-
-if (phoneTab) {
-
-    phoneTab.addEventListener(
-        "click",
-        switchToPhone
-    );
-
-}
-
-
-// ============================================================
-// FIREBASE ERROR MESSAGE
-// ============================================================
-
-function firebaseErrorMessage(error) {
-
-    console.error(
-        "Firebase error:",
-        error
-    );
-
-
-    const code =
-        error?.code || "";
-
-
-    switch (code) {
-
-        case "auth/invalid-api-key":
-
-            return "Firebase API key is invalid. Check the Firebase configuration.";
-
-        case "auth/api-key-not-valid.-please-pass-a-valid-api-key.":
-
-            return "Firebase API key is invalid. Check your Firebase Web App configuration.";
-
-        case "auth/email-already-in-use":
-
-            return "This email is already registered. Please login.";
-
-        case "auth/invalid-email":
-
-            return "Please enter a valid email address.";
-
-        case "auth/weak-password":
-
-            return "Password should be at least 6 characters.";
-
-        case "auth/invalid-credential":
-
-            return "Incorrect email or password.";
-
-        case "auth/user-not-found":
-
-            return "No account was found with this email.";
-
-        case "auth/wrong-password":
-
-            return "Incorrect password.";
-
-        case "auth/too-many-requests":
-
-            return "Too many attempts. Please try again later.";
-
-        case "auth/operation-not-allowed":
-
-            return "This authentication method is not enabled in Firebase.";
-
-        case "auth/quota-exceeded":
-
-            return "Firebase SMS quota has been exceeded.";
-
-        case "auth/invalid-phone-number":
-
-            return "Enter the phone number in international format, for example +919876543210.";
-
-        case "auth/missing-phone-number":
-
-            return "Please enter a phone number.";
-
-        case "auth/code-expired":
-
-            return "The OTP has expired. Please request a new OTP.";
-
-        case "auth/invalid-verification-code":
-
-            return "The OTP is incorrect.";
-
-        case "auth/captcha-check-failed":
-
-            return "reCAPTCHA verification failed. Please try again.";
-
-        case "auth/network-request-failed":
-
-            return "Network error. Please check your internet connection.";
-
-        default:
-
-            return (
-                error?.message ||
-                "Authentication failed."
-            );
+        authMessage.style.color = "#16a34a";
 
     }
 
@@ -905,120 +570,130 @@ function firebaseErrorMessage(error) {
 
 
 // ============================================================
-// EMAIL LOGIN / SIGNUP
+// EMAIL SIGN UP
 // ============================================================
 
-if (authSubmit) {
+if (signupBtn) {
 
-    authSubmit.addEventListener(
+    signupBtn.addEventListener(
         "click",
         async function () {
 
             const email =
-                authEmail.value.trim();
+                emailInput?.value.trim();
 
             const password =
-                authPassword.value;
+                passwordInput?.value;
 
 
-            if (!email) {
+            if (!email || !password) {
 
-                authMessage.textContent =
-                    "Please enter your email.";
-
-                return;
-
-            }
-
-
-            if (!password) {
-
-                authMessage.textContent =
-                    "Please enter your password.";
+                showAuthMessage(
+                    "Please enter email and password.",
+                    true
+                );
 
                 return;
 
             }
 
 
-            authSubmit.disabled =
-                true;
+            if (password.length < 6) {
 
-            authSubmit.textContent =
-                "Please wait...";
+                showAuthMessage(
+                    "Password must contain at least 6 characters.",
+                    true
+                );
+
+                return;
+
+            }
 
 
             try {
 
-                let userCredential;
-
-
-                if (
-                    authMode ===
-                    "signup"
-                ) {
-
-                    userCredential =
-                        await createUserWithEmailAndPassword(
-                            auth,
-                            email,
-                            password
-                        );
-
-                    authMessage.textContent =
-                        "Account created successfully!";
-
-
-                } else {
-
-                    userCredential =
-                        await signInWithEmailAndPassword(
-                            auth,
-                            email,
-                            password
-                        );
-
-                    authMessage.textContent =
-                        "Login successful!";
-
-                }
-
-
-                console.log(
-                    "Authenticated user:",
-                    userCredential.user
+                await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
                 );
 
-
-                setTimeout(
-                    () => {
-
-                        authModal.classList.add(
-                            "hidden"
-                        );
-
-                    },
-                    1000
+                showAuthMessage(
+                    "Account created successfully."
                 );
-
 
             } catch (error) {
 
-                authMessage.textContent =
-                    firebaseErrorMessage(
-                        error
-                    );
+                console.error(
+                    "Signup error:",
+                    error
+                );
 
-            } finally {
+                showAuthMessage(
+                    error.message,
+                    true
+                );
 
-                authSubmit.disabled =
-                    false;
+            }
 
-                authSubmit.textContent =
-                    authMode ===
-                    "signup"
-                        ? "Sign Up"
-                        : "Login";
+        }
+    );
+
+}
+
+
+// ============================================================
+// EMAIL LOGIN
+// ============================================================
+
+if (loginBtn) {
+
+    loginBtn.addEventListener(
+        "click",
+        async function () {
+
+            const email =
+                emailInput?.value.trim();
+
+            const password =
+                passwordInput?.value;
+
+
+            if (!email || !password) {
+
+                showAuthMessage(
+                    "Please enter email and password.",
+                    true
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                await signInWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+                showAuthMessage(
+                    "Login successful."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Login error:",
+                    error
+                );
+
+                showAuthMessage(
+                    error.message,
+                    true
+                );
 
             }
 
@@ -1032,23 +707,60 @@ if (authSubmit) {
 // CREATE RECAPTCHA
 // ============================================================
 
-function createRecaptcha() {
-
-    if (
-        recaptchaVerifier !==
-        null
-    ) {
-        return;
-    }
-
+function setupRecaptcha() {
 
     try {
+
+        // Remove previous verifier
+        if (recaptchaVerifier) {
+
+            try {
+
+                recaptchaVerifier.clear();
+
+            } catch (e) {
+
+                console.log(
+                    "Previous reCAPTCHA cleared."
+                );
+
+            }
+
+            recaptchaVerifier = null;
+
+        }
+
+
+        // Look for existing container
+        let container =
+            document.getElementById(
+                "recaptcha-container"
+            );
+
+
+        // If container doesn't exist,
+        // create it automatically
+        if (!container) {
+
+            container =
+                document.createElement("div");
+
+            container.id =
+                "recaptcha-container";
+
+            document.body.appendChild(
+                container
+            );
+
+        }
+
 
         recaptchaVerifier =
             new RecaptchaVerifier(
                 auth,
                 "recaptcha-container",
                 {
+
                     size: "normal",
 
                     callback: function () {
@@ -1062,8 +774,10 @@ function createRecaptcha() {
                     "expired-callback":
                         function () {
 
-                            authMessage.textContent =
-                                "reCAPTCHA expired. Please verify again.";
+                            showAuthMessage(
+                                "reCAPTCHA expired. Please verify again.",
+                                true
+                            );
 
                         }
 
@@ -1071,18 +785,22 @@ function createRecaptcha() {
             );
 
 
-        recaptchaVerifier.render();
+        return recaptchaVerifier;
 
 
     } catch (error) {
 
         console.error(
-            "reCAPTCHA error:",
+            "reCAPTCHA setup error:",
             error
         );
 
-        authMessage.textContent =
-            "Could not load reCAPTCHA.";
+        showAuthMessage(
+            "Unable to initialize reCAPTCHA.",
+            true
+        );
+
+        return null;
 
     }
 
@@ -1099,103 +817,171 @@ if (sendOtpBtn) {
         "click",
         async function () {
 
-            const number =
-                phoneNumber.value.trim();
+            const phone =
+                phoneInput?.value.trim();
 
 
-            if (!number) {
+            // -----------------------------------------------
+            // Check phone number
+            // -----------------------------------------------
 
-                authMessage.textContent =
-                    "Please enter your phone number.";
+            if (!phone) {
+
+                showAuthMessage(
+                    "Please enter your phone number.",
+                    true
+                );
+
+                return;
+
+            }
+
+
+            // -----------------------------------------------
+            // Phone format
+            // -----------------------------------------------
+
+            if (!phone.startsWith("+")) {
+
+                showAuthMessage(
+                    "Enter phone number with country code. Example: +919876543210",
+                    true
+                );
 
                 return;
 
             }
 
 
-            if (
-                !number.startsWith("+")
-            ) {
+            sendOtpBtn.disabled = true;
 
-                authMessage.textContent =
-                    "Use international format, for example +919876543210.";
-
-                return;
-
-            }
+            sendOtpBtn.textContent =
+                "Sending OTP...";
 
 
             try {
 
-                sendOtpBtn.disabled =
-                    true;
+                // -------------------------------------------
+                // Setup reCAPTCHA
+                // -------------------------------------------
 
-                sendOtpBtn.textContent =
-                    "Sending OTP...";
+                const verifier =
+                    setupRecaptcha();
 
 
-                if (
-                    !recaptchaVerifier
-                ) {
+                if (!verifier) {
 
-                    createRecaptcha();
-
-                    await new Promise(
-                        resolve =>
-                            setTimeout(
-                                resolve,
-                                1000
-                            )
+                    throw new Error(
+                        "reCAPTCHA could not be initialized."
                     );
 
                 }
 
 
+                // -------------------------------------------
+                // Send OTP
+                // -------------------------------------------
+
                 confirmationResult =
                     await signInWithPhoneNumber(
                         auth,
-                        number,
-                        recaptchaVerifier
+                        phone,
+                        verifier
                     );
 
 
-                authMessage.textContent =
-                    "OTP sent successfully. Check your phone.";
-
-                console.log(
-                    "OTP sent."
+                showAuthMessage(
+                    "OTP sent successfully. Check your phone."
                 );
+
+
+                // Enable OTP button
+                if (verifyOtpBtn) {
+
+                    verifyOtpBtn.disabled = false;
+
+                }
 
 
             } catch (error) {
 
-                authMessage.textContent =
-                    firebaseErrorMessage(
-                        error
-                    );
+                console.error(
+                    "OTP error:",
+                    error
+                );
+
+
+                let errorMessage =
+                    error.message;
+
+
+                // Firebase-specific messages
+                if (
+                    error.code ===
+                    "auth/invalid-phone-number"
+                ) {
+
+                    errorMessage =
+                        "Invalid phone number. Use international format, e.g. +919876543210.";
+
+                }
+
+                else if (
+                    error.code ===
+                    "auth/too-many-requests"
+                ) {
+
+                    errorMessage =
+                        "Too many requests. Please try again later.";
+
+                }
+
+                else if (
+                    error.code ===
+                    "auth/quota-exceeded"
+                ) {
+
+                    errorMessage =
+                        "SMS quota exceeded. Please try again later.";
+
+                }
+
+                else if (
+                    error.code ===
+                    "auth/operation-not-allowed"
+                ) {
+
+                    errorMessage =
+                        "Phone authentication is not enabled in Firebase.";
+
+                }
+
+                showAuthMessage(
+                    errorMessage,
+                    true
+                );
 
 
                 // Reset reCAPTCHA
-
-                if (
-                    recaptchaVerifier
-                ) {
+                if (recaptchaVerifier) {
 
                     try {
 
                         recaptchaVerifier.clear();
 
-                    } catch (_) {}
+                    } catch (e) {
 
-                    recaptchaVerifier =
-                        null;
+                        console.log(e);
+
+                    }
+
+                    recaptchaVerifier = null;
 
                 }
 
             } finally {
 
-                sendOtpBtn.disabled =
-                    false;
+                sendOtpBtn.disabled = false;
 
                 sendOtpBtn.textContent =
                     "Send OTP";
@@ -1218,86 +1004,115 @@ if (verifyOtpBtn) {
         "click",
         async function () {
 
-            const code =
-                otpCode.value.trim();
+            const otp =
+                otpInput?.value.trim();
 
 
-            if (
-                !confirmationResult
-            ) {
+            if (!confirmationResult) {
 
-                authMessage.textContent =
-                    "Please request an OTP first.";
+                showAuthMessage(
+                    "Please click Send OTP first.",
+                    true
+                );
+
+                return;
+
+            }
+
+
+            if (!otp) {
+
+                showAuthMessage(
+                    "Please enter the OTP.",
+                    true
+                );
 
                 return;
 
             }
 
 
-            if (
-                code.length !== 6
-            ) {
+            verifyOtpBtn.disabled = true;
 
-                authMessage.textContent =
-                    "Please enter the 6-digit OTP.";
-
-                return;
-
-            }
+            verifyOtpBtn.textContent =
+                "Verifying...";
 
 
             try {
 
-                verifyOtpBtn.disabled =
-                    true;
-
-                verifyOtpBtn.textContent =
-                    "Verifying...";
-
-
                 const result =
                     await confirmationResult.confirm(
-                        code
+                        otp
                     );
 
 
+                const user =
+                    result.user;
+
+
                 console.log(
-                    "Phone authenticated:",
-                    result.user
+                    "Phone login successful:",
+                    user
                 );
 
 
-                authMessage.textContent =
-                    "Phone authentication successful!";
-
-
-                confirmationResult =
-                    null;
-
-
-                setTimeout(
-                    () => {
-
-                        authModal.classList.add(
-                            "hidden"
-                        );
-
-                    },
-                    1000
+                showAuthMessage(
+                    "Phone login successful."
                 );
+
+
+                if (otpInput) {
+
+                    otpInput.value = "";
+
+                }
+
+
+                confirmationResult = null;
 
 
             } catch (error) {
 
-                authMessage.textContent =
-                    firebaseErrorMessage(
-                        error
-                    );
+                console.error(
+                    "OTP verification error:",
+                    error
+                );
+
+
+                let errorMessage =
+                    error.message;
+
+
+                if (
+                    error.code ===
+                    "auth/invalid-verification-code"
+                ) {
+
+                    errorMessage =
+                        "Invalid OTP. Please check the OTP and try again.";
+
+                }
+
+                else if (
+                    error.code ===
+                    "auth/code-expired"
+                ) {
+
+                    errorMessage =
+                        "OTP expired. Please request a new OTP.";
+
+                }
+
+
+                showAuthMessage(
+                    errorMessage,
+                    true
+                );
+
 
             } finally {
 
-                verifyOtpBtn.disabled =
-                    false;
+                verifyOtpBtn.disabled = false;
 
                 verifyOtpBtn.textContent =
                     "Verify OTP";
@@ -1322,20 +1137,22 @@ if (logoutBtn) {
 
             try {
 
-                await signOut(
-                    auth
-                );
+                await signOut(auth);
 
-                alert(
+                showAuthMessage(
                     "Logged out successfully."
                 );
 
             } catch (error) {
 
-                alert(
-                    firebaseErrorMessage(
-                        error
-                    )
+                console.error(
+                    "Logout error:",
+                    error
+                );
+
+                showAuthMessage(
+                    error.message,
+                    true
                 );
 
             }
@@ -1347,7 +1164,7 @@ if (logoutBtn) {
 
 
 // ============================================================
-// AUTH STATE
+// FIREBASE AUTH STATE
 // ============================================================
 
 onAuthStateChanged(
@@ -1358,22 +1175,37 @@ onAuthStateChanged(
 
             console.log(
                 "User logged in:",
-                user.email ||
+                user.uid
+            );
+
+
+            console.log(
+                "Email:",
+                user.email
+            );
+
+
+            console.log(
+                "Phone:",
                 user.phoneNumber
             );
 
 
-            loginBtn.classList.add(
-                "hidden"
-            );
+            // Change login button
+            if (loginBtn) {
 
-            signupBtn.classList.add(
-                "hidden"
-            );
+                loginBtn.textContent =
+                    "Logged In";
 
-            logoutBtn.classList.remove(
-                "hidden"
-            );
+            }
+
+
+            if (logoutBtn) {
+
+                logoutBtn.style.display =
+                    "inline-block";
+
+            }
 
 
         } else {
@@ -1383,17 +1215,12 @@ onAuthStateChanged(
             );
 
 
-            loginBtn.classList.remove(
-                "hidden"
-            );
+            if (logoutBtn) {
 
-            signupBtn.classList.remove(
-                "hidden"
-            );
+                logoutBtn.style.display =
+                    "none";
 
-            logoutBtn.classList.add(
-                "hidden"
-            );
+            }
 
         }
 
@@ -1402,16 +1229,75 @@ onAuthStateChanged(
 
 
 // ============================================================
-// INITIAL COUNT
+// SYSTEM STATUS
 // ============================================================
 
-updateCount();
+const statusLink =
+    document.getElementById(
+        "systemStatus"
+    );
+
+
+if (statusLink) {
+
+    statusLink.addEventListener(
+        "click",
+        async function (event) {
+
+            event.preventDefault();
+
+            try {
+
+                const response =
+                    await fetch("/health");
+
+
+                const data =
+                    await response.json();
+
+
+                if (
+                    data.status === "ok"
+                ) {
+
+                    alert(
+                        "System is online."
+                    );
+
+                } else {
+
+                    alert(
+                        "System status unavailable."
+                    );
+
+                }
+
+            } catch (error) {
+
+                alert(
+                    "Unable to connect to server."
+                );
+
+            }
+
+        }
+    );
+
+}
 
 
 // ============================================================
-// FIREBASE TEST
+// INITIAL MESSAGE
 // ============================================================
 
 console.log(
-    "QuantumDiagnose Firebase initialized successfully."
+    "QuantumDiagnose JavaScript loaded successfully."
+);
+
+console.log(
+    "Firebase Authentication initialized."
+);
+
+console.log(
+    "Firestore initialized."
 );
