@@ -2,13 +2,8 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>QuantumDiagnose</title>
 
@@ -16,14 +11,11 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
-
 </head>
-
 
 <body>
 
 <div class="background"></div>
-
 
 <!-- =====================================================
      AUTH SCREEN
@@ -41,12 +33,12 @@
             Intelligent symptom analysis platform
         </p>
 
-
         <div class="auth-tabs">
 
             <button
                 id="loginTab"
                 class="auth-tab active"
+                type="button"
             >
                 Login
             </button>
@@ -54,34 +46,34 @@
             <button
                 id="signupTab"
                 class="auth-tab"
+                type="button"
             >
                 Sign Up
             </button>
 
         </div>
 
-
         <input
             id="authEmail"
             type="email"
             placeholder="Email address"
+            autocomplete="email"
         >
-
 
         <input
             id="authPassword"
             type="password"
             placeholder="Password"
+            autocomplete="current-password"
         >
-
 
         <button
             id="authSubmit"
             class="primary full"
+            type="button"
         >
             Login
         </button>
-
 
         <p id="authMessage"></p>
 
@@ -91,14 +83,10 @@
 
 
 <!-- =====================================================
-     APPLICATION
+     MAIN APPLICATION
 ===================================================== -->
 
-<div
-    id="app"
-    class="app hidden"
->
-
+<div id="app" class="app hidden">
 
     <!-- SIDEBAR -->
 
@@ -111,7 +99,6 @@
             </div>
 
             <div>
-
                 <strong>
                     QuantumDiagnose
                 </strong>
@@ -119,7 +106,6 @@
                 <small>
                     AI Health Platform
                 </small>
-
             </div>
 
         </div>
@@ -130,62 +116,63 @@
             <button
                 class="nav-item active"
                 data-page="dashboard"
+                type="button"
             >
                 🏠 Dashboard
             </button>
 
-
             <button
                 class="nav-item"
                 data-page="profile"
+                type="button"
             >
                 👤 Patient Profile
             </button>
 
-
             <button
                 class="nav-item"
                 data-page="prediction"
+                type="button"
             >
                 🩺 New Prediction
             </button>
 
-
             <button
                 class="nav-item"
                 data-page="history"
+                type="button"
             >
                 📋 History
             </button>
 
-
             <button
                 class="nav-item"
                 data-page="doctors"
+                type="button"
             >
                 👨‍⚕️ Doctors
             </button>
 
-
             <button
                 class="nav-item"
                 data-page="quantum"
+                type="button"
             >
                 ⚛️ Quantum Analysis
             </button>
 
-
             <button
                 class="nav-item"
                 data-page="comparison"
+                type="button"
             >
                 🔬 RF vs Quantum
             </button>
 
-
             <button
                 class="nav-item"
                 data-page="performance"
+                type="button"
             >
                 📊 Performance
             </button>
@@ -196,6 +183,7 @@
         <button
             id="logoutBtn"
             class="logout"
+            type="button"
         >
             Logout
         </button>
@@ -206,7 +194,6 @@
     <!-- MAIN -->
 
     <main class="main">
-
 
         <!-- TOPBAR -->
 
@@ -224,13 +211,8 @@
 
             </div>
 
-
             <div class="user-chip">
-
-                <span id="userEmail">
-                    —
-                </span>
-
+                <span id="userEmail">—</span>
             </div>
 
         </header>
@@ -261,17 +243,17 @@
                     </h1>
 
                     <p>
-                        Analyze symptoms, review your
-                        prediction history and explore
-                        experimental quantum analysis.
+                        Analyze symptoms, review your prediction
+                        history and explore experimental quantum
+                        analysis.
                     </p>
 
                 </div>
 
-
                 <button
                     class="primary"
                     data-go="prediction"
+                    type="button"
                 >
                     Start New Analysis
                 </button>
@@ -282,54 +264,23 @@
             <div class="stats-grid">
 
                 <div class="stat-card">
-
-                    <span>
-                        Total Predictions
-                    </span>
-
-                    <strong id="predictionCount">
-                        0
-                    </strong>
-
+                    <span>Total Predictions</span>
+                    <strong id="predictionCount">0</strong>
                 </div>
 
-
                 <div class="stat-card">
-
-                    <span>
-                        Latest Prediction
-                    </span>
-
-                    <strong id="latestDisease">
-                        —
-                    </strong>
-
+                    <span>Latest Prediction</span>
+                    <strong id="latestDisease">—</strong>
                 </div>
 
-
                 <div class="stat-card">
-
-                    <span>
-                        Model
-                    </span>
-
-                    <strong>
-                        Random Forest
-                    </strong>
-
+                    <span>Model</span>
+                    <strong>Random Forest</strong>
                 </div>
 
-
                 <div class="stat-card">
-
-                    <span>
-                        Quantum
-                    </span>
-
-                    <strong>
-                        Qiskit
-                    </strong>
-
+                    <span>Quantum</span>
+                    <strong>Qiskit</strong>
                 </div>
 
             </div>
@@ -348,44 +299,37 @@
                         <button
                             class="quick"
                             data-go="prediction"
+                            type="button"
                         >
                             🩺
-                            <span>
-                                New Prediction
-                            </span>
+                            <span>New Prediction</span>
                         </button>
-
 
                         <button
                             class="quick"
                             data-go="history"
+                            type="button"
                         >
                             📋
-                            <span>
-                                View History
-                            </span>
+                            <span>View History</span>
                         </button>
-
 
                         <button
                             class="quick"
                             data-go="doctors"
+                            type="button"
                         >
                             👨‍⚕️
-                            <span>
-                                Find Doctors
-                            </span>
+                            <span>Find Doctors</span>
                         </button>
-
 
                         <button
                             class="quick"
                             data-go="performance"
+                            type="button"
                         >
                             📊
-                            <span>
-                                Performance
-                            </span>
+                            <span>Performance</span>
                         </button>
 
                     </div>
@@ -529,10 +473,10 @@
                 <button
                     id="saveProfileBtn"
                     class="primary"
+                    type="button"
                 >
                     Save Profile
                 </button>
-
 
                 <p id="profileMessage"></p>
 
@@ -571,10 +515,10 @@
 
                     </div>
 
-
                     <button
                         id="clearBtn"
                         class="secondary"
+                        type="button"
                     >
                         Clear
                     </button>
@@ -620,16 +564,20 @@
                 <div class="prediction-action">
 
                     <span>
+
                         <strong id="count">
                             0
                         </strong>
+
                         symptoms selected
+
                     </span>
 
 
                     <button
                         id="predictBtn"
                         class="primary"
+                        type="button"
                     >
                         Analyze Symptoms
                     </button>
@@ -722,21 +670,13 @@
 
             <div class="card">
 
-                <div class="section-head">
+                <h2>
+                    Prediction History
+                </h2>
 
-                    <div>
-
-                        <h2>
-                            Prediction History
-                        </h2>
-
-                        <p class="muted">
-                            Your previous analyses.
-                        </p>
-
-                    </div>
-
-                </div>
+                <p class="muted">
+                    Your previous analyses.
+                </p>
 
 
                 <div
@@ -816,6 +756,7 @@
                 <button
                     id="quantumBtn"
                     class="primary"
+                    type="button"
                 >
                     Run Quantum Analysis
                 </button>
@@ -825,10 +766,8 @@
                     id="quantumResult"
                     class="quantum-result"
                 >
-
                     Select symptoms and run a
                     quantum analysis.
-
                 </div>
 
             </div>
@@ -865,9 +804,7 @@
                             Random Forest
                         </h3>
 
-                        <strong
-                            id="rfAccuracy"
-                        >
+                        <strong id="rfAccuracy">
                             —
                         </strong>
 
@@ -1043,9 +980,10 @@
 </div>
 
 
-<script type="module"
-    src="{{ url_for('static', filename='script.js') }}">
-</script>
+<script
+    type="module"
+    src="{{ url_for('static', filename='script.js') }}"
+></script>
 
 </body>
 
