@@ -2,33 +2,56 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>QuantumDiagnose</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
+
 </head>
+
 
 <body>
 
 <div class="background"></div>
 
+
 <main class="container">
 
-    <!-- ================= HEADER ================= -->
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
     <header class="hero">
 
-        <div class="logo">Q</div>
-
-        <div class="brand">
-            <h1>QuantumDiagnose</h1>
-            <p>Machine-learning based symptom analysis</p>
+        <div class="logo">
+            Q
         </div>
 
-        <span class="badge">ML Prototype</span>
+
+        <div class="brand">
+
+            <h1>
+                QuantumDiagnose
+            </h1>
+
+            <p>
+                Machine-learning based symptom analysis
+            </p>
+
+        </div>
+
+
+        <span class="badge">
+            ML Prototype
+        </span>
+
 
         <div class="auth-buttons">
 
@@ -37,10 +60,12 @@
                 Login
             </button>
 
+
             <button id="signupBtn"
                     class="primary">
                 Sign Up
             </button>
+
 
             <button id="logoutBtn"
                     class="secondary hidden">
@@ -52,29 +77,64 @@
     </header>
 
 
-    <!-- ================= SYMPTOMS ================= -->
+
+    <!-- =====================================================
+         PATIENT WELCOME
+    ====================================================== -->
+
+    <section id="welcomeSection"
+             class="card">
+
+        <h2>
+            Welcome to QuantumDiagnose
+        </h2>
+
+        <p>
+            Analyze symptoms using machine learning
+            and receive educational health insights.
+        </p>
+
+        <p id="userStatus">
+            Please login or create an account to continue.
+        </p>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         SYMPTOMS
+    ====================================================== -->
 
     <section class="card">
 
         <div class="section-head">
 
             <div>
-                <h2>Enter symptoms</h2>
+
+                <h2>
+                    Enter symptoms
+                </h2>
 
                 <p>
                     Select the symptoms reported by the patient.
                 </p>
+
             </div>
+
 
             <button id="clearBtn"
                     class="secondary">
+
                 Clear
+
             </button>
 
         </div>
 
 
-        <!-- Search -->
+
+        <!-- SEARCH -->
 
         <div class="search-wrap">
 
@@ -86,7 +146,8 @@
         </div>
 
 
-        <!-- Symptoms -->
+
+        <!-- SYMPTOMS -->
 
         <div id="symptomGrid"
              class="symptom-grid">
@@ -112,18 +173,27 @@
         </div>
 
 
-        <!-- Selected count + prediction -->
+
+        <!-- SELECTED -->
 
         <div class="selected-line">
 
             <span>
-                <strong id="count">0</strong>
+
+                <strong id="count">
+                    0
+                </strong>
+
                 symptoms selected
+
             </span>
+
 
             <button id="predictBtn"
                     class="primary">
+
                 Predict Possible Disease
+
             </button>
 
         </div>
@@ -131,7 +201,10 @@
     </section>
 
 
-    <!-- ================= RESULT ================= -->
+
+    <!-- =====================================================
+         RESULT
+    ====================================================== -->
 
     <section id="result"
              class="card result hidden">
@@ -140,23 +213,31 @@
             Prediction
         </div>
 
+
         <h2 id="disease">
             —
         </h2>
 
+
         <div class="confidence-bar">
+
             <span id="confidenceBar"></span>
+
         </div>
 
+
         <p id="confidenceText"></p>
+
 
         <h3>
             Top Predictions
         </h3>
 
+
         <div id="topPredictions"
              class="top-list">
         </div>
+
 
         <p id="message"
            class="disclaimer">
@@ -165,55 +246,189 @@
     </section>
 
 
-    <!-- ================= AUTH MODAL ================= -->
+
+    <!-- =====================================================
+         PATIENT PROFILE MODAL
+    ====================================================== -->
+
+    <div id="profileModal"
+         class="modal hidden">
+
+        <div class="modal-content profile-modal">
+
+            <h2>
+                Complete Your Profile
+            </h2>
+
+
+            <p>
+                Please enter your basic details before
+                continuing to QuantumDiagnose.
+            </p>
+
+
+
+            <!-- NAME -->
+
+            <label>
+                Full Name
+            </label>
+
+            <input
+                id="profileName"
+                type="text"
+                placeholder="Enter your full name">
+
+
+
+            <!-- GENDER -->
+
+            <label>
+                Gender
+            </label>
+
+            <select id="profileGender">
+
+                <option value="">
+                    Select gender
+                </option>
+
+                <option value="Male">
+                    Male
+                </option>
+
+                <option value="Female">
+                    Female
+                </option>
+
+                <option value="Other">
+                    Other
+                </option>
+
+                <option value="Prefer not to say">
+                    Prefer not to say
+                </option>
+
+            </select>
+
+
+
+            <!-- AGE -->
+
+            <label>
+                Age
+            </label>
+
+            <input
+                id="profileAge"
+                type="number"
+                min="1"
+                max="120"
+                placeholder="Enter your age">
+
+
+
+            <!-- HEIGHT -->
+
+            <label>
+                Height (cm)
+            </label>
+
+            <input
+                id="profileHeight"
+                type="number"
+                min="1"
+                max="300"
+                placeholder="Example: 175">
+
+
+
+            <!-- WEIGHT -->
+
+            <label>
+                Weight (kg)
+            </label>
+
+            <input
+                id="profileWeight"
+                type="number"
+                min="1"
+                max="500"
+                step="0.1"
+                placeholder="Example: 70">
+
+
+
+            <!-- MESSAGE -->
+
+            <p id="profileMessage"></p>
+
+
+
+            <!-- SAVE -->
+
+            <button id="saveProfileBtn"
+                    class="primary">
+
+                Save & Continue
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         AUTH MODAL
+    ====================================================== -->
 
     <div id="authModal"
          class="modal hidden">
 
         <div class="modal-content">
 
-            <!-- Close -->
 
             <button id="closeModal"
                     class="close-btn">
+
                 ×
+
             </button>
 
-
-            <!-- Title -->
 
             <h2 id="authTitle">
                 Login
             </h2>
 
 
-            <!-- ================= EMAIL AUTH ================= -->
 
             <div id="emailAuth">
+
 
                 <input
                     id="authEmail"
                     type="email"
-                    placeholder="Email"
-                    autocomplete="email">
+                    placeholder="Email">
 
 
                 <input
                     id="authPassword"
                     type="password"
-                    placeholder="Password"
-                    autocomplete="current-password">
+                    placeholder="Password">
 
 
                 <button id="authSubmit"
                         class="primary">
+
                     Login
+
                 </button>
+
 
             </div>
 
-
-            <!-- Authentication message -->
 
             <p id="authMessage"></p>
 
@@ -222,7 +437,10 @@
     </div>
 
 
-    <!-- ================= FOOTER ================= -->
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
 
     <footer>
 
@@ -230,23 +448,31 @@
             QuantumDiagnose • Educational project
         </span>
 
+
         <a href="/health"
            target="_blank">
+
             System status
+
         </a>
 
     </footer>
 
+
 </main>
 
 
-<!-- ==================================================
-     APPLICATION JAVASCRIPT
-     ================================================== -->
 
-<script type="module"
-        src="{{ url_for('static', filename='script.js') }}">
+<!-- =====================================================
+     FIREBASE + APPLICATION JAVASCRIPT
+====================================================== -->
+
+<script
+    type="module"
+    src="{{ url_for('static', filename='script.js') }}">
 </script>
 
+
 </body>
+
 </html>
