@@ -21,18 +21,14 @@
 
     <header class="hero">
 
-        <div class="logo">
-            Q
-        </div>
+        <div class="logo">Q</div>
 
         <div class="brand">
             <h1>QuantumDiagnose</h1>
             <p>Machine-learning based symptom analysis</p>
         </div>
 
-        <span class="badge">
-            ML Prototype
-        </span>
+        <span class="badge">ML Prototype</span>
 
         <div class="auth-buttons">
 
@@ -78,7 +74,7 @@
         </div>
 
 
-        <!-- ================= SEARCH ================= -->
+        <!-- Search -->
 
         <div class="search-wrap">
 
@@ -90,7 +86,7 @@
         </div>
 
 
-        <!-- ================= SYMPTOM GRID ================= -->
+        <!-- Symptoms -->
 
         <div id="symptomGrid"
              class="symptom-grid">
@@ -116,7 +112,7 @@
         </div>
 
 
-        <!-- ================= SELECTED COUNT ================= -->
+        <!-- Selected count + prediction -->
 
         <div class="selected-line">
 
@@ -148,19 +144,11 @@
             —
         </h2>
 
-
-        <!-- Confidence -->
-
         <div class="confidence-bar">
-
             <span id="confidenceBar"></span>
-
         </div>
 
         <p id="confidenceText"></p>
-
-
-        <!-- Top Predictions -->
 
         <h3>
             Top Predictions
@@ -170,9 +158,6 @@
              class="top-list">
         </div>
 
-
-        <!-- Disclaimer / Message -->
-
         <p id="message"
            class="disclaimer">
         </p>
@@ -180,22 +165,17 @@
     </section>
 
 
-    <!-- ==================================================
-         AUTHENTICATION MODAL
-         EMAIL + PASSWORD ONLY
-         ================================================== -->
+    <!-- ================= AUTH MODAL ================= -->
 
     <div id="authModal"
          class="modal hidden">
 
         <div class="modal-content">
 
-
             <!-- Close -->
 
             <button id="closeModal"
-                    class="close-btn"
-                    type="button">
+                    class="close-btn">
                 ×
             </button>
 
@@ -211,17 +191,12 @@
 
             <div id="emailAuth">
 
-
-                <!-- Email -->
-
                 <input
                     id="authEmail"
                     type="email"
                     placeholder="Email"
                     autocomplete="email">
 
-
-                <!-- Password -->
 
                 <input
                     id="authPassword"
@@ -230,19 +205,15 @@
                     autocomplete="current-password">
 
 
-                <!-- Submit -->
-
                 <button id="authSubmit"
-                        class="primary"
-                        type="button">
+                        class="primary">
                     Login
                 </button>
-
 
             </div>
 
 
-            <!-- Firebase message -->
+            <!-- Authentication message -->
 
             <p id="authMessage"></p>
 
@@ -278,5 +249,4 @@
 </script>
 
 </body>
-
 </html>
