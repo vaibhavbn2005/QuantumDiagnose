@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
-
 from pathlib import Path
 
 from sklearn.ensemble import RandomForestClassifier
@@ -43,18 +42,16 @@ app = Flask(
 # ============================================================
 
 try:
-
     training_df = pd.read_csv(TRAIN_PATH)
     testing_df = pd.read_csv(TEST_PATH)
 
 except Exception as error:
-
     raise RuntimeError(
         f"Could not load datasets: {error}"
     )
 
 
-# Remove accidental pandas index columns
+# Remove accidental index columns
 
 training_df = training_df.loc[
     :,
@@ -98,7 +95,6 @@ possible_targets = [
 for column in possible_targets:
 
     if column in training_df.columns:
-
         TARGET_COLUMN = column
         break
 
@@ -112,7 +108,7 @@ if TARGET_COLUMN is None:
 
 
 # ============================================================
-# FIND SYMPTOM COLUMNS
+# SYMPTOM COLUMNS
 # ============================================================
 
 symptom_columns = [
@@ -123,7 +119,7 @@ symptom_columns = [
 
 
 # ============================================================
-# MAKE TRAINING AND TESTING COLUMNS MATCH
+# CHECK TEST DATA
 # ============================================================
 
 missing_in_test = [
@@ -207,7 +203,6 @@ model.fit(
 
 test_predictions = model.predict(X_test)
 
-
 accuracy = accuracy_score(
     y_test,
     test_predictions
@@ -233,9 +228,6 @@ f1 = f1_score(
     average="weighted",
     zero_division=0
 )
-
-
-# Confusion matrix
 
 labels = sorted(
     list(
@@ -273,14 +265,87 @@ symptom_map = {
 
 
 # ============================================================
-# SPECIALIST MAPPING
+# SPECIALTY MAPPING
 # ============================================================
+
+DISEASE_SPECIALTY_MAP = {
+
+    # Skin
+    "chickenpox": "Dermatologist",
+    "acne": "Dermatologist",
+    "psoriasis": "Dermatologist",
+    "impetigo": "Dermatologist",
+    "fungal infection": "Dermatologist",
+    "skin allergy": "Dermatologist",
+    "contact dermatitis": "Dermatologist",
+    "drug reaction": "Dermatologist",
+    "allergy": "Dermatologist",
+    "allergic dermatitis": "Dermatologist",
+
+    # Respiratory
+    "bronchitis": "Pulmonologist",
+    "pneumonia": "Pulmonologist",
+    "asthma": "Pulmonologist",
+    "tuberculosis": "Pulmonologist",
+    "influenza": "Pulmonologist",
+    "common cold": "Pulmonologist",
+
+    # Heart
+    "heart attack": "Cardiologist",
+    "heart disease": "Cardiologist",
+    "hypertension": "Cardiologist",
+    "high blood pressure": "Cardiologist",
+
+    # Neurology
+    "migraine": "Neurologist",
+    "paralysis": "Neurologist",
+    "epilepsy": "Neurologist",
+    "vertigo": "Neurologist",
+
+    # Joints
+    "arthritis": "Rheumatologist",
+    "osteoarthritis": "Rheumatologist",
+    "rheumatoid arthritis": "Rheumatologist",
+    "gout": "Rheumatologist",
+
+    # Digestive
+    "gastroenteritis": "Gastroenterologist",
+    "gerd": "Gastroenterologist",
+    "peptic ulcer disease": "Gastroenterologist",
+    "gastritis": "Gastroenterologist",
+    "hepatitis": "Gastroenterologist",
+    "jaundice": "Gastroenterologist",
+
+    # Urinary
+    "urinary tract infection": "Urologist",
+    "uti": "Urologist",
+    "kidney stone": "Urologist",
+    "kidney stones": "Urologist",
+
+    # ENT
+    "sinusitis": "ENT Specialist",
+    "tonsillitis": "ENT Specialist",
+    "otitis media": "ENT Specialist",
+
+    # Eye
+    "conjunctivitis": "Ophthalmologist",
+    "cataract": "Ophthalmologist",
+    "glaucoma": "Ophthalmologist",
+
+    # General
+    "dengue": "General Physician",
+    "malaria": "General Physician",
+    "typhoid": "General Physician",
+    "diabetes": "General Physician"
+}
+
 
 SPECIALTY_KEYWORDS = {
 
     "skin": "Dermatologist",
     "rash": "Dermatologist",
     "acne": "Dermatologist",
+    "chickenpox": "Dermatologist",
 
     "heart": "Cardiologist",
     "cardiac": "Cardiologist",
@@ -288,9 +353,13 @@ SPECIALTY_KEYWORDS = {
     "lung": "Pulmonologist",
     "respiratory": "Pulmonologist",
     "bronch": "Pulmonologist",
+    "pneumonia": "Pulmonologist",
+    "influenza": "Pulmonologist",
+    "asthma": "Pulmonologist",
 
     "brain": "Neurologist",
     "migraine": "Neurologist",
+    "paralysis": "Neurologist",
 
     "joint": "Rheumatologist",
     "arthritis": "Rheumatologist",
@@ -298,23 +367,36 @@ SPECIALTY_KEYWORDS = {
     "stomach": "Gastroenterologist",
     "gastric": "Gastroenterologist",
     "digest": "Gastroenterologist",
+    "gastro": "Gastroenterologist",
+    "hepat": "Gastroenterologist",
 
-    "kidney": "Nephrologist",
+    "kidney": "Urologist",
     "urinary": "Urologist",
+    "uti": "Urologist",
 
     "eye": "Ophthalmologist",
 
     "ear": "ENT Specialist",
-
-    "general": "General Physician"
+    "sinus": "ENT Specialist",
+    "throat": "ENT Specialist"
 }
 
 
 def recommend_specialty(disease):
 
-    disease_text = str(
-        disease
-    ).lower()
+    disease_text = (
+        str(disease)
+        .strip()
+        .lower()
+    )
+
+    # Exact disease mapping first
+
+    if disease_text in DISEASE_SPECIALTY_MAP:
+
+        return DISEASE_SPECIALTY_MAP[disease_text]
+
+    # Keyword mapping
 
     for keyword, specialty in SPECIALTY_KEYWORDS.items():
 
@@ -417,32 +499,37 @@ def home():
 @app.route("/health")
 def health():
 
+    qiskit_available = False
+
+    try:
+        import qiskit
+        qiskit_available = True
+    except Exception:
+        qiskit_available = False
+
     return jsonify({
 
         "status": "ok",
 
         "model": "Random Forest",
 
-        "target_column":
-            TARGET_COLUMN,
+        "qiskit": qiskit_available,
 
-        "training_rows":
-            len(training_df),
+        "target_column": TARGET_COLUMN,
 
-        "testing_rows":
-            len(testing_df),
+        "training_rows": len(training_df),
 
-        "symptoms":
-            len(symptom_columns),
+        "testing_rows": len(testing_df),
 
-        "diseases":
-            len(model.classes_)
+        "symptoms": len(symptom_columns),
+
+        "diseases": len(model.classes_)
 
     })
 
 
 # ============================================================
-# MODEL PERFORMANCE
+# PERFORMANCE
 # ============================================================
 
 @app.route("/performance")
@@ -450,32 +537,43 @@ def performance():
 
     return jsonify({
 
-        "accuracy":
-            round(accuracy * 100, 2),
+        "accuracy": round(
+            accuracy * 100,
+            2
+        ),
 
-        "precision":
-            round(precision * 100, 2),
+        "precision": round(
+            precision * 100,
+            2
+        ),
 
-        "recall":
-            round(recall * 100, 2),
+        "recall": round(
+            recall * 100,
+            2
+        ),
 
-        "f1":
-            round(f1 * 100, 2),
+        "f1": round(
+            f1 * 100,
+            2
+        ),
 
-        "training_samples":
-            len(training_df),
+        "training_samples": len(
+            training_df
+        ),
 
-        "testing_samples":
-            len(testing_df),
+        "testing_samples": len(
+            testing_df
+        ),
 
-        "number_of_symptoms":
-            len(symptom_columns),
+        "number_of_symptoms": len(
+            symptom_columns
+        ),
 
-        "number_of_diseases":
-            len(model.classes_),
+        "number_of_diseases": len(
+            model.classes_
+        ),
 
-        "model":
-            "Random Forest"
+        "model": "Random Forest"
 
     })
 
@@ -509,6 +607,7 @@ def doctors():
         filtered = [
 
             doctor
+
             for doctor in DOCTORS
 
             if doctor["specialization"].lower()
@@ -520,14 +619,138 @@ def doctors():
 
         filtered = DOCTORS
 
-
     return jsonify({
         "doctors": filtered
     })
 
 
 # ============================================================
-# PREDICTION
+# RANDOM FOREST PREDICTION
+# ============================================================
+
+def perform_random_forest_prediction(
+    selected_symptoms
+):
+
+    input_data = {
+        symptom: 0
+        for symptom in symptom_columns
+    }
+
+    matched_symptoms = []
+
+    for symptom in selected_symptoms:
+
+        normalized = normalize_symptom(
+            symptom
+        )
+
+        if normalized in symptom_map:
+
+            actual_column = symptom_map[
+                normalized
+            ]
+
+            input_data[
+                actual_column
+            ] = 1
+
+            if actual_column not in matched_symptoms:
+
+                matched_symptoms.append(
+                    actual_column
+                )
+
+    if not matched_symptoms:
+
+        raise ValueError(
+            "Selected symptoms were not found "
+            "in the training dataset."
+        )
+
+    input_df = pd.DataFrame(
+        [input_data],
+        columns=symptom_columns
+    )
+
+    prediction = model.predict(
+        input_df
+    )[0]
+
+    probabilities = model.predict_proba(
+        input_df
+    )[0]
+
+    classes = model.classes_
+
+    results = sorted(
+        zip(
+            classes,
+            probabilities
+        ),
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+    top_predictions = [
+
+        {
+            "disease": str(disease),
+
+            "confidence": round(
+                float(probability) * 100,
+                2
+            )
+        }
+
+        for disease, probability
+        in results[:5]
+    ]
+
+    confidence = (
+        top_predictions[0]["confidence"]
+        if top_predictions
+        else 0
+    )
+
+    specialty = recommend_specialty(
+        prediction
+    )
+
+    recommended_doctors = [
+
+        doctor
+
+        for doctor in DOCTORS
+
+        if doctor["specialization"].lower()
+        == specialty.lower()
+
+    ]
+
+    return {
+
+        "disease": str(prediction),
+
+        "confidence": confidence,
+
+        "top_predictions":
+            top_predictions,
+
+        "selected_symptoms":
+            matched_symptoms,
+
+        "specialty":
+            specialty,
+
+        "doctors":
+            recommended_doctors
+
+    }
+
+
+# ============================================================
+# PREDICT
 # ============================================================
 
 @app.route(
@@ -546,15 +769,13 @@ def predict():
 
             return jsonify({
                 "error":
-                    "Invalid JSON request."
+                "Invalid JSON request."
             }), 400
-
 
         selected_symptoms = data.get(
             "symptoms",
             []
         )
-
 
         if not isinstance(
             selected_symptoms,
@@ -563,182 +784,33 @@ def predict():
 
             return jsonify({
                 "error":
-                    "Symptoms must be provided as a list."
+                "Symptoms must be provided as a list."
             }), 400
-
 
         if len(selected_symptoms) == 0:
 
             return jsonify({
                 "error":
-                    "Please select at least one symptom."
+                "Please select at least one symptom."
             }), 400
 
-
-        # Create empty vector
-
-        input_data = {
-            symptom: 0
-            for symptom in symptom_columns
-        }
-
-
-        matched_symptoms = []
-
-
-        # Match symptoms
-
-        for symptom in selected_symptoms:
-
-            normalized = normalize_symptom(
-                symptom
-            )
-
-            if normalized in symptom_map:
-
-                actual_column = symptom_map[
-                    normalized
-                ]
-
-                input_data[
-                    actual_column
-                ] = 1
-
-                matched_symptoms.append(
-                    actual_column
-                )
-
-
-        if not matched_symptoms:
-
-            return jsonify({
-
-                "error":
-                    "Selected symptoms were not "
-                    "found in the training dataset."
-
-            }), 400
-
-
-        # DataFrame
-
-        input_df = pd.DataFrame(
-            [input_data],
-            columns=symptom_columns
+        result = perform_random_forest_prediction(
+            selected_symptoms
         )
-
-
-        # Prediction
-
-        prediction = model.predict(
-            input_df
-        )[0]
-
-
-        probabilities = model.predict_proba(
-            input_df
-        )[0]
-
-
-        classes = model.classes_
-
-
-        # Sort
-
-        results = sorted(
-            zip(
-                classes,
-                probabilities
-            ),
-            key=lambda item:
-                item[1],
-            reverse=True
-        )
-
-
-        # Top 5
-
-        top_predictions = [
-
-            {
-                "disease":
-                    str(disease),
-
-                "confidence":
-                    round(
-                        float(probability)
-                        * 100,
-                        2
-                    )
-            }
-
-            for disease, probability
-            in results[:5]
-
-        ]
-
-
-        confidence = (
-            top_predictions[0]["confidence"]
-            if top_predictions
-            else 0
-        )
-
-
-        # Specialist
-
-        specialty = recommend_specialty(
-            prediction
-        )
-
-
-        # Doctors
-
-        recommended_doctors = [
-
-            doctor
-            for doctor in DOCTORS
-
-            if doctor["specialization"].lower()
-            == specialty.lower()
-
-        ]
-
 
         return jsonify({
 
             "success": True,
 
-            "disease":
-                str(prediction),
-
-            "confidence":
-                confidence,
-
-            "top_predictions":
-                top_predictions,
-
-            "selected_symptoms":
-                matched_symptoms,
-
-            "specialty":
-                specialty,
-
-            "doctors":
-                recommended_doctors,
+            **result,
 
             "model":
                 "Random Forest",
 
             "message":
-                (
-                    "This is an educational "
-                    "machine-learning prediction "
-                    "and is not a medical diagnosis."
-                )
+                "This is an educational machine-learning prediction and is not a medical diagnosis."
 
         })
-
 
     except Exception as error:
 
@@ -751,14 +823,13 @@ def predict():
 
             "success": False,
 
-            "error":
-                str(error)
+            "error": str(error)
 
         }), 500
 
 
 # ============================================================
-# QUANTUM ANALYSIS
+# QISKIT EXPERIMENTAL ANALYSIS
 # ============================================================
 
 @app.route(
@@ -777,27 +848,25 @@ def quantum_analysis():
 
             return jsonify({
                 "error":
-                    "No quantum input received."
+                "No quantum input received."
             }), 400
-
 
         selected_symptoms = data.get(
             "symptoms",
             []
         )
 
-
         if not selected_symptoms:
 
             return jsonify({
                 "error":
-                    "Select symptoms first."
+                "Select symptoms first."
             }), 400
 
 
-        # ----------------------------------------------------
-        # QISKIT
-        # ----------------------------------------------------
+        # --------------------------------------------------------
+        # QISKIT IMPORT
+        # --------------------------------------------------------
 
         try:
 
@@ -807,30 +876,78 @@ def quantum_analysis():
 
             return jsonify({
 
+                "success": False,
+
                 "error":
                     "Qiskit is not installed on the server.",
 
                 "message":
-                    "Install qiskit in requirements.txt."
+                    "Add Qiskit to requirements.txt and redeploy."
 
             }), 500
 
 
-        # Use at most 4 qubits for a lightweight demonstration
+        # --------------------------------------------------------
+        # MATCH SYMPTOMS
+        # --------------------------------------------------------
+
+        input_vector = np.zeros(
+            len(symptom_columns),
+            dtype=float
+        )
+
+        matched = []
+
+        for symptom in selected_symptoms:
+
+            normalized = normalize_symptom(
+                symptom
+            )
+
+            if normalized in symptom_map:
+
+                actual_column = symptom_map[
+                    normalized
+                ]
+
+                index = symptom_columns.index(
+                    actual_column
+                )
+
+                input_vector[index] = 1
+
+                if actual_column not in matched:
+
+                    matched.append(
+                        actual_column
+                    )
+
+
+        if not matched:
+
+            return jsonify({
+
+                "success": False,
+
+                "error":
+                    "No matching symptoms found."
+
+            }), 400
+
+
+        # --------------------------------------------------------
+        # QUANTUM FEATURE ENCODING
+        # --------------------------------------------------------
 
         number_of_qubits = min(
-            max(len(selected_symptoms), 1),
+            max(len(matched), 1),
             4
         )
 
-
         circuit = QuantumCircuit(
-            number_of_qubits,
             number_of_qubits
         )
 
-
-        # Encode selected symptoms
 
         for index in range(
             number_of_qubits
@@ -838,49 +955,233 @@ def quantum_analysis():
 
             circuit.h(index)
 
+            angle = (
+                np.pi
+                if index < len(matched)
+                else 0
+            )
 
-            if index < len(
-                selected_symptoms
+            circuit.ry(
+                angle / 2,
+                index
+            )
+
+
+        # --------------------------------------------------------
+        # DISEASE PROTOTYPES
+        # --------------------------------------------------------
+
+        prototype_scores = []
+
+        train_matrix = training_df[
+            symptom_columns
+        ].values.astype(float)
+
+
+        for disease in model.classes_:
+
+            disease_rows = train_matrix[
+                y_train.values == disease
+            ]
+
+            if len(disease_rows) == 0:
+
+                continue
+
+            prototype = np.mean(
+                disease_rows,
+                axis=0
+            )
+
+            numerator = np.dot(
+                input_vector,
+                prototype
+            )
+
+            input_norm = np.linalg.norm(
+                input_vector
+            )
+
+            prototype_norm = np.linalg.norm(
+                prototype
+            )
+
+            if (
+                input_norm == 0
+                or prototype_norm == 0
             ):
 
-                circuit.ry(
-                    np.pi / 2,
-                    index
+                similarity = 0
+
+            else:
+
+                similarity = (
+                    numerator
+                    / (
+                        input_norm
+                        * prototype_norm
+                    )
                 )
 
+            prototype_scores.append(
+                (
+                    disease,
+                    float(similarity)
+                )
+            )
 
-        circuit.measure(
-            range(number_of_qubits),
-            range(number_of_qubits)
+
+        # --------------------------------------------------------
+        # SOFTMAX EXPERIMENTAL SCORES
+        # --------------------------------------------------------
+
+        if prototype_scores:
+
+            raw_scores = np.array([
+                score
+                for _, score
+                in prototype_scores
+            ])
+
+            temperature = 5.0
+
+            exp_scores = np.exp(
+                (raw_scores - raw_scores.max())
+                * temperature
+            )
+
+            probabilities = (
+                exp_scores
+                / exp_scores.sum()
+            )
+
+            quantum_results = sorted(
+
+                [
+
+                    (
+                        disease,
+                        float(probability)
+                    )
+
+                    for (
+                        disease,
+                        _
+                    ), probability
+                    in zip(
+                        prototype_scores,
+                        probabilities
+                    )
+
+                ],
+
+                key=lambda x: x[1],
+
+                reverse=True
+
+            )
+
+        else:
+
+            quantum_results = []
+
+
+        # --------------------------------------------------------
+        # TOP QUANTUM RESULT
+        # --------------------------------------------------------
+
+        if quantum_results:
+
+            quantum_disease = str(
+                quantum_results[0][0]
+            )
+
+            quantum_score = round(
+                quantum_results[0][1]
+                * 100,
+                2
+            )
+
+        else:
+
+            quantum_disease = "Unavailable"
+
+            quantum_score = 0
+
+
+        quantum_top_predictions = [
+
+            {
+                "disease":
+                    str(disease),
+
+                "confidence":
+                    round(
+                        probability * 100,
+                        2
+                    )
+            }
+
+            for disease, probability
+            in quantum_results[:5]
+
+        ]
+
+
+        # --------------------------------------------------------
+        # SPECIALTY FOR QUANTUM RESULT
+        # --------------------------------------------------------
+
+        quantum_specialty = (
+            recommend_specialty(
+                quantum_disease
+            )
         )
 
 
-        # ----------------------------------------------------
-        # EXPERIMENTAL QUANTUM SCORE
-        # ----------------------------------------------------
+        # --------------------------------------------------------
+        # DOCTORS
+        # --------------------------------------------------------
 
-        # This is intentionally an experimental
-        # quantum feature representation.
-        #
-        # It should NOT be described as a
-        # clinically validated quantum diagnosis.
+        quantum_doctors = [
 
-        quantum_score = round(
-            min(
-                len(selected_symptoms)
-                / max(len(symptom_columns), 1),
-                1
-            ) * 100,
-            2
-        )
+            doctor
 
+            for doctor in DOCTORS
+
+            if doctor[
+                "specialization"
+            ].lower()
+            == quantum_specialty.lower()
+
+        ]
+
+
+        # --------------------------------------------------------
+        # RESPONSE
+        # --------------------------------------------------------
 
         return jsonify({
 
             "success": True,
 
             "model":
-                "Qiskit Quantum Analysis",
+                "Qiskit Experimental Analysis",
+
+            "prediction":
+                quantum_disease,
+
+            "quantum_score":
+                quantum_score,
+
+            "top_predictions":
+                quantum_top_predictions,
+
+            "specialty":
+                quantum_specialty,
+
+            "doctors":
+                quantum_doctors,
 
             "qubits":
                 number_of_qubits,
@@ -889,20 +1190,13 @@ def quantum_analysis():
                 circuit.depth(),
 
             "circuit":
-
                 str(circuit),
 
-            "quantum_score":
-                quantum_score,
+            "selected_symptoms":
+                matched,
 
             "interpretation":
-                (
-                    "Experimental quantum feature "
-                    "encoding completed. This quantum "
-                    "component is a research/educational "
-                    "demonstration and is not a "
-                    "medical diagnosis."
-                )
+                "Qiskit was used for quantum feature encoding and experimental similarity scoring. This is an educational proof-of-concept, not a clinically validated quantum diagnosis."
 
         })
 
@@ -918,8 +1212,7 @@ def quantum_analysis():
 
             "success": False,
 
-            "error":
-                str(error)
+            "error": str(error)
 
         }), 500
 
