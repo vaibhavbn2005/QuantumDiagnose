@@ -25,27 +25,20 @@
 <div class="background"></div>
 
 
-<!-- =========================================================
-     AUTHENTICATION
-========================================================= -->
+<!-- =====================================================
+     AUTH SCREEN
+===================================================== -->
 
-<div
-    id="authScreen"
-    class="auth-screen"
->
+<div id="authScreen" class="auth-screen">
 
     <div class="auth-card">
 
-        <div class="logo large">
-            Q
-        </div>
+        <div class="logo large">Q</div>
 
-        <h1>
-            QuantumDiagnose
-        </h1>
+        <h1>QuantumDiagnose</h1>
 
         <p class="subtitle">
-            Intelligent Symptom Analysis Platform
+            Intelligent symptom analysis platform
         </p>
 
 
@@ -54,7 +47,6 @@
             <button
                 id="loginTab"
                 class="auth-tab active"
-                type="button"
             >
                 Login
             </button>
@@ -62,7 +54,6 @@
             <button
                 id="signupTab"
                 class="auth-tab"
-                type="button"
             >
                 Sign Up
             </button>
@@ -70,162 +61,47 @@
         </div>
 
 
-        <!-- EMAIL -->
-
-        <div
-            id="emailAuth"
-            class="auth-method"
+        <input
+            id="authEmail"
+            type="email"
+            placeholder="Email address"
         >
 
-            <label>
-                Email Address
-            </label>
 
-            <input
-                id="authEmail"
-                type="email"
-                placeholder="Enter your email"
-                autocomplete="email"
-            >
+        <input
+            id="authPassword"
+            type="password"
+            placeholder="Password"
+        >
 
-
-            <label>
-                Password
-            </label>
-
-            <input
-                id="authPassword"
-                type="password"
-                placeholder="Minimum 6 characters"
-                autocomplete="current-password"
-            >
-
-
-            <div class="captcha-box">
-
-                <div>
-                    Security Check
-                </div>
-
-                <strong id="captchaQuestion">
-                    —
-                </strong>
-
-                <input
-                    id="captchaAnswer"
-                    type="number"
-                    placeholder="Answer"
-                >
-
-                <button
-                    id="refreshCaptcha"
-                    class="captcha-refresh"
-                    type="button"
-                >
-                    ↻
-                </button>
-
+        <div class="captcha-box">
+            <div class="captcha-title">Security Check</div>
+            <div class="captcha-question" id="captchaQuestion">—</div>
+            <div class="captcha-row">
+                <input id="captchaAnswer" type="number" placeholder="Answer" inputmode="numeric">
+                <button id="captchaRefresh" class="captcha-refresh" type="button" title="New question">↻</button>
             </div>
-
-
-            <button
-                id="authSubmit"
-                class="primary full"
-                type="button"
-            >
-                Login
-            </button>
-
         </div>
 
 
-        <!-- PHONE -->
-
-        <div
-            id="phoneAuth"
-            class="auth-method hidden"
+        <button
+            id="authSubmit"
+            class="primary full"
         >
-
-            <label>
-                Phone Number
-            </label>
-
-            <input
-                id="phoneNumber"
-                type="tel"
-                placeholder="+91XXXXXXXXXX"
-            >
+            Login
+        </button>
 
 
-            <div
-                id="recaptcha-container"
-                class="recaptcha-box"
-            ></div>
-
-
-            <button
-                id="sendOtpBtn"
-                class="primary full"
-                type="button"
-            >
-                Send OTP
-            </button>
-
-
-            <input
-                id="otpCode"
-                type="text"
-                maxlength="6"
-                placeholder="Enter OTP"
-            >
-
-
-            <button
-                id="verifyOtpBtn"
-                class="secondary full"
-                type="button"
-            >
-                Verify OTP
-            </button>
-
-        </div>
-
-
-        <div class="auth-method-tabs">
-
-            <button
-                id="emailTab"
-                class="method-tab active"
-                type="button"
-            >
-                Email
-            </button>
-
-            <button
-                id="phoneTab"
-                class="method-tab"
-                type="button"
-            >
-                Phone
-            </button>
-
-        </div>
-
-
-        <p
-            id="authMessage"
-            class="auth-message"
-        ></p>
+        <p id="authMessage"></p>
 
     </div>
 
 </div>
 
 
-
-<!-- =========================================================
+<!-- =====================================================
      APPLICATION
-========================================================= -->
+===================================================== -->
 
 <div
     id="app"
@@ -263,7 +139,6 @@
             <button
                 class="nav-item active"
                 data-page="dashboard"
-                type="button"
             >
                 🏠 Dashboard
             </button>
@@ -272,7 +147,6 @@
             <button
                 class="nav-item"
                 data-page="profile"
-                type="button"
             >
                 👤 Patient Profile
             </button>
@@ -281,7 +155,6 @@
             <button
                 class="nav-item"
                 data-page="prediction"
-                type="button"
             >
                 🩺 New Prediction
             </button>
@@ -290,7 +163,6 @@
             <button
                 class="nav-item"
                 data-page="history"
-                type="button"
             >
                 📋 History
             </button>
@@ -299,7 +171,6 @@
             <button
                 class="nav-item"
                 data-page="doctors"
-                type="button"
             >
                 👨‍⚕️ Doctors
             </button>
@@ -308,16 +179,14 @@
             <button
                 class="nav-item"
                 data-page="comparison"
-                type="button"
             >
-                🔬 Model Comparison
+                🔬 RF vs Quantum
             </button>
 
 
             <button
                 class="nav-item"
                 data-page="performance"
-                type="button"
             >
                 📊 Performance
             </button>
@@ -325,33 +194,14 @@
         </nav>
 
 
-        <div class="sidebar-bottom">
-
-            <div class="logged-user">
-
-                <span>
-                    Logged in as
-                </span>
-
-                <strong id="userEmail">
-                    —
-                </strong>
-
-            </div>
-
-
-            <button
-                id="logoutBtn"
-                class="logout"
-                type="button"
-            >
-                Logout
-            </button>
-
-        </div>
+        <button
+            id="logoutBtn"
+            class="logout"
+        >
+            Logout
+        </button>
 
     </aside>
-
 
 
     <!-- MAIN -->
@@ -370,22 +220,30 @@
                 </h2>
 
                 <p>
-                    Intelligent symptom analysis
+                    Machine-learning based symptom analysis
                 </p>
 
             </div>
 
 
-            <div class="user-chip">
+            <div class="topbar-actions">
 
-                <span id="topUserName">
-                    Patient
-                </span>
+                <div class="theme-toggle-wrap">
+                    <span class="theme-icon">☀️</span>
+                    <label class="switch" title="Toggle light/dark mode">
+                        <input id="themeToggle" type="checkbox" aria-label="Toggle dark mode">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="theme-icon">🌙</span>
+                </div>
+
+                <div class="user-chip">
+                    <span id="userEmail">—</span>
+                </div>
 
             </div>
 
         </header>
-
 
 
         <!-- =================================================
@@ -412,9 +270,10 @@
                         </span>
                     </h1>
 
-                    <p id="welcomeText">
-                        Complete your patient profile before starting
-                        a symptom analysis.
+                    <p>
+                        Analyze symptoms, review your
+                        prediction history and explore
+                        Random Forest and experimental Qiskit results.
                     </p>
 
                 </div>
@@ -423,7 +282,6 @@
                 <button
                     class="primary"
                     data-go="prediction"
-                    type="button"
                 >
                     Start New Analysis
                 </button>
@@ -462,7 +320,7 @@
                 <div class="stat-card">
 
                     <span>
-                        ML Model
+                        Model
                     </span>
 
                     <strong>
@@ -475,7 +333,7 @@
                 <div class="stat-card">
 
                     <span>
-                        Quantum Engine
+                        Quantum
                     </span>
 
                     <strong>
@@ -500,7 +358,6 @@
                         <button
                             class="quick"
                             data-go="prediction"
-                            type="button"
                         >
                             🩺
                             <span>
@@ -511,20 +368,7 @@
 
                         <button
                             class="quick"
-                            data-go="profile"
-                            type="button"
-                        >
-                            👤
-                            <span>
-                                Patient Profile
-                            </span>
-                        </button>
-
-
-                        <button
-                            class="quick"
                             data-go="history"
-                            type="button"
                         >
                             📋
                             <span>
@@ -536,11 +380,21 @@
                         <button
                             class="quick"
                             data-go="doctors"
-                            type="button"
                         >
                             👨‍⚕️
                             <span>
                                 Find Doctors
+                            </span>
+                        </button>
+
+
+                        <button
+                            class="quick"
+                            data-go="performance"
+                        >
+                            📊
+                            <span>
+                                Performance
                             </span>
                         </button>
 
@@ -566,7 +420,6 @@
         </section>
 
 
-
         <!-- =================================================
              PROFILE
         ================================================= -->
@@ -576,56 +429,39 @@
             class="page"
         >
 
-            <div class="page-heading">
-
-                <span class="eyebrow">
-                    PATIENT INFORMATION
-                </span>
-
-                <h1>
-                    Patient Profile
-                </h1>
-
-                <p>
-                    Your profile is required before starting
-                    a prediction.
-                </p>
-
-            </div>
-
-
             <div class="card">
 
-                <div class="profile-status">
+                <h2>
+                    Patient Profile
+                </h2>
 
-                    <span id="profileStatusBadge">
-                        Profile not completed
-                    </span>
-
-                </div>
+                <p class="muted">
+                    Complete your profile before using
+                    the prediction system.
+                </p>
 
 
                 <div class="form-grid">
 
-                    <div class="form-group full-width">
+                    <div>
 
                         <label>
-                            Full Name *
+                            Full Name
                         </label>
 
                         <input
                             id="profileName"
                             type="text"
-                            placeholder="Enter your full name"
+                            placeholder="Enter your name"
                         >
 
                     </div>
 
 
-                    <div class="form-group">
+                    <div>
 
                         <label>
-                            Gender *
+                            Gender
                         </label>
 
                         <select id="profileGender">
@@ -651,10 +487,10 @@
                     </div>
 
 
-                    <div class="form-group">
+                    <div>
 
                         <label>
-                            Age *
+                            Age
                         </label>
 
                         <input
@@ -668,34 +504,30 @@
                     </div>
 
 
-                    <div class="form-group">
+                    <div>
 
                         <label>
-                            Height (cm) *
+                            Height (cm)
                         </label>
 
                         <input
                             id="profileHeight"
                             type="number"
-                            min="30"
-                            max="250"
                             placeholder="Height"
                         >
 
                     </div>
 
 
-                    <div class="form-group">
+                    <div>
 
                         <label>
-                            Weight (kg) *
+                            Weight (kg)
                         </label>
 
                         <input
                             id="profileWeight"
                             type="number"
-                            min="2"
-                            max="300"
                             placeholder="Weight"
                         >
 
@@ -707,21 +539,16 @@
                 <button
                     id="saveProfileBtn"
                     class="primary"
-                    type="button"
                 >
                     Save Profile
                 </button>
 
 
-                <p
-                    id="profileMessage"
-                    class="status-message"
-                ></p>
+                <p id="profileMessage"></p>
 
             </div>
 
         </section>
-
 
 
         <!-- =================================================
@@ -733,75 +560,44 @@
             class="page"
         >
 
-            <div class="page-heading">
-
-                <span class="eyebrow">
-                    AI ANALYSIS
-                </span>
-
-                <h1>
-                    New Prediction
-                </h1>
-
-                <p>
-                    Select symptoms and analyze them using
-                    Random Forest and Qiskit together.
-                </p>
-
-            </div>
-
-
             <div class="card">
 
                 <div class="section-head">
 
                     <div>
 
+                        <span class="eyebrow">
+                            AI ANALYSIS
+                        </span>
+
                         <h2>
                             Select Symptoms
                         </h2>
 
                         <p class="muted">
-                            Select one or more symptoms reported
+                            Select the symptoms reported
                             by the patient.
                         </p>
 
                     </div>
 
 
-                    <div class="selected-count">
-
-                        <strong id="count">
-                            0
-                        </strong>
-
-                        <span>
-                            selected
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="search-row">
-
-                    <input
-                        id="search"
-                        type="search"
-                        placeholder="🔎 Search symptoms..."
-                    >
-
-
                     <button
+                        type="button"
                         id="clearBtn"
                         class="secondary"
-                        type="button"
                     >
                         Clear
                     </button>
 
                 </div>
+
+
+                <input
+                    id="search"
+                    type="search"
+                    placeholder="Search symptoms..."
+                >
 
 
                 <div
@@ -813,7 +609,7 @@
 
                     <label
                         class="symptom"
-                        data-name="{{ symptom|replace('_', ' ') }}"
+                        data-name="{{ symptom|replace('_', ' ')|lower }}"
                     >
 
                         <input
@@ -832,14 +628,22 @@
                 </div>
 
 
-                <div class="analysis-action">
+                <div class="prediction-action">
+
+                    <span>
+                        <strong id="count">
+                            0
+                        </strong>
+                        symptoms selected
+                    </span>
+
 
                     <button
-                        id="predictBtn"
-                        class="primary large"
                         type="button"
+                        id="predictBtn"
+                        class="primary"
                     >
-                        🔍 Analyze Symptoms
+                        Analyze Symptoms
                     </button>
 
                 </div>
@@ -847,366 +651,104 @@
             </div>
 
 
-
-            <!-- =================================================
-                 COMPLETE RESULT
-            ================================================= -->
+            <!-- RESULT -->
 
             <div
                 id="result"
-                class="result-section hidden"
+                class="card result hidden"
             >
 
-                <div class="prediction-header">
+                <span class="eyebrow">
+                    RANDOM FOREST RESULT
+                </span>
 
-                    <span class="eyebrow">
-                        ANALYSIS COMPLETED
-                    </span>
+                <h2 id="disease">
+                    —
+                </h2>
 
-                    <h2>
-                        Prediction Results
-                    </h2>
 
-                    <p>
-                        Both models analyzed the same selected symptoms.
-                    </p>
+                <div class="confidence">
 
-                </div>
+                    <div class="confidence-head">
 
-
-                <!-- TWO MODELS -->
-
-                <div class="model-grid">
-
-
-                    <!-- RANDOM FOREST -->
-
-                    <div class="model-card">
-
-                        <div class="model-title">
-
-                            <span class="model-icon">
-                                🌲
-                            </span>
-
-                            <div>
-
-                                <span class="model-label">
-                                    RANDOM FOREST
-                                </span>
-
-                                <h3 id="disease">
-                                    —
-                                </h3>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="score-number">
-
-                            <strong id="confidenceText">
-                                0%
-                            </strong>
-
-                            <span>
-                                Confidence
-                            </span>
-
-                        </div>
-
-
-                        <div class="score-track">
-
-                            <div
-                                id="confidenceBar"
-                                class="score-fill rf-fill"
-                            ></div>
-
-                        </div>
-
-
-                        <div class="model-description">
-
-                            Classical machine-learning
-                            prediction trained using
-                            the project dataset.
-
-                        </div>
-
-                    </div>
-
-
-
-                    <!-- QISKIT -->
-
-                    <div class="model-card quantum-card">
-
-                        <div class="model-title">
-
-                            <span class="model-icon">
-                                ⚛️
-                            </span>
-
-                            <div>
-
-                                <span class="model-label">
-                                    QISKIT
-                                </span>
-
-                                <h3 id="qiskitDisease">
-                                    —
-                                </h3>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="experimental-tag">
-                            Experimental
-                        </div>
-
-
-                        <div class="score-number">
-
-                            <strong id="qiskitScore">
-                                0%
-                            </strong>
-
-                            <span>
-                                Experimental Score
-                            </span>
-
-                        </div>
-
-
-                        <div class="score-track">
-
-                            <div
-                                id="qiskitScoreBar"
-                                class="score-fill quantum-fill"
-                            ></div>
-
-                        </div>
-
-
-                        <div class="quantum-details">
-
-                            <span>
-                                Qubits:
-                                <strong id="qiskitQubits">
-                                    —
-                                </strong>
-                            </span>
-
-                            <span>
-                                Circuit depth:
-                                <strong id="qiskitDepth">
-                                    —
-                                </strong>
-                            </span>
-
-                        </div>
-
-
-                        <div
-                            id="quantumMessage"
-                            class="model-description"
-                        >
-                            Experimental Qiskit score.
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-
-                <!-- MODEL COMPARISON -->
-
-                <div class="card comparison-result">
-
-                    <div class="section-head">
-
-                        <div>
-
-                            <span class="eyebrow">
-                                MODEL COMPARISON
-                            </span>
-
-                            <h2>
-                                Random Forest vs Qiskit
-                            </h2>
-
-                        </div>
-
-                        <div
-                            id="agreementBadge"
-                            class="agreement-badge"
-                        >
-                            —
-                        </div>
-
-                    </div>
-
-
-                    <div class="comparison-values">
-
-                        <div>
-
-                            <span>
-                                Random Forest
-                            </span>
-
-                            <strong id="comparisonRF">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                Qiskit
-                            </span>
-
-                            <strong id="comparisonQuantum">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                Difference
-                            </span>
-
-                            <strong id="scoreDifference">
-                                —
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="agreement-text">
-
-                        <strong>
-                            Predicted Disease:
-                        </strong>
-
-                        <span id="comparisonDisease">
-                            —
+                        <span>
+                            Model confidence
                         </span>
 
+                        <strong id="confidenceText">
+                            0%
+                        </strong>
+
                     </div>
 
 
-                    <p class="educational-note">
+                    <div class="confidence-bar">
 
-                        Qiskit is included as an experimental
-                        educational quantum-computing component.
-                        Its score is not a clinically validated
-                        probability.
+                        <span
+                            id="confidenceBar"
+                        ></span>
 
-                    </p>
-
-                </div>
-
-
-
-                <!-- TOP PREDICTIONS -->
-
-                <div class="card">
-
-                    <span class="eyebrow">
-                        RANDOM FOREST
-                    </span>
-
-                    <h2>
-                        Top Predictions
-                    </h2>
-
-                    <div id="topPredictions"></div>
+                    </div>
 
                 </div>
 
 
+                <h3>
+                    Top Predictions
+                </h3>
 
-                <!-- DOCTOR -->
 
-                <div class="card doctor-recommendation">
+                <div
+                    id="topPredictions"
+                    class="top-list"
+                >
+                </div>
 
-                    <div class="section-head">
 
-                        <div>
+                <div
+                    id="specialistBox"
+                    class="recommendation"
+                >
+                </div>
 
-                            <span class="eyebrow">
-                                RECOMMENDATION
-                            </span>
+                <div class="model-result-grid">
+                    <div class="model-result-card rf-card">
+                        <span class="model-label">CLASSICAL ML</span>
+                        <h3>Random Forest</h3>
+                        <p>Primary symptom prediction model</p>
+                        <strong id="rfResultSummary">—</strong>
+                    </div>
 
-                            <h2>
-                                Recommended Doctor
-                            </h2>
-
+                    <div class="model-result-card quantum-card">
+                        <span class="model-label">QUANTUM COMPONENT</span>
+                        <h3>Qiskit</h3>
+                        <p id="quantumPrediction">Experimental quantum score</p>
+                        <strong id="quantumScore">—</strong>
+                        <div class="confidence-bar quantum-bar"><span id="quantumScoreBar"></span></div>
+                        <div class="quantum-meta">
+                            <span>Qubits <b id="quantumQubits">—</b></span>
+                            <span>Depth <b id="quantumDepth">—</b></span>
                         </div>
-
                     </div>
+                </div>
 
+                <div id="recommendedDoctorBox" class="doctor-recommendation"></div>
 
-                    <div
-                        id="specialistBox"
-                        class="specialist-box"
-                    >
-                        —
-                    </div>
-
-
-                    <div
-                        id="recommendedDoctors"
-                        class="doctor-grid"
-                    ></div>
-
+                <div class="result-actions">
+                    <button id="downloadReportBtn" class="secondary" type="button">📄 Download Report</button>
+                    <button id="compareBtn" class="secondary" type="button">🔬 View Comparison</button>
                 </div>
 
 
-
-                <!-- SAVE HISTORY -->
-
-                <div class="save-result">
-
-                    <button
-                        id="saveHistoryBtn"
-                        class="primary large"
-                        type="button"
-                    >
-                        💾 Save to History
-                    </button>
-
-                    <span
-                        id="saveHistoryMessage"
-                    ></span>
-
-                </div>
-
-
-                <div class="result-warning">
-
-                    ℹ️ This is an educational project.
-                    The prediction is not a medical diagnosis.
-
-                </div>
+                <p
+                    id="message"
+                    class="disclaimer"
+                >
+                </p>
 
             </div>
 
         </section>
-
 
 
         <!-- =================================================
@@ -1218,38 +760,39 @@
             class="page"
         >
 
-            <div class="page-heading">
-
-                <span class="eyebrow">
-                    RECORDS
-                </span>
-
-                <h1>
-                    Prediction History
-                </h1>
-
-                <p>
-                    Your saved analyses are associated with
-                    your account.
-                </p>
-
-            </div>
-
-
             <div class="card">
 
-                <div id="historyList">
+                <div class="section-head">
 
-                    <div class="empty-state">
-                        No predictions saved yet.
+                    <div>
+
+                        <h2>
+                            Prediction History
+                        </h2>
+
+                        <p class="muted">
+                            Your previous analyses.
+                        </p>
+
                     </div>
+
+                </div>
+
+
+                <div
+                    id="historyList"
+                    class="history-list"
+                >
+
+                    <p class="muted">
+                        No predictions yet.
+                    </p>
 
                 </div>
 
             </div>
 
         </section>
-
 
 
         <!-- =================================================
@@ -1261,33 +804,29 @@
             class="page"
         >
 
-            <div class="page-heading">
+            <div class="card">
 
-                <span class="eyebrow">
-                    DOCTORS
-                </span>
+                <h2>
+                    Recommended Doctors
+                </h2>
 
-                <h1>
-                    Dummy Doctor Directory
-                </h1>
-
-                <p>
-                    Doctors are demonstration data for this project.
+                <p class="muted">
+                    Recommendations are based on the
+                    predicted condition and are for
+                    educational demonstration.
                 </p>
+
+
+                <div
+                    id="doctorList"
+                    class="doctor-grid"
+                >
+                </div>
 
             </div>
 
-
-            <div
-                id="doctorList"
-                class="doctor-grid"
-            ></div>
-
         </section>
-
-
-
-        <!-- =================================================
+<!-- =================================================
              COMPARISON
         ================================================= -->
 
@@ -1296,126 +835,69 @@
             class="page"
         >
 
-            <div class="page-heading">
-
-                <span class="eyebrow">
-                    MODEL COMPARISON
-                </span>
-
-                <h1>
-                    Random Forest vs Qiskit
-                </h1>
-
-                <p>
-                    Comparison from your latest symptom analysis.
-                </p>
-
-            </div>
-
-
-            <div class="comparison-grid">
-
-                <div class="card">
-
-                    <div class="comparison-big-icon">
-                        🌲
-                    </div>
-
-                    <h2>
-                        Random Forest
-                    </h2>
-
-                    <span class="tag">
-                        Classical ML
-                    </span>
-
-                    <div class="comparison-stat">
-
-                        <span>
-                            Latest Disease
-                        </span>
-
-                        <strong id="pageRFDisease">
-                            —
-                        </strong>
-
-                    </div>
-
-                    <div class="comparison-stat">
-
-                        <span>
-                            Confidence
-                        </span>
-
-                        <strong id="pageRFScore">
-                            —
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card quantum-card">
-
-                    <div class="comparison-big-icon">
-                        ⚛️
-                    </div>
-
-                    <h2>
-                        Qiskit
-                    </h2>
-
-                    <span class="tag quantum-tag">
-                        Experimental
-                    </span>
-
-                    <div class="comparison-stat">
-
-                        <span>
-                            Latest Disease
-                        </span>
-
-                        <strong id="pageQuantumDisease">
-                            —
-                        </strong>
-
-                    </div>
-
-                    <div class="comparison-stat">
-
-                        <span>
-                            Experimental Score
-                        </span>
-
-                        <strong id="pageQuantumScore">
-                            —
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
             <div class="card">
 
                 <h2>
-                    Latest Model Agreement
+                    Random Forest vs Qiskit
                 </h2>
 
-                <div
-                    id="pageAgreement"
-                    class="agreement-large"
-                >
-                    No analysis yet.
+                <p class="muted">
+                    Experimental comparison of the classical
+                    baseline and quantum component.
+                </p>
+
+
+                <div class="comparison-grid">
+
+                    <div class="model-box">
+
+                        <h3>
+                            Random Forest
+                        </h3>
+
+                        <strong
+                            id="rfAccuracy"
+                        >
+                            —
+                        </strong>
+
+                        <span>
+                            Testing Accuracy
+                        </span>
+
+                    </div>
+
+
+                    <div class="model-box">
+
+                        <h3>
+                            Qiskit
+                        </h3>
+
+                        <strong>
+                            Experimental
+                        </strong>
+
+                        <span>
+                            Quantum feature analysis
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="notice">
+
+                    The quantum component is an educational
+                    proof-of-concept and should not be
+                    interpreted as clinically superior.
+
                 </div>
 
             </div>
 
         </section>
-
 
 
         <!-- =================================================
@@ -1427,170 +909,134 @@
             class="page"
         >
 
-            <div class="page-heading">
-
-                <span class="eyebrow">
-                    MODEL PERFORMANCE
-                </span>
-
-                <h1>
-                    Performance
-                </h1>
-
-                <p>
-                    Evaluation of the Random Forest model
-                    using the Testing.csv dataset.
-                </p>
-
-            </div>
-
-
-            <div class="stats-grid performance-grid">
-
-                <div class="stat-card">
-
-                    <span>
-                        Accuracy
-                    </span>
-
-                    <strong id="perfAccuracy">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <span>
-                        Precision
-                    </span>
-
-                    <strong id="perfPrecision">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <span>
-                        Recall
-                    </span>
-
-                    <strong id="perfRecall">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <span>
-                        F1 Score
-                    </span>
-
-                    <strong id="perfF1">
-                        —
-                    </strong>
-
-                </div>
-
-            </div>
-
-
             <div class="card">
 
+                <span class="eyebrow">
+                    MODEL EVALUATION
+                </span>
+
                 <h2>
-                    Dataset Information
+                    Performance Dashboard
                 </h2>
 
-                <div class="dataset-grid">
 
-                    <div>
+                <div class="metric-grid">
+
+                    <div class="metric">
 
                         <span>
-                            Training Samples
+                            Accuracy
                         </span>
 
+                        <strong id="metricAccuracy">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="metric">
+
+                        <span>
+                            Precision
+                        </span>
+
+                        <strong id="metricPrecision">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="metric">
+
+                        <span>
+                            Recall
+                        </span>
+
+                        <strong id="metricRecall">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="metric">
+
+                        <span>
+                            F1 Score
+                        </span>
+
+                        <strong id="metricF1">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="performance-info">
+
+                    <div>
+                        Training samples:
                         <strong id="trainingSamples">
                             —
                         </strong>
-
                     </div>
 
-
                     <div>
-
-                        <span>
-                            Testing Samples
-                        </span>
-
+                        Testing samples:
                         <strong id="testingSamples">
                             —
                         </strong>
-
                     </div>
 
-
                     <div>
-
-                        <span>
-                            Symptoms
-                        </span>
-
+                        Symptoms:
                         <strong id="symptomTotal">
                             —
                         </strong>
-
                     </div>
 
-
                     <div>
-
-                        <span>
-                            Diseases
-                        </span>
-
+                        Diseases:
                         <strong id="diseaseTotal">
                             —
                         </strong>
-
                     </div>
 
                 </div>
-
-            </div>
-
-
-            <div class="educational-note">
-
-                <strong>
-                    Important
-                </strong>
-
-                <p>
-                    These metrics describe the model's
-                    performance on the project dataset.
-                    They do not establish clinical reliability.
-                </p>
 
             </div>
 
         </section>
 
 
+        <footer>
+
+            <span>
+                QuantumDiagnose • Educational Project
+            </span>
+
+            <a
+                href="/health"
+                target="_blank"
+            >
+                System Status
+            </a>
+
+        </footer>
+
     </main>
 
 </div>
 
 
-<script
-    type="module"
-    src="{{ url_for('static', filename='script.js') }}"
-></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module"
+    src="{{ url_for('static', filename='script.js') }}">
+</script>
 
 </body>
 
