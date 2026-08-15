@@ -1,12 +1,6 @@
 // ============================================================
 // QUANTUMDIAGNOSE - COMPLETE SCRIPT.JS
 // Email/Password Authentication Only
-// Fixed to match actual index.html element IDs
-// ============================================================
-
-
-// ============================================================
-// FIREBASE IMPORTS
 // ============================================================
 
 import { initializeApp } from
@@ -34,11 +28,6 @@ import {
 } from
     "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-
-// ============================================================
-// FIREBASE CONFIGURATION
-// ============================================================
-
 const firebaseConfig = {
     apiKey: "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
     authDomain: "quantumdiagnose.firebaseapp.com",
@@ -49,11 +38,6 @@ const firebaseConfig = {
     measurementId: "G-YM0HMMVBFR"
 };
 
-
-// ============================================================
-// INITIALIZE FIREBASE
-// ============================================================
-
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
@@ -61,14 +45,8 @@ const db = getFirestore(firebaseApp);
 window.firebaseAuth = auth;
 window.firebaseDB = db;
 
-console.log("Firebase initialized successfully.");
+console.log("Firebase initialized successfully. Build v2");
 
-
-// ============================================================
-// GET HTML ELEMENTS (matching actual index.html IDs)
-// ============================================================
-
-// Auth screen
 const authScreen = document.getElementById("authScreen");
 const app = document.getElementById("app");
 
@@ -84,17 +62,14 @@ const logoutBtn = document.getElementById("logoutBtn");
 const userEmail = document.getElementById("userEmail");
 const welcomeName = document.getElementById("welcomeName");
 
-// Navigation
 const navItems = document.querySelectorAll(".nav-item");
 const goButtons = document.querySelectorAll("[data-go]");
 const pageTitle = document.getElementById("pageTitle");
 
-// Dashboard stats
 const predictionCount = document.getElementById("predictionCount");
 const latestDisease = document.getElementById("latestDisease");
 const dashboardLatest = document.getElementById("dashboardLatest");
 
-// Profile
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 const profileMessage = document.getElementById("profileMessage");
 const profileName = document.getElementById("profileName");
@@ -103,7 +78,6 @@ const profileAge = document.getElementById("profileAge");
 const profileHeight = document.getElementById("profileHeight");
 const profileWeight = document.getElementById("profileWeight");
 
-// Symptoms / prediction
 const searchInput = document.getElementById("search");
 const symptomGrid = document.getElementById("symptomGrid");
 const count = document.getElementById("count");
@@ -117,17 +91,12 @@ const confidenceText = document.getElementById("confidenceText");
 const topPredictions = document.getElementById("topPredictions");
 const message = document.getElementById("message");
 
-// History
 const historyList = document.getElementById("historyList");
-
-// Doctors
 const doctorList = document.getElementById("doctorList");
 
-// Quantum
 const quantumBtn = document.getElementById("quantumBtn");
 const quantumResult = document.getElementById("quantumResult");
 
-// Performance
 const metricAccuracy = document.getElementById("metricAccuracy");
 const metricPrecision = document.getElementById("metricPrecision");
 const metricRecall = document.getElementById("metricRecall");
@@ -138,78 +107,40 @@ const symptomTotal = document.getElementById("symptomTotal");
 const diseaseTotal = document.getElementById("diseaseTotal");
 const rfAccuracy = document.getElementById("rfAccuracy");
 
-
-// ============================================================
-// AUTH MODE STATE (login vs signup)
-// ============================================================
-
 let authMode = "login";
 
-
 function showAuthMessage(text, isError = false) {
-
     if (!authMessage) return;
-
     authMessage.textContent = text;
     authMessage.style.color = isError ? "#d32f2f" : "#2e7d32";
 }
 
-
 function setAuthMode(mode) {
-
     authMode = mode;
-
-    if (loginTab) {
-        loginTab.classList.toggle("active", mode === "login");
-    }
-
-    if (signupTab) {
-        signupTab.classList.toggle("active", mode === "signup");
-    }
-
-    if (authSubmit) {
-        authSubmit.textContent = mode === "login" ? "Login" : "Create Account";
-    }
-
+    if (loginTab) loginTab.classList.toggle("active", mode === "login");
+    if (signupTab) signupTab.classList.toggle("active", mode === "signup");
+    if (authSubmit) authSubmit.textContent = mode === "login" ? "Login" : "Create Account";
     showAuthMessage("");
 }
 
-
-// ============================================================
-// SHOW / HIDE APP AFTER AUTH STATE CHANGES
-// ============================================================
-
 function showApp(user) {
-
     if (authScreen) authScreen.classList.add("hidden");
     if (app) app.classList.remove("hidden");
-
     if (userEmail) userEmail.textContent = user.email || "";
     if (welcomeName) welcomeName.textContent = user.email ? user.email.split("@")[0] : "Patient";
-
     loadHistory();
     loadDashboardStats();
 }
 
-
 function showAuthScreen() {
-
     if (app) app.classList.add("hidden");
     if (authScreen) authScreen.classList.remove("hidden");
-
     if (authEmail) authEmail.value = "";
     if (authPassword) authPassword.value = "";
-
     setAuthMode("login");
 }
 
-
-// ============================================================
-// EMAIL LOGIN / SIGN UP
-// ============================================================
-
 async function handleEmailAuthentication() {
-
     if (!authEmail || !authPassword) {
         console.error("Authentication input elements not found.");
         return;
@@ -218,20 +149,9 @@ async function handleEmailAuthentication() {
     const email = authEmail.value.trim();
     const password = authPassword.value;
 
-    if (!email) {
-        showAuthMessage("Please enter your email address.", true);
-        return;
-    }
-
-    if (!password) {
-        showAuthMessage("Please enter your password.", true);
-        return;
-    }
-
-    if (password.length < 6) {
-        showAuthMessage("Password must contain at least 6 characters.", true);
-        return;
-    }
+    if (!email) { showAuthMessage("Please enter your email address.", true); return; }
+    if (!password) { showAuthMessage("Please enter your password.", true); return; }
+    if (password.length < 6) { showAuthMessage("Password must contain at least 6 characters.", true); return; }
 
     if (authSubmit) {
         authSubmit.disabled = true;
@@ -241,74 +161,34 @@ async function handleEmailAuthentication() {
     showAuthMessage("Processing...");
 
     try {
-
         if (authMode === "login") {
-
             await signInWithEmailAndPassword(auth, email, password);
             showAuthMessage("Login successful!");
             console.log("User logged in:", email);
-
         } else {
-
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             showAuthMessage("Account created successfully!");
             console.log("Account created:", userCredential.user.email);
         }
-
-        // onAuthStateChanged will handle showing the app
-
     } catch (error) {
-
         console.error("Firebase authentication error:", error);
-
         let errorMessage = "Authentication failed.";
 
         switch (error.code) {
-
-            case "auth/invalid-email":
-                errorMessage = "Please enter a valid email address.";
-                break;
-
-            case "auth/user-not-found":
-                errorMessage = "No account found with this email.";
-                break;
-
-            case "auth/wrong-password":
-                errorMessage = "Incorrect password.";
-                break;
-
-            case "auth/invalid-credential":
-                errorMessage = "Invalid email or password.";
-                break;
-
-            case "auth/email-already-in-use":
-                errorMessage = "This email is already registered. Please login.";
-                break;
-
-            case "auth/weak-password":
-                errorMessage = "Password is too weak.";
-                break;
-
-            case "auth/too-many-requests":
-                errorMessage = "Too many attempts. Please try again later.";
-                break;
-
-            case "auth/api-key-not-valid":
-                errorMessage = "Firebase API key is invalid. Please check the Firebase configuration.";
-                break;
-
-            case "auth/network-request-failed":
-                errorMessage = "Network error. Please check your internet connection.";
-                break;
-
-            default:
-                errorMessage = error.message || "Authentication failed.";
+            case "auth/invalid-email": errorMessage = "Please enter a valid email address."; break;
+            case "auth/user-not-found": errorMessage = "No account found with this email."; break;
+            case "auth/wrong-password": errorMessage = "Incorrect password."; break;
+            case "auth/invalid-credential": errorMessage = "Invalid email or password."; break;
+            case "auth/email-already-in-use": errorMessage = "This email is already registered. Please login."; break;
+            case "auth/weak-password": errorMessage = "Password is too weak."; break;
+            case "auth/too-many-requests": errorMessage = "Too many attempts. Please try again later."; break;
+            case "auth/api-key-not-valid": errorMessage = "Firebase API key is invalid."; break;
+            case "auth/network-request-failed": errorMessage = "Network error. Please check your internet connection."; break;
+            default: errorMessage = error.message || "Authentication failed.";
         }
 
         showAuthMessage(errorMessage, true);
-
     } finally {
-
         if (authSubmit) {
             authSubmit.disabled = false;
             authSubmit.textContent = authMode === "login" ? "Login" : "Create Account";
@@ -316,101 +196,60 @@ async function handleEmailAuthentication() {
     }
 }
 
-
-// ============================================================
-// AUTH STATE LISTENER
-// ============================================================
-
 onAuthStateChanged(auth, function (user) {
-
     if (user) {
-
         console.log("Logged in user:", user.email);
         showApp(user);
-
     } else {
-
         console.log("No user logged in.");
         showAuthScreen();
     }
 });
 
-
-// ============================================================
-// LOGOUT
-// ============================================================
-
 async function logoutUser() {
-
     try {
-
         await signOut(auth);
         alert("Logged out successfully.");
-
     } catch (error) {
-
         console.error("Logout error:", error);
         alert("Logout failed: " + error.message);
     }
 }
 
-
-// ============================================================
-// SIDEBAR NAVIGATION
-// ============================================================
-
 function goToPage(pageId) {
-
     document.querySelectorAll(".page").forEach(function (page) {
         page.classList.remove("active-page");
     });
 
     const target = document.getElementById(pageId);
-
-    if (target) {
-        target.classList.add("active-page");
-    }
+    if (target) target.classList.add("active-page");
 
     navItems.forEach(function (item) {
         item.classList.toggle("active", item.dataset.page === pageId);
     });
 
-    if (pageTitle) {
-        pageTitle.textContent = pageId.charAt(0).toUpperCase() + pageId.slice(1);
-    }
+    if (pageTitle) pageTitle.textContent = pageId.charAt(0).toUpperCase() + pageId.slice(1);
 
     if (pageId === "doctors") loadDoctors();
     if (pageId === "performance") loadPerformance();
     if (pageId === "history") loadHistory();
 }
 
-
 navItems.forEach(function (item) {
-
     item.addEventListener("click", function () {
         goToPage(item.dataset.page);
     });
 });
 
-
 goButtons.forEach(function (btn) {
-
     btn.addEventListener("click", function () {
         goToPage(btn.dataset.go);
     });
 });
 
-
-// ============================================================
-// PROFILE
-// ============================================================
-
 if (saveProfileBtn) {
-
     saveProfileBtn.addEventListener("click", async function () {
-
         const user = auth.currentUser;
-
         if (!user) {
             if (profileMessage) profileMessage.textContent = "Please login first.";
             return;
@@ -427,121 +266,69 @@ if (saveProfileBtn) {
         };
 
         try {
-
             await addDoc(collection(db, "profiles"), profileData);
-
             if (profileMessage) profileMessage.textContent = "Profile saved.";
             if (welcomeName && profileData.name) welcomeName.textContent = profileData.name;
-
         } catch (error) {
-
             console.error("Profile save error:", error);
             if (profileMessage) profileMessage.textContent = "Could not save profile: " + error.message;
         }
     });
 }
 
-
-// ============================================================
-// SYMPTOM CHECKBOXES
-// ============================================================
-
 function getSymptomCheckboxes() {
     return document.querySelectorAll('#symptomGrid input[type="checkbox"]');
 }
 
-
 function updateCount() {
-
     const boxes = getSymptomCheckboxes();
     let selectedCount = 0;
-
-    boxes.forEach(function (box) {
-        if (box.checked) selectedCount++;
-    });
-
+    boxes.forEach(function (box) { if (box.checked) selectedCount++; });
     if (count) count.textContent = selectedCount;
 }
 
-
 function setupSymptomEvents() {
-
     const boxes = getSymptomCheckboxes();
-
     console.log("Found symptom checkboxes:", boxes.length);
-
     boxes.forEach(function (box) {
         box.addEventListener("change", updateCount);
     });
-
     updateCount();
 }
 
-
-// ============================================================
-// SEARCH SYMPTOMS
-// ============================================================
-
 if (searchInput) {
-
     searchInput.addEventListener("input", function (event) {
-
         const searchText = event.target.value.toLowerCase().trim();
         const symptoms = document.querySelectorAll("#symptomGrid .symptom");
-
         symptoms.forEach(function (symptom) {
-
             const name = (symptom.dataset.name || "").toLowerCase();
             symptom.style.display = name.includes(searchText) ? "" : "none";
         });
     });
 }
 
-
-// ============================================================
-// CLEAR SYMPTOMS
-// ============================================================
-
 if (clearBtn) {
-
     clearBtn.addEventListener("click", function () {
-
-        getSymptomCheckboxes().forEach(function (box) {
-            box.checked = false;
-        });
-
+        getSymptomCheckboxes().forEach(function (box) { box.checked = false; });
         updateCount();
-
         if (result) result.classList.add("hidden");
         if (searchInput) searchInput.value = "";
-
         document.querySelectorAll("#symptomGrid .symptom").forEach(function (symptom) {
             symptom.style.display = "";
         });
     });
 }
 
-
-// ============================================================
-// PREDICTION
-// ============================================================
-
 function getSelectedSymptoms() {
-
     const selected = [];
-
     getSymptomCheckboxes().forEach(function (box) {
         if (box.checked) selected.push(box.value);
     });
-
     return selected;
 }
 
-
 async function makePrediction() {
-
     const selectedSymptoms = getSelectedSymptoms();
-
     console.log("Selected symptoms:", selectedSymptoms);
 
     if (!auth.currentUser) {
@@ -560,7 +347,6 @@ async function makePrediction() {
     }
 
     try {
-
         const response = await fetch("/predict", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -569,9 +355,7 @@ async function makePrediction() {
 
         const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.error || "Prediction failed.");
-        }
+        if (!response.ok) throw new Error(data.error || "Prediction failed.");
 
         if (result) result.classList.remove("hidden");
         if (disease) disease.textContent = data.disease || "Unknown";
@@ -581,50 +365,35 @@ async function makePrediction() {
         if (confidenceText) confidenceText.textContent = `Confidence: ${confidence}%`;
         if (confidenceBar) confidenceBar.style.width = `${confidence}%`;
 
-        if (topPredictions) {
-            topPredictions.innerHTML = "";
-        }
+        if (topPredictions) topPredictions.innerHTML = "";
 
         if (data.top_predictions && data.top_predictions.length && topPredictions) {
-
             data.top_predictions.forEach(function (item) {
-
                 const div = document.createElement("div");
                 div.className = "prediction-item";
-
                 const diseaseName = document.createElement("span");
                 diseaseName.textContent = item.disease;
-
                 const confidenceValue = document.createElement("strong");
                 confidenceValue.textContent = `${item.confidence}%`;
-
                 div.appendChild(diseaseName);
                 div.appendChild(confidenceValue);
-
                 topPredictions.appendChild(div);
             });
         }
 
-        if (message) {
-            message.textContent = data.message || "Educational ML prediction only.";
-        }
+        if (message) message.textContent = data.message || "Educational ML prediction only.";
 
         await savePrediction(selectedSymptoms, data);
 
         if (latestDisease) latestDisease.textContent = data.disease || "—";
         if (dashboardLatest) dashboardLatest.textContent = `${data.disease} (${confidence}% confidence)`;
 
-        if (result) {
-            result.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+        if (result) result.scrollIntoView({ behavior: "smooth", block: "start" });
 
     } catch (error) {
-
         console.error("Prediction error:", error);
         alert("Prediction failed: " + error.message);
-
     } finally {
-
         if (predictBtn) {
             predictBtn.disabled = false;
             predictBtn.textContent = "Analyze Symptoms";
@@ -632,22 +401,14 @@ async function makePrediction() {
     }
 }
 
-
-// ============================================================
-// SAVE PREDICTION TO FIRESTORE
-// ============================================================
-
 async function savePrediction(selectedSymptoms, data) {
-
     const user = auth.currentUser;
-
     if (!user) {
         console.log("User not logged in. Prediction not saved.");
         return;
     }
 
     try {
-
         await addDoc(collection(db, "predictions"), {
             userId: user.uid,
             userEmail: user.email || null,
@@ -657,28 +418,17 @@ async function savePrediction(selectedSymptoms, data) {
             topPredictions: data.top_predictions || [],
             createdAt: serverTimestamp()
         });
-
         console.log("Prediction saved to Firestore.");
-
     } catch (error) {
-
         console.error("Firestore save error:", error);
     }
 }
 
-
-// ============================================================
-// LOAD HISTORY FROM FIRESTORE
-// ============================================================
-
 async function loadHistory() {
-
     const user = auth.currentUser;
-
     if (!user || !historyList) return;
 
     try {
-
         const q = query(
             collection(db, "predictions"),
             where("userId", "==", user.uid),
@@ -695,82 +445,56 @@ async function loadHistory() {
         }
 
         historyList.innerHTML = "";
-
         let items = 0;
 
         snapshot.forEach(function (docSnap) {
-
             const entry = docSnap.data();
             items++;
-
             const div = document.createElement("div");
             div.className = "history-item";
             div.textContent = `${entry.disease || "Unknown"} — ${entry.confidence || 0}% confidence`;
-
             historyList.appendChild(div);
         });
 
         if (predictionCount) predictionCount.textContent = String(items);
 
     } catch (error) {
-
         console.error("History load error:", error);
         historyList.innerHTML = '<p class="muted">Could not load history.</p>';
     }
 }
 
-
 async function loadDashboardStats() {
-    // Reuses loadHistory, which also populates predictionCount
     await loadHistory();
 }
 
-
-// ============================================================
-// DOCTORS
-// ============================================================
-
 async function loadDoctors() {
-
     if (!doctorList) return;
 
     try {
-
         const response = await fetch("/doctors");
         const data = await response.json();
 
         doctorList.innerHTML = "";
 
         (data.doctors || []).forEach(function (doctor) {
-
             const card = document.createElement("div");
             card.className = "doctor-card";
-
             card.innerHTML = `
                 <strong>${doctor.name}</strong>
                 <span>${doctor.specialization}</span>
                 <span>${doctor.hospital}, ${doctor.location}</span>
                 <span>${doctor.experience} experience</span>
             `;
-
             doctorList.appendChild(card);
         });
-
     } catch (error) {
-
         console.error("Doctors load error:", error);
     }
 }
 
-
-// ============================================================
-// PERFORMANCE
-// ============================================================
-
 async function loadPerformance() {
-
     try {
-
         const response = await fetch("/performance");
         const data = await response.json();
 
@@ -786,20 +510,12 @@ async function loadPerformance() {
         if (rfAccuracy) rfAccuracy.textContent = `${data.accuracy}%`;
 
     } catch (error) {
-
         console.error("Performance load error:", error);
     }
 }
 
-
-// ============================================================
-// QUANTUM ANALYSIS
-// ============================================================
-
 if (quantumBtn) {
-
     quantumBtn.addEventListener("click", async function () {
-
         const selectedSymptoms = getSelectedSymptoms();
 
         if (selectedSymptoms.length === 0) {
@@ -811,7 +527,6 @@ if (quantumBtn) {
         quantumBtn.textContent = "Running...";
 
         try {
-
             const response = await fetch("/quantum", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -820,12 +535,9 @@ if (quantumBtn) {
 
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || "Quantum analysis failed.");
-            }
+            if (!response.ok) throw new Error(data.error || "Quantum analysis failed.");
 
             if (quantumResult) {
-
                 quantumResult.innerHTML = `
                     <p><strong>Qubits used:</strong> ${data.qubits}</p>
                     <p><strong>Circuit depth:</strong> ${data.circuit_depth}</p>
@@ -833,64 +545,30 @@ if (quantumBtn) {
                     <p>${data.interpretation}</p>
                 `;
             }
-
         } catch (error) {
-
             console.error("Quantum error:", error);
-
-            if (quantumResult) {
-                quantumResult.textContent = "Quantum analysis failed: " + error.message;
-            }
-
+            if (quantumResult) quantumResult.textContent = "Quantum analysis failed: " + error.message;
         } finally {
-
             quantumBtn.disabled = false;
             quantumBtn.textContent = "Run Quantum Analysis";
         }
     });
 }
 
-
-// ============================================================
-// EVENT WIRING
-// ============================================================
-
-if (loginTab) {
-    loginTab.addEventListener("click", function () { setAuthMode("login"); });
-}
-
-if (signupTab) {
-    signupTab.addEventListener("click", function () { setAuthMode("signup"); });
-}
-
-if (authSubmit) {
-    authSubmit.addEventListener("click", handleEmailAuthentication);
-}
+if (loginTab) loginTab.addEventListener("click", function () { setAuthMode("login"); });
+if (signupTab) signupTab.addEventListener("click", function () { setAuthMode("signup"); });
+if (authSubmit) authSubmit.addEventListener("click", handleEmailAuthentication);
 
 if (authPassword) {
-
     authPassword.addEventListener("keydown", function (event) {
-
-        if (event.key === "Enter") {
-            handleEmailAuthentication();
-        }
+        if (event.key === "Enter") handleEmailAuthentication();
     });
 }
 
-if (logoutBtn) {
-    logoutBtn.addEventListener("click", logoutUser);
-}
-
-if (predictBtn) {
-    predictBtn.addEventListener("click", makePrediction);
-}
-
-
-// ============================================================
-// INITIALIZE
-// ============================================================
+if (logoutBtn) logoutBtn.addEventListener("click", logoutUser);
+if (predictBtn) predictBtn.addEventListener("click", makePrediction);
 
 setupSymptomEvents();
 setAuthMode("login");
 
-console.log("QuantumDiagnose JavaScript loaded successfully.");
+console.log("QuantumDiagnose JavaScript loaded successfully - v2.");
