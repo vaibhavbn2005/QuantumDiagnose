@@ -1,607 +1,324 @@
-// ============================================================
-// QUANTUM DIAGNOSE - MAIN JAVASCRIPT
-// ============================================================
+/* =========================================================
+   ANALYSIS RESULTS
+========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+.results-section {
+    margin-top: 40px;
+    padding: 30px;
+}
 
-    console.log("Quantum Diagnose loaded");
+.results-section h2 {
+    text-align: center;
+    margin-bottom: 10px;
+}
 
-    // --------------------------------------------------------
-    // ANALYZE BUTTON
-    // --------------------------------------------------------
-
-    const analyzeButton =
-        document.getElementById("analyzeBtn");
-
-    if (analyzeButton) {
-
-        analyzeButton.addEventListener(
-            "click",
-            analyzeSymptoms
-        );
-    }
-
-});
-
-
-// ============================================================
-// ANALYZE SYMPTOMS
-// ============================================================
-
-async function analyzeSymptoms() {
-
-    const button =
-        document.getElementById("analyzeBtn");
-
-    if (button) {
-
-        button.disabled = true;
-
-        button.innerHTML =
-            "⏳ Running Random Forest + Qiskit...";
-    }
-
-    try {
-
-        // ----------------------------------------------------
-        // COLLECT FORM DATA
-        // ----------------------------------------------------
-
-        const form =
-            document.getElementById("symptomForm");
-
-        if (!form) {
-
-            showError(
-                "Symptom form not found."
-            );
-
-            return;
-        }
-
-        const formData =
-            new FormData(form);
-
-        const data = {};
-
-        formData.forEach(
-            (value, key) => {
-
-                if (value !== "") {
-
-                    data[key] =
-                        Number(value);
-                }
-            }
-        );
-
-        console.log(
-            "Sending symptoms:",
-            data
-        );
-
-        // ----------------------------------------------------
-        // SEND TO BACKEND
-        // ----------------------------------------------------
-
-        const response =
-            await fetch(
-                "/api/analyze",
-                {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify(data)
-                }
-            );
-
-        const result =
-            await response.json();
-
-        console.log(
-            "Analysis result:",
-            result
-        );
-
-        if (!response.ok ||
-            !result.success) {
-
-            throw new Error(
-                result.error ||
-                "Analysis failed."
-            );
-        }
-
-        // ----------------------------------------------------
-        // DISPLAY RESULTS
-        // ----------------------------------------------------
-
-        displayAnalysis(result);
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Analysis error:",
-            error
-        );
-
-        showError(
-            error.message
-        );
-
-    }
-
-    finally {
-
-        if (button) {
-
-            button.disabled = false;
-
-            button.innerHTML =
-                "🔬 Analyze Symptoms";
-        }
-    }
+.result-note {
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.75;
+    margin-bottom: 30px;
 }
 
 
-// ============================================================
-// DISPLAY ANALYSIS
-// ============================================================
+/* =========================================================
+   MODEL CARDS
+========================================================= */
 
-function displayAnalysis(result) {
+.model-card {
+    background: white;
+    border-radius: 18px;
+    padding: 25px;
+    margin-bottom: 25px;
 
-    const resultsSection =
-        document.getElementById(
-            "resultsSection"
-        );
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.08);
+}
 
-    if (resultsSection) {
+.model-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 
-        resultsSection.style.display =
-            "block";
-    }
+    margin-bottom: 25px;
+}
 
-    // --------------------------------------------------------
-    // RANDOM FOREST
-    // --------------------------------------------------------
+.model-icon {
+    font-size: 40px;
+}
 
-    const rf =
-        result.random_forest;
+.model-title h3 {
+    margin: 0;
+    font-size: 22px;
+}
 
-    const rfPrediction =
-        document.getElementById(
-            "rfPrediction"
-        );
-
-    const rfConfidence =
-        document.getElementById(
-            "rfConfidence"
-        );
-
-    const rfAccuracy =
-        document.getElementById(
-            "rfAccuracy"
-        );
-
-    const rfPrecision =
-        document.getElementById(
-            "rfPrecision"
-        );
-
-    const rfRecall =
-        document.getElementById(
-            "rfRecall"
-        );
-
-    const rfF1 =
-        document.getElementById(
-            "rfF1"
-        );
-
-    if (rfPrediction) {
-
-        rfPrediction.textContent =
-            rf.prediction;
-    }
-
-    if (rfConfidence) {
-
-        rfConfidence.textContent =
-            rf.confidence + "%";
-
-        updateProgress(
-            "rfProgress",
-            rf.confidence
-        );
-    }
-
-    if (rfAccuracy) {
-
-        rfAccuracy.textContent =
-            rf.test_accuracy + "%";
-    }
-
-    if (rfPrecision) {
-
-        rfPrecision.textContent =
-            rf.precision + "%";
-    }
-
-    if (rfRecall) {
-
-        rfRecall.textContent =
-            rf.recall + "%";
-    }
-
-    if (rfF1) {
-
-        rfF1.textContent =
-            rf.f1_score + "%";
-    }
-
-
-    // --------------------------------------------------------
-    // QISKIT
-    // --------------------------------------------------------
-
-    const quantum =
-        result.qiskit;
-
-    const qPrediction =
-        document.getElementById(
-            "qPrediction"
-        );
-
-    const qConfidence =
-        document.getElementById(
-            "qConfidence"
-        );
-
-    const qAccuracy =
-        document.getElementById(
-            "qAccuracy"
-        );
-
-    const qPrecision =
-        document.getElementById(
-            "qPrecision"
-        );
-
-    const qRecall =
-        document.getElementById(
-            "qRecall"
-        );
-
-    const qF1 =
-        document.getElementById(
-            "qF1"
-        );
-
-    if (quantum) {
-
-        if (qPrediction) {
-
-            qPrediction.textContent =
-                quantum.prediction;
-        }
-
-        if (qConfidence) {
-
-            qConfidence.textContent =
-                quantum.confidence + "%";
-
-            updateProgress(
-                "qProgress",
-                quantum.confidence
-            );
-        }
-
-        if (qAccuracy) {
-
-            qAccuracy.textContent =
-                quantum.test_accuracy + "%";
-        }
-
-        if (qPrecision) {
-
-            qPrecision.textContent =
-                quantum.precision + "%";
-        }
-
-        if (qRecall) {
-
-            qRecall.textContent =
-                quantum.recall + "%";
-        }
-
-        if (qF1) {
-
-            qF1.textContent =
-                quantum.f1_score + "%";
-        }
-
-    }
-    else {
-
-        if (qPrediction) {
-
-            qPrediction.textContent =
-                "Unavailable";
-        }
-
-        if (qConfidence) {
-
-            qConfidence.textContent =
-                "--";
-        }
-    }
-
-
-    // --------------------------------------------------------
-    // COMPARISON
-    // --------------------------------------------------------
-
-    showComparison(
-        rf,
-        quantum
-    );
-
-
-    // --------------------------------------------------------
-    // RANDOM FOREST CLASS PROBABILITIES
-    // --------------------------------------------------------
-
-    displayClassProbabilities(
-        rf.probabilities
-    );
-
-
-    // --------------------------------------------------------
-    // SCROLL TO RESULTS
-    // --------------------------------------------------------
-
-    if (resultsSection) {
-
-        resultsSection.scrollIntoView({
-            behavior: "smooth"
-        });
-    }
+.model-title p {
+    margin: 5px 0 0;
+    opacity: 0.65;
 }
 
 
-// ============================================================
-// PROGRESS BAR
-// ============================================================
+/* =========================================================
+   PREDICTION
+========================================================= */
 
-function updateProgress(
-    elementId,
-    percentage
-) {
+.prediction {
+    background: #f5f7fb;
+    padding: 18px;
+    border-radius: 12px;
 
-    const element =
-        document.getElementById(
-            elementId
-        );
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-    if (!element) {
-        return;
-    }
+    margin-bottom: 22px;
+}
 
-    element.style.width =
-        Math.min(
-            100,
-            Math.max(
-                0,
-                percentage
-            )
-        ) + "%";
+.prediction span {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.prediction strong {
+    font-size: 22px;
 }
 
 
-// ============================================================
-// MODEL COMPARISON
-// ============================================================
+/* =========================================================
+   CONFIDENCE
+========================================================= */
 
-function showComparison(
-    randomForest,
-    quantum
-) {
+.confidence {
+    margin-bottom: 25px;
+}
 
-    const comparison =
-        document.getElementById(
-            "modelComparison"
-        );
+.confidence-header {
+    display: flex;
+    justify-content: space-between;
 
-    if (!comparison) {
-        return;
-    }
+    margin-bottom: 10px;
+}
 
-    if (!quantum) {
+.confidence-header strong {
+    font-size: 20px;
+}
 
-        comparison.innerHTML = `
-            <div class="comparison-message">
-                ⚠️ Qiskit model is currently unavailable.
-            </div>
-        `;
+.progress {
+    height: 12px;
+    background: #e5e7eb;
+    border-radius: 20px;
+    overflow: hidden;
+}
 
-        return;
-    }
+.progress-bar {
+    height: 100%;
+    width: 0%;
 
-    const rfScore =
-        Number(
-            randomForest.confidence
-        );
+    border-radius: 20px;
 
-    const qScore =
-        Number(
-            quantum.confidence
-        );
-
-    let winner;
-
-    if (rfScore > qScore) {
-
-        winner =
-            "🌲 Random Forest has the higher model confidence.";
-
-    }
-    else if (qScore > rfScore) {
-
-        winner =
-            "⚛️ Qiskit has the higher model confidence.";
-
-    }
-    else {
-
-        winner =
-            "🤝 Both models have the same model confidence.";
-    }
-
-    comparison.innerHTML = `
-
-        <div class="comparison-card">
-
-            <h3>
-                🔬 Model Comparison
-            </h3>
-
-            <div class="comparison-row">
-
-                <div>
-                    <strong>
-                        Random Forest
-                    </strong>
-
-                    <span>
-                        ${randomForest.prediction}
-                    </span>
-
-                    <b>
-                        ${rfScore}%
-                    </b>
-                </div>
-
-                <div>
-                    <strong>
-                        Qiskit Quantum
-                    </strong>
-
-                    <span>
-                        ${quantum.prediction}
-                    </span>
-
-                    <b>
-                        ${qScore}%
-                    </b>
-                </div>
-
-            </div>
-
-            <div class="winner">
-
-                ${winner}
-
-            </div>
-
-        </div>
-    `;
+    transition:
+        width 0.8s ease;
 }
 
 
-// ============================================================
-// DISPLAY CLASS PROBABILITIES
-// ============================================================
+/* =========================================================
+   METRICS
+========================================================= */
 
-function displayClassProbabilities(
-    probabilities
-) {
+.metrics {
+    display: grid;
 
-    const container =
-        document.getElementById(
-            "classProbabilities"
-        );
+    grid-template-columns:
+        repeat(4, 1fr);
 
-    if (!container) {
-        return;
-    }
+    gap: 12px;
+}
 
-    container.innerHTML = "";
+.metrics div {
+    background: #f5f7fb;
 
-    if (!probabilities) {
-        return;
-    }
+    padding: 15px;
 
-    Object.entries(
-        probabilities
-    ).forEach(
-        ([label, percentage]) => {
+    border-radius: 10px;
 
-            container.innerHTML += `
+    text-align: center;
+}
 
-                <div class="probability-row">
+.metrics span {
+    display: block;
 
-                    <div class="probability-header">
+    font-size: 12px;
 
-                        <span>
-                            ${label}
-                        </span>
+    opacity: 0.65;
 
-                        <strong>
-                            ${percentage}%
-                        </strong>
+    margin-bottom: 7px;
+}
 
-                    </div>
-
-                    <div class="probability-bar">
-
-                        <div
-                            class="probability-fill"
-                            style="width:${percentage}%"
-                        ></div>
-
-                    </div>
-
-                </div>
-            `;
-        }
-    );
+.metrics strong {
+    font-size: 17px;
 }
 
 
-// ============================================================
-// ERROR
-// ============================================================
+/* =========================================================
+   COMPARISON
+========================================================= */
 
-function showError(
-    message
-) {
+.model-comparison {
+    margin-top: 30px;
+}
 
-    const error =
-        document.getElementById(
-            "errorMessage"
-        );
+.comparison-card {
+    background: #f5f7fb;
 
-    if (error) {
+    border-radius: 18px;
 
-        error.textContent =
-            "⚠️ " + message;
+    padding: 25px;
+}
 
-        error.style.display =
-            "block";
+.comparison-card h3 {
+    text-align: center;
+    margin-bottom: 25px;
+}
 
-        return;
+.comparison-row {
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 20px;
+}
+
+.comparison-row > div {
+    background: white;
+
+    padding: 20px;
+
+    border-radius: 12px;
+
+    text-align: center;
+}
+
+.comparison-row strong {
+    display: block;
+
+    font-size: 18px;
+
+    margin-bottom: 8px;
+}
+
+.comparison-row span {
+    display: block;
+
+    margin-bottom: 8px;
+
+    opacity: 0.7;
+}
+
+.comparison-row b {
+    font-size: 25px;
+}
+
+.winner {
+    text-align: center;
+
+    margin-top: 25px;
+
+    font-weight: bold;
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    background: white;
+}
+
+
+/* =========================================================
+   PROBABILITIES
+========================================================= */
+
+.probability-card {
+    background: white;
+
+    margin-top: 25px;
+
+    padding: 25px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.probability-card h3 {
+    margin-bottom: 25px;
+}
+
+.probability-row {
+    margin-bottom: 18px;
+}
+
+.probability-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-bottom: 8px;
+}
+
+.probability-bar {
+    height: 10px;
+
+    background: #e5e7eb;
+
+    border-radius: 20px;
+
+    overflow: hidden;
+}
+
+.probability-fill {
+    height: 100%;
+
+    border-radius: 20px;
+
+    transition:
+        width 0.8s ease;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.error-message {
+    margin-top: 20px;
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+
+    .metrics {
+        grid-template-columns:
+            repeat(2, 1fr);
     }
 
-    alert(
-        "Analysis Error: " +
-        message
-    );
+    .comparison-row {
+        grid-template-columns: 1fr;
+    }
+
+    .results-section {
+        padding: 15px;
+    }
 }
