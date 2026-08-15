@@ -1,29 +1,15 @@
 // ============================================================
-// QuantumDiagnose - Updated Complete script.js
-// Features:
-// - Email authentication
-// - Phone OTP + reCAPTCHA
-// - Patient profile
-// - Saved profile after logout/login
-// - Welcome back name
-// - Mandatory profile before prediction
-// - Random Forest prediction
-// - Qiskit prediction display
-// - Disease-related doctor recommendation
-// - Prediction timestamp
-// - Prediction history with date/time
-// - Download Prediction Report as PDF
-// - No toggle button
+// QUANTUMDIAGNOSE - COMPLETE SCRIPT
 // ============================================================
 
-
 // ============================================================
-// FIREBASE IMPORTS
+// FIREBASE
 // ============================================================
 
 import {
     initializeApp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
 
 import {
     getAuth,
@@ -35,189 +21,75 @@ import {
     signInWithPhoneNumber
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+
 import {
     getFirestore,
+    doc,
+    getDoc,
+    setDoc,
     collection,
     addDoc,
-    serverTimestamp,
-    doc,
-    setDoc,
-    getDoc,
     query,
-    where,
     orderBy,
-    getDocs
+    getDocs,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
 // ============================================================
-// FIREBASE CONFIGURATION
+// FIREBASE CONFIG
 // ============================================================
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
-    authDomain: "quantumdiagnose.firebaseapp.com",
-    projectId: "quantumdiagnose",
-    storageBucket: "quantumdiagnose.firebasestorage.app",
-    messagingSenderId: "727641186346",
-    appId: "1:727641186346:web:958942c8d9f6906a69e353",
-    measurementId: "G-YM0HMMVBFR"
+
+    apiKey:
+        "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
+
+    authDomain:
+        "quantumdiagnose.firebaseapp.com",
+
+    projectId:
+        "quantumdiagnose",
+
+    storageBucket:
+        "quantumdiagnose.firebasestorage.app",
+
+    messagingSenderId:
+        "727641186346",
+
+    appId:
+        "1:727641186346:web:958942c8d9f6906a69e353",
+
+    measurementId:
+        "G-YM0HMMVBFR"
 };
 
 
 // ============================================================
-// INITIALIZE FIREBASE
+// INITIALIZE
 // ============================================================
 
-const firebaseApp = initializeApp(firebaseConfig);
+const appFirebase =
+    initializeApp(firebaseConfig);
 
-const auth = getAuth(firebaseApp);
+const auth =
+    getAuth(appFirebase);
 
-const db = getFirestore(firebaseApp);
-
-window.firebaseAuth = auth;
-window.firebaseDB = db;
-
-
-// ============================================================
-// HTML ELEMENTS
-// ============================================================
-
-// Authentication
-const loginBtn = document.getElementById("loginBtn");
-const signupBtn = document.getElementById("signupBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-
-const authModal = document.getElementById("authModal");
-const closeModal = document.getElementById("closeModal");
-const authTitle = document.getElementById("authTitle");
-
-const emailTab = document.getElementById("emailTab");
-const phoneTab = document.getElementById("phoneTab");
-
-const emailAuth = document.getElementById("emailAuth");
-const phoneAuth = document.getElementById("phoneAuth");
-
-const authEmail = document.getElementById("authEmail");
-const authPassword = document.getElementById("authPassword");
-const authSubmit = document.getElementById("authSubmit");
-
-const phoneNumber = document.getElementById("phoneNumber");
-const sendOtpBtn = document.getElementById("sendOtpBtn");
-const otpCode = document.getElementById("otpCode");
-const verifyOtpBtn = document.getElementById("verifyOtpBtn");
-
-const recaptchaContainer =
-    document.getElementById("recaptcha-container");
-
-const authMessage =
-    document.getElementById("authMessage");
-
-
-// Symptoms
-const searchInput =
-    document.getElementById("search");
-
-const symptomGrid =
-    document.getElementById("symptomGrid");
-
-const count =
-    document.getElementById("count");
-
-const clearBtn =
-    document.getElementById("clearBtn");
-
-const predictBtn =
-    document.getElementById("predictBtn");
-
-
-// Prediction result
-const result =
-    document.getElementById("result");
-
-const disease =
-    document.getElementById("disease");
-
-const confidenceBar =
-    document.getElementById("confidenceBar");
-
-const confidenceText =
-    document.getElementById("confidenceText");
-
-const topPredictions =
-    document.getElementById("topPredictions");
-
-const message =
-    document.getElementById("message");
-
-const specialistBox =
-    document.getElementById("specialistBox");
-
-
-// Patient profile
-const profileName =
-    document.getElementById("profileName");
-
-const profileGender =
-    document.getElementById("profileGender");
-
-const profileAge =
-    document.getElementById("profileAge");
-
-const profileHeight =
-    document.getElementById("profileHeight");
-
-const profileWeight =
-    document.getElementById("profileWeight");
-
-const saveProfileBtn =
-    document.getElementById("saveProfileBtn");
-
-const profileMessage =
-    document.getElementById("profileMessage");
-
-
-// Dashboard
-const welcomeName =
-    document.getElementById("welcomeName");
-
-const latestDisease =
-    document.getElementById("latestDisease");
-
-
-// History
-const historyList =
-    document.getElementById("historyList");
-
-
-// Quantum
-const quantumBtn =
-    document.getElementById("quantumBtn");
-
-const quantumResult =
-    document.getElementById("quantumResult");
-
-
-// Performance
-const metricAccuracy =
-    document.getElementById("metricAccuracy");
-
-const metricPrecision =
-    document.getElementById("metricPrecision");
-
-const metricRecall =
-    document.getElementById("metricRecall");
-
-const metricF1 =
-    document.getElementById("metricF1");
-
-const rfAccuracy =
-    document.getElementById("rfAccuracy");
+const db =
+    getFirestore(appFirebase);
 
 
 // ============================================================
-// GLOBAL VARIABLES
+// GLOBAL STATE
 // ============================================================
+
+let currentUser = null;
+
+let currentProfile = null;
+
+let currentResult = null;
+
+let currentPage = "dashboard";
 
 let authMode = "login";
 
@@ -227,304 +99,191 @@ let confirmationResult = null;
 
 let recaptchaVerifier = null;
 
-let currentProfile = null;
+let captchaAnswer = null;
 
-let latestPrediction = null;
 
-let latestPredictionTimestamp = null;
+// ============================================================
+// SHORTCUT
+// ============================================================
+
+const $ = (id) =>
+    document.getElementById(id);
 
 
 // ============================================================
 // AUTH MESSAGE
 // ============================================================
 
-function showAuthMessage(text, isError = false) {
+function showAuthMessage(
+    message,
+    error = false
+) {
 
-    if (!authMessage) {
+    const element =
+        $("authMessage");
+
+    if (!element) {
         return;
     }
 
-    authMessage.textContent = text;
+    element.textContent =
+        message;
 
-    authMessage.style.color =
-        isError
-            ? "#d32f2f"
-            : "#2e7d32";
+    element.className =
+        error
+            ? "auth-message error"
+            : "auth-message success";
 }
 
 
 // ============================================================
-// PROFILE MESSAGE
+// CAPTCHA
 // ============================================================
 
-function showProfileMessage(text, isError = false) {
+function generateCaptcha() {
 
-    if (!profileMessage) {
-        return;
-    }
+    const a =
+        Math.floor(
+            Math.random() * 9
+        ) + 1;
 
-    profileMessage.textContent = text;
+    const b =
+        Math.floor(
+            Math.random() * 9
+        ) + 1;
 
-    profileMessage.style.color =
-        isError
-            ? "#d32f2f"
-            : "#2e7d32";
+    captchaAnswer =
+        a + b;
+
+    $("captchaQuestion")
+        .textContent =
+        `${a} + ${b} = ?`;
+
+    $("captchaAnswer")
+        .value = "";
+}
+
+
+function verifyCaptcha() {
+
+    const answer =
+        Number(
+            $("captchaAnswer").value
+        );
+
+    return (
+        answer ===
+        captchaAnswer
+    );
 }
 
 
 // ============================================================
-// OPEN AUTH MODAL
+// AUTH TABS
 // ============================================================
 
-function openAuthModal(mode) {
+function setAuthMode(mode) {
 
     authMode = mode;
 
-    authMethod = "email";
-
-    if (authTitle) {
-        authTitle.textContent =
+    $("loginTab")
+        .classList.toggle(
+            "active",
             mode === "login"
-                ? "Login"
-                : "Create Account";
-    }
+        );
 
-    if (authSubmit) {
-        authSubmit.textContent =
-            mode === "login"
-                ? "Login"
-                : "Create Account";
-    }
+    $("signupTab")
+        .classList.toggle(
+            "active",
+            mode === "signup"
+        );
 
-    if (authModal) {
-        authModal.classList.remove("hidden");
-    }
-
-    showEmailAuth();
-
-    clearAuthInputs();
-
-    showAuthMessage("");
-}
-
-
-// ============================================================
-// CLOSE AUTH MODAL
-// ============================================================
-
-function closeAuthModal() {
-
-    if (authModal) {
-        authModal.classList.add("hidden");
-    }
+    $("authSubmit")
+        .textContent =
+        mode === "login"
+            ? "Login"
+            : "Create Account";
 
     showAuthMessage("");
 
-    clearAuthInputs();
-
-    if (recaptchaVerifier) {
-
-        try {
-            recaptchaVerifier.clear();
-        } catch (error) {
-            console.log(
-                "reCAPTCHA clear error:",
-                error
-            );
-        }
-
-        recaptchaVerifier = null;
-    }
-
-    confirmationResult = null;
+    generateCaptcha();
 }
 
 
 // ============================================================
-// CLEAR AUTH INPUTS
+// AUTH METHOD
 // ============================================================
 
-function clearAuthInputs() {
-
-    if (authEmail) {
-        authEmail.value = "";
-    }
-
-    if (authPassword) {
-        authPassword.value = "";
-    }
-
-    if (phoneNumber) {
-        phoneNumber.value = "";
-    }
-
-    if (otpCode) {
-        otpCode.value = "";
-    }
-}
-
-
-// ============================================================
-// EMAIL AUTH TAB
-// ============================================================
-
-function showEmailAuth() {
+function showEmailMethod() {
 
     authMethod = "email";
 
-    if (emailTab) {
-        emailTab.classList.add("active");
-    }
+    $("emailAuth")
+        .classList.remove("hidden");
 
-    if (phoneTab) {
-        phoneTab.classList.remove("active");
-    }
+    $("phoneAuth")
+        .classList.add("hidden");
 
-    if (emailAuth) {
-        emailAuth.classList.remove("hidden");
-    }
+    $("emailTab")
+        .classList.add("active");
 
-    if (phoneAuth) {
-        phoneAuth.classList.add("hidden");
-    }
+    $("phoneTab")
+        .classList.remove("active");
 
     showAuthMessage("");
+
+    generateCaptcha();
 }
 
 
-// ============================================================
-// PHONE AUTH TAB
-// ============================================================
-
-function showPhoneAuth() {
+function showPhoneMethod() {
 
     authMethod = "phone";
 
-    if (phoneTab) {
-        phoneTab.classList.add("active");
-    }
+    $("emailAuth")
+        .classList.add("hidden");
 
-    if (emailTab) {
-        emailTab.classList.remove("active");
-    }
+    $("phoneAuth")
+        .classList.remove("hidden");
 
-    if (emailAuth) {
-        emailAuth.classList.add("hidden");
-    }
+    $("emailTab")
+        .classList.remove("active");
 
-    if (phoneAuth) {
-        phoneAuth.classList.remove("hidden");
-    }
+    $("phoneTab")
+        .classList.add("active");
 
     showAuthMessage("");
 
-    initializeRecaptcha();
+    initializePhoneRecaptcha();
 }
 
 
 // ============================================================
-// INITIALIZE reCAPTCHA
+// EMAIL AUTHENTICATION
 // ============================================================
 
-function initializeRecaptcha() {
-
-    if (recaptchaVerifier) {
-        return;
-    }
-
-    if (!recaptchaContainer) {
-        return;
-    }
-
-    try {
-
-        recaptchaVerifier =
-            new RecaptchaVerifier(
-                auth,
-                "recaptcha-container",
-                {
-                    size: "normal",
-
-                    callback: function () {
-                        console.log(
-                            "reCAPTCHA verified"
-                        );
-                    },
-
-                    "expired-callback":
-                        function () {
-
-                            showAuthMessage(
-                                "reCAPTCHA expired. Please verify again.",
-                                true
-                            );
-                        }
-                }
-            );
-
-        recaptchaVerifier
-            .render()
-            .then(function (widgetId) {
-
-                console.log(
-                    "reCAPTCHA rendered:",
-                    widgetId
-                );
-
-            })
-            .catch(function (error) {
-
-                console.error(
-                    "reCAPTCHA render error:",
-                    error
-                );
-
-                showAuthMessage(
-                    "Could not load reCAPTCHA.",
-                    true
-                );
-            });
-
-    } catch (error) {
-
-        console.error(
-            "reCAPTCHA initialization error:",
-            error
-        );
-
-        showAuthMessage(
-            "Could not initialize phone authentication.",
-            true
-        );
-    }
-}
-
-
-// ============================================================
-// EMAIL LOGIN / SIGN UP
-// ============================================================
-
-async function handleEmailAuthentication() {
+async function handleEmailAuth() {
 
     const email =
-        authEmail
-            ? authEmail.value.trim()
-            : "";
+        $("authEmail")
+            .value
+            .trim();
 
     const password =
-        authPassword
-            ? authPassword.value
-            : "";
+        $("authPassword")
+            .value;
+
 
     if (!email) {
 
         showAuthMessage(
-            "Please enter your email address.",
+            "Please enter your email.",
             true
         );
 
         return;
     }
+
 
     if (!password) {
 
@@ -536,6 +295,7 @@ async function handleEmailAuthentication() {
         return;
     }
 
+
     if (password.length < 6) {
 
         showAuthMessage(
@@ -546,12 +306,28 @@ async function handleEmailAuthentication() {
         return;
     }
 
-    if (authSubmit) {
-        authSubmit.disabled = true;
-        authSubmit.textContent = "Please wait...";
+
+    if (!verifyCaptcha()) {
+
+        showAuthMessage(
+            "Incorrect CAPTCHA answer.",
+            true
+        );
+
+        generateCaptcha();
+
+        return;
     }
 
-    showAuthMessage("Processing...");
+
+    const button =
+        $("authSubmit");
+
+    button.disabled = true;
+
+    button.textContent =
+        "Please wait...";
+
 
     try {
 
@@ -580,135 +356,167 @@ async function handleEmailAuthentication() {
             );
         }
 
-        setTimeout(
-            closeAuthModal,
-            700
-        );
-
     } catch (error) {
 
-        console.error(
-            "Authentication error:",
-            error
-        );
+        console.error(error);
 
-        let errorMessage =
+        let message =
             "Authentication failed.";
 
         switch (error.code) {
 
             case "auth/invalid-email":
-                errorMessage =
-                    "Please enter a valid email address.";
+                message =
+                    "Please enter a valid email.";
                 break;
 
             case "auth/user-not-found":
-                errorMessage =
+                message =
                     "No account found with this email.";
                 break;
 
             case "auth/wrong-password":
-                errorMessage =
+                message =
                     "Incorrect password.";
                 break;
 
             case "auth/invalid-credential":
-                errorMessage =
+                message =
                     "Invalid email or password.";
                 break;
 
             case "auth/email-already-in-use":
-                errorMessage =
+                message =
                     "This email is already registered. Please login.";
                 break;
 
             case "auth/weak-password":
-                errorMessage =
-                    "Password is too weak.";
-                break;
-
-            case "auth/too-many-requests":
-                errorMessage =
-                    "Too many attempts. Please try again later.";
+                message =
+                    "Password must contain at least 6 characters.";
                 break;
 
             default:
-                errorMessage =
-                    error.message ||
-                    "Authentication failed.";
+                message =
+                    error.message;
         }
 
         showAuthMessage(
-            errorMessage,
+            message,
             true
         );
 
+        generateCaptcha();
+
     } finally {
 
-        if (authSubmit) {
+        button.disabled = false;
 
-            authSubmit.disabled = false;
-
-            authSubmit.textContent =
-                authMode === "login"
-                    ? "Login"
-                    : "Create Account";
-        }
+        button.textContent =
+            authMode === "login"
+                ? "Login"
+                : "Create Account";
     }
 }
 
 
 // ============================================================
-// SEND PHONE OTP
+// PHONE RECAPTCHA
 // ============================================================
 
-async function sendPhoneOTP() {
+function initializePhoneRecaptcha() {
+
+    if (recaptchaVerifier) {
+        return;
+    }
+
+    try {
+
+        recaptchaVerifier =
+            new RecaptchaVerifier(
+                auth,
+                "recaptcha-container",
+                {
+                    size: "normal",
+
+                    callback: function () {
+
+                        showAuthMessage(
+                            "reCAPTCHA verified."
+                        );
+
+                    },
+
+                    "expired-callback":
+                        function () {
+
+                            showAuthMessage(
+                                "reCAPTCHA expired.",
+                                true
+                            );
+                        }
+                }
+            );
+
+
+        recaptchaVerifier.render();
+
+    } catch (error) {
+
+        console.error(
+            "reCAPTCHA error:",
+            error
+        );
+
+    }
+}
+
+
+// ============================================================
+// PHONE OTP
+// ============================================================
+
+async function sendOTP() {
 
     const phone =
-        phoneNumber
-            ? phoneNumber.value.trim()
-            : "";
+        $("phoneNumber")
+            .value
+            .trim();
+
 
     if (!phone) {
 
         showAuthMessage(
-            "Please enter your phone number.",
+            "Enter your phone number.",
             true
         );
 
         return;
     }
+
 
     if (!phone.startsWith("+")) {
 
         showAuthMessage(
-            "Enter the phone number with country code, e.g. +919876543210.",
+            "Use country code, for example +91XXXXXXXXXX.",
             true
         );
 
         return;
     }
+
 
     if (!recaptchaVerifier) {
 
-        initializeRecaptcha();
+        initializePhoneRecaptcha();
 
         showAuthMessage(
-            "Please complete the reCAPTCHA and click Send OTP again.",
+            "Complete the reCAPTCHA and click Send OTP again.",
             true
         );
 
         return;
     }
 
-    if (sendOtpBtn) {
-        sendOtpBtn.disabled = true;
-        sendOtpBtn.textContent = "Sending...";
-    }
-
-    showAuthMessage(
-        "Sending OTP..."
-    );
 
     try {
 
@@ -720,126 +528,54 @@ async function sendPhoneOTP() {
             );
 
         showAuthMessage(
-            "OTP sent successfully. Check your phone."
+            "OTP sent successfully."
         );
-
-        if (otpCode) {
-            otpCode.focus();
-        }
 
     } catch (error) {
 
-        console.error(
-            "Phone OTP error:",
-            error
-        );
-
-        let errorMessage =
-            "Could not send OTP.";
-
-        switch (error.code) {
-
-            case "auth/invalid-phone-number":
-                errorMessage =
-                    "Invalid phone number. Use format +91XXXXXXXXXX.";
-                break;
-
-            case "auth/operation-not-allowed":
-                errorMessage =
-                    "Phone authentication is not enabled in Firebase.";
-                break;
-
-            case "auth/too-many-requests":
-                errorMessage =
-                    "Too many requests. Please try again later.";
-                break;
-
-            case "auth/quota-exceeded":
-                errorMessage =
-                    "SMS quota exceeded.";
-                break;
-
-            case "auth/captcha-check-failed":
-                errorMessage =
-                    "reCAPTCHA verification failed.";
-                break;
-
-            default:
-                errorMessage =
-                    error.message ||
-                    "Could not send OTP.";
-        }
+        console.error(error);
 
         showAuthMessage(
-            errorMessage,
+            error.message,
             true
         );
-
-    } finally {
-
-        if (sendOtpBtn) {
-
-            sendOtpBtn.disabled = false;
-
-            sendOtpBtn.textContent =
-                "Send OTP";
-        }
     }
 }
 
 
 // ============================================================
-// VERIFY PHONE OTP
+// VERIFY OTP
 // ============================================================
 
-async function verifyPhoneOTP() {
+async function verifyOTP() {
 
     const code =
-        otpCode
-            ? otpCode.value.trim()
-            : "";
+        $("otpCode")
+            .value
+            .trim();
+
 
     if (!confirmationResult) {
 
         showAuthMessage(
-            "Please click Send OTP first.",
+            "Send OTP first.",
             true
         );
 
         return;
     }
 
-    if (!code) {
-
-        showAuthMessage(
-            "Please enter the OTP.",
-            true
-        );
-
-        return;
-    }
 
     if (code.length !== 6) {
 
         showAuthMessage(
-            "OTP must contain 6 digits.",
+            "Enter the 6-digit OTP.",
             true
         );
 
         return;
     }
 
-    if (verifyOtpBtn) {
-
-        verifyOtpBtn.disabled = true;
-
-        verifyOtpBtn.textContent =
-            "Verifying...";
-    }
-
-    showAuthMessage(
-        "Verifying OTP..."
-    );
 
     try {
 
@@ -848,112 +584,166 @@ async function verifyPhoneOTP() {
         );
 
         showAuthMessage(
-            "Phone verification successful!"
-        );
-
-        setTimeout(
-            closeAuthModal,
-            700
+            "Phone authentication successful!"
         );
 
     } catch (error) {
 
-        console.error(
-            "OTP verification error:",
-            error
-        );
-
-        let errorMessage =
-            "OTP verification failed.";
-
-        switch (error.code) {
-
-            case "auth/invalid-verification-code":
-                errorMessage =
-                    "Incorrect OTP.";
-                break;
-
-            case "auth/code-expired":
-                errorMessage =
-                    "OTP expired. Please request a new OTP.";
-                break;
-
-            default:
-                errorMessage =
-                    error.message ||
-                    "OTP verification failed.";
-        }
+        console.error(error);
 
         showAuthMessage(
-            errorMessage,
+            error.message,
             true
         );
-
-    } finally {
-
-        if (verifyOtpBtn) {
-
-            verifyOtpBtn.disabled = false;
-
-            verifyOtpBtn.textContent =
-                "Verify OTP";
-        }
     }
 }
 
 
 // ============================================================
-// GET PROFILE DATA
+// FIREBASE AUTH STATE
 // ============================================================
 
-function getProfileData() {
+onAuthStateChanged(
+    auth,
+    async (user) => {
 
-    return {
+        if (user) {
 
-        name:
-            profileName
-                ? profileName.value.trim()
-                : "",
+            currentUser =
+                user;
 
-        gender:
-            profileGender
-                ? profileGender.value
-                : "",
+            $("authScreen")
+                .classList
+                .add("hidden");
 
-        age:
-            profileAge
-                ? profileAge.value
-                : "",
+            $("app")
+                .classList
+                .remove("hidden");
 
-        height:
-            profileHeight
-                ? profileHeight.value
-                : "",
+            $("userEmail")
+                .textContent =
+                user.email ||
+                user.phoneNumber ||
+                "User";
 
-        weight:
-            profileWeight
-                ? profileWeight.value
-                : ""
-    };
+            await initializeUser();
+
+        } else {
+
+            currentUser = null;
+
+            currentProfile = null;
+
+            $("authScreen")
+                .classList
+                .remove("hidden");
+
+            $("app")
+                .classList
+                .add("hidden");
+        }
+    }
+);
+
+
+// ============================================================
+// USER INITIALIZATION
+// ============================================================
+
+async function initializeUser() {
+
+    const profile =
+        await loadProfile();
+
+    await loadHistory();
+
+    await loadDoctors();
+
+    await loadPerformance();
+
+
+    if (profile) {
+
+        currentProfile =
+            profile;
+
+        fillProfileForm(
+            profile
+        );
+
+        updateWelcome(
+            profile.name
+        );
+
+        showPage(
+            "dashboard"
+        );
+
+    } else {
+
+        currentProfile =
+            null;
+
+        showPage(
+            "profile"
+        );
+
+        $("profileMessage")
+            .textContent =
+            "Please complete your Patient Profile before starting a prediction.";
+    }
 }
 
 
 // ============================================================
-// CHECK PROFILE
+// PROFILE
 // ============================================================
 
-function isProfileComplete() {
+async function loadProfile() {
 
-    const profile =
-        getProfileData();
+    if (!currentUser) {
+        return null;
+    }
 
-    return (
-        profile.name !== "" &&
-        profile.gender !== "" &&
-        profile.age !== "" &&
-        profile.height !== "" &&
-        profile.weight !== ""
-    );
+
+    try {
+
+        const reference =
+            doc(
+                db,
+                "users",
+                currentUser.uid
+            );
+
+        const snapshot =
+            await getDoc(
+                reference
+            );
+
+
+        if (
+            snapshot.exists()
+        ) {
+
+            return snapshot.data();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Profile loading error:",
+            error
+        );
+
+        showProfileMessage(
+            "Could not load profile. Check Firestore rules.",
+            true
+        );
+    }
+
+
+    return null;
 }
 
 
@@ -963,135 +753,148 @@ function isProfileComplete() {
 
 async function saveProfile() {
 
-    const user =
-        auth.currentUser;
+    if (!currentUser) {
+        return;
+    }
 
-    if (!user) {
+
+    const name =
+        $("profileName")
+            .value
+            .trim();
+
+    const gender =
+        $("profileGender")
+            .value;
+
+    const age =
+        Number(
+            $("profileAge")
+                .value
+        );
+
+    const height =
+        Number(
+            $("profileHeight")
+                .value
+        );
+
+    const weight =
+        Number(
+            $("profileWeight")
+                .value
+        );
+
+
+    if (
+        !name ||
+        !gender ||
+        !age ||
+        !height ||
+        !weight
+    ) {
 
         showProfileMessage(
-            "Please login first.",
+            "Please complete all required fields.",
             true
         );
 
-        return false;
+        return;
     }
 
-    const profile =
-        getProfileData();
 
-    if (!profile.name) {
+    if (
+        age < 1 ||
+        age > 120
+    ) {
 
         showProfileMessage(
-            "Please enter your name.",
+            "Please enter a valid age.",
             true
         );
 
-        return false;
+        return;
     }
 
-    if (!profile.gender) {
 
-        showProfileMessage(
-            "Please select your gender.",
-            true
-        );
+    const profile = {
 
-        return false;
-    }
+        name,
 
-    if (!profile.age) {
+        gender,
 
-        showProfileMessage(
-            "Please enter your age.",
-            true
-        );
+        age,
 
-        return false;
-    }
+        height,
 
-    if (!profile.height) {
+        weight,
 
-        showProfileMessage(
-            "Please enter your height.",
-            true
-        );
+        email:
+            currentUser.email || "",
 
-        return false;
-    }
+        phone:
+            currentUser.phoneNumber || "",
 
-    if (!profile.weight) {
+        updatedAt:
+            serverTimestamp()
+    };
 
-        showProfileMessage(
-            "Please enter your weight.",
-            true
-        );
 
-        return false;
-    }
+    const button =
+        $("saveProfileBtn");
 
-    if (saveProfileBtn) {
+    button.disabled = true;
 
-        saveProfileBtn.disabled = true;
+    button.textContent =
+        "Saving...";
 
-        saveProfileBtn.textContent =
-            "Saving...";
-    }
 
     try {
 
-        const profileRef =
+        await setDoc(
             doc(
                 db,
-                "profiles",
-                user.uid
-            );
-
-        await setDoc(
-            profileRef,
-            {
-                uid: user.uid,
-
-                name: profile.name,
-
-                gender: profile.gender,
-
-                age: Number(profile.age),
-
-                height: Number(profile.height),
-
-                weight: Number(profile.weight),
-
-                email:
-                    user.email || "",
-
-                phone:
-                    user.phoneNumber || "",
-
-                updatedAt:
-                    serverTimestamp()
-            },
+                "users",
+                currentUser.uid
+            ),
+            profile,
             {
                 merge: true
             }
         );
 
-        currentProfile =
-            profile;
 
-        localStorage.setItem(
-            "quantumDiagnoseProfile",
-            JSON.stringify(profile)
+        currentProfile = {
+            ...profile,
+            updatedAt: null
+        };
+
+
+        fillProfileForm(
+            currentProfile
         );
 
-        updateWelcomeName(
-            profile.name
+        updateWelcome(
+            name
         );
+
 
         showProfileMessage(
             "Profile saved successfully."
         );
 
-        return true;
+
+        setTimeout(
+            () => {
+
+                showPage(
+                    "dashboard"
+                );
+
+            },
+            800
+        );
+
 
     } catch (error) {
 
@@ -1101,330 +904,257 @@ async function saveProfile() {
         );
 
         showProfileMessage(
-            "Could not save profile: " +
-            error.message,
+            "Profile could not be saved. Check Firestore rules.",
             true
         );
 
-        return false;
-
     } finally {
 
-        if (saveProfileBtn) {
+        button.disabled = false;
 
-            saveProfileBtn.disabled = false;
-
-            saveProfileBtn.textContent =
-                "Save Profile";
-        }
+        button.textContent =
+            "Save Profile";
     }
 }
 
 
 // ============================================================
-// LOAD PROFILE
+// PROFILE FORM
 // ============================================================
 
-async function loadProfile(user) {
+function fillProfileForm(
+    profile
+) {
 
-    if (!user) {
+    if (!profile) {
         return;
     }
 
-    try {
+    $("profileName")
+        .value =
+        profile.name || "";
 
-        const profileRef =
-            doc(
-                db,
-                "profiles",
-                user.uid
-            );
+    $("profileGender")
+        .value =
+        profile.gender || "";
 
-        const profileSnap =
-            await getDoc(profileRef);
+    $("profileAge")
+        .value =
+        profile.age || "";
 
-        if (profileSnap.exists()) {
+    $("profileHeight")
+        .value =
+        profile.height || "";
 
-            const data =
-                profileSnap.data();
+    $("profileWeight")
+        .value =
+        profile.weight || "";
 
-            currentProfile =
-                data;
 
-            fillProfileFields(
-                data
-            );
+    $("profileStatusBadge")
+        .textContent =
+        "✓ Profile completed";
 
-            updateWelcomeName(
-                data.name
-            );
-
-            return;
-        }
-
-        // Fallback to localStorage
-        const saved =
-            localStorage.getItem(
-                "quantumDiagnoseProfile"
-            );
-
-        if (saved) {
-
-            const data =
-                JSON.parse(saved);
-
-            currentProfile =
-                data;
-
-            fillProfileFields(
-                data
-            );
-
-            updateWelcomeName(
-                data.name
-            );
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Profile load error:",
-            error
-        );
-    }
+    $("profileStatusBadge")
+        .classList
+        .add("completed");
 }
 
 
 // ============================================================
-// FILL PROFILE FIELDS
+// PROFILE MESSAGE
 // ============================================================
 
-function fillProfileFields(data) {
+function showProfileMessage(
+    message,
+    error = false
+) {
 
-    if (!data) {
-        return;
-    }
+    const element =
+        $("profileMessage");
 
-    if (profileName) {
-        profileName.value =
-            data.name || "";
-    }
+    element.textContent =
+        message;
 
-    if (profileGender) {
-        profileGender.value =
-            data.gender || "";
-    }
-
-    if (profileAge) {
-        profileAge.value =
-            data.age || "";
-    }
-
-    if (profileHeight) {
-        profileHeight.value =
-            data.height || "";
-    }
-
-    if (profileWeight) {
-        profileWeight.value =
-            data.weight || "";
-    }
+    element.className =
+        error
+            ? "status-message error"
+            : "status-message success";
 }
 
 
 // ============================================================
-// UPDATE WELCOME NAME
+// WELCOME
 // ============================================================
 
-function updateWelcomeName(name) {
+function updateWelcome(
+    name
+) {
 
-    if (!welcomeName) {
-        return;
-    }
+    $("welcomeName")
+        .textContent =
+        name || "Patient";
 
-    if (name && name.trim()) {
+    $("topUserName")
+        .textContent =
+        name || "Patient";
 
-        welcomeName.textContent =
-            name.trim();
-
-    } else {
-
-        welcomeName.textContent =
-            "Patient";
-    }
+    $("welcomeText")
+        .textContent =
+        "Your patient profile is saved. You can now start a new symptom analysis.";
 }
 
 
 // ============================================================
-// MANDATORY PROFILE CHECK
+// NAVIGATION
 // ============================================================
 
-async function ensureProfileBeforePrediction() {
+const pageTitles = {
 
-    const user =
-        auth.currentUser;
+    dashboard:
+        "Dashboard",
 
-    if (!user) {
+    profile:
+        "Patient Profile",
 
-        alert(
-            "Please login before analyzing symptoms."
+    prediction:
+        "New Prediction",
+
+    history:
+        "Prediction History",
+
+    doctors:
+        "Doctor Recommendations",
+
+    comparison:
+        "Model Comparison",
+
+    performance:
+        "Performance"
+};
+
+
+function showPage(
+    page
+) {
+
+    // Patient profile is mandatory
+
+    if (
+        page === "prediction" &&
+        !currentProfile
+    ) {
+
+        showProfileMessage(
+            "Complete your Patient Profile first.",
+            true
         );
 
-        openAuthModal(
-            "login"
-        );
-
-        return false;
+        page = "profile";
     }
 
-    await loadProfile(
-        user
-    );
 
-    if (!isProfileComplete()) {
+    currentPage =
+        page;
 
-        alert(
-            "Please complete and save your Patient Profile before prediction."
+
+    document
+        .querySelectorAll(".page")
+        .forEach(
+            element => {
+
+                element.classList
+                    .remove(
+                        "active-page"
+                    );
+            }
         );
 
-        // Try to navigate to profile
-        const profilePage =
-            document.getElementById(
-                "profile"
-            );
 
-        if (profilePage) {
+    const selectedPage =
+        $(page);
 
-            document
-                .querySelectorAll(".page")
-                .forEach(
-                    page =>
-                        page.classList.remove(
-                            "active-page"
-                        )
-                );
+    if (selectedPage) {
 
-            profilePage.classList.add(
+        selectedPage.classList
+            .add(
                 "active-page"
             );
-        }
-
-        return false;
     }
 
-    return true;
+
+    document
+        .querySelectorAll(".nav-item")
+        .forEach(
+            button => {
+
+                button.classList
+                    .toggle(
+                        "active",
+                        button.dataset.page === page
+                    );
+            }
+        );
+
+
+    $("pageTitle")
+        .textContent =
+        pageTitles[page] ||
+        "Dashboard";
 }
 
 
 // ============================================================
-// AUTH STATE
+// NAVIGATION EVENTS
 // ============================================================
 
-onAuthStateChanged(
-    auth,
-    async function (user) {
+document
+    .querySelectorAll(
+        ".nav-item"
+    )
+    .forEach(
+        button => {
 
-        if (user) {
+            button.addEventListener(
+                "click",
+                () => {
 
-            console.log(
-                "Logged in user:",
-                user
+                    showPage(
+                        button.dataset.page
+                    );
+
+                }
             );
-
-            if (loginBtn) {
-                loginBtn.classList.add(
-                    "hidden"
-                );
-            }
-
-            if (signupBtn) {
-                signupBtn.classList.add(
-                    "hidden"
-                );
-            }
-
-            if (logoutBtn) {
-                logoutBtn.classList.remove(
-                    "hidden"
-                );
-            }
-
-            await loadProfile(
-                user
-            );
-
-            await loadPredictionHistory();
-
-        } else {
-
-            console.log(
-                "No user logged in."
-            );
-
-            if (loginBtn) {
-                loginBtn.classList.remove(
-                    "hidden"
-                );
-            }
-
-            if (signupBtn) {
-                signupBtn.classList.remove(
-                    "hidden"
-                );
-            }
-
-            if (logoutBtn) {
-                logoutBtn.classList.add(
-                    "hidden"
-                );
-            }
-
-            updateWelcomeName(
-                "Patient"
-            );
-
-            currentProfile = null;
         }
-    }
-);
+    );
 
 
-// ============================================================
-// LOGOUT
-// ============================================================
+document
+    .querySelectorAll(
+        "[data-go]"
+    )
+    .forEach(
+        button => {
 
-async function logoutUser() {
+            button.addEventListener(
+                "click",
+                () => {
 
-    try {
+                    showPage(
+                        button.dataset.go
+                    );
 
-        await signOut(
-            auth
-        );
-
-        alert(
-            "Logged out successfully."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Logout error:",
-            error
-        );
-
-        alert(
-            "Logout failed: " +
-            error.message
-        );
-    }
-}
+                }
+            );
+        }
+    );
 
 
 // ============================================================
 // SYMPTOMS
 // ============================================================
 
-function getSymptomCheckboxes() {
+function getSymptomBoxes() {
 
     return document.querySelectorAll(
         '#symptomGrid input[type="checkbox"]'
@@ -1432,362 +1162,167 @@ function getSymptomCheckboxes() {
 }
 
 
-// ============================================================
-// UPDATE COUNT
-// ============================================================
-
 function updateCount() {
 
     const boxes =
-        getSymptomCheckboxes();
+        getSymptomBoxes();
 
-    let selectedCount = 0;
+    let selected = 0;
 
     boxes.forEach(
-        function (box) {
+        box => {
 
             if (box.checked) {
-                selectedCount++;
+                selected++;
             }
+
         }
     );
 
-    if (count) {
-        count.textContent =
-            selectedCount;
-    }
+
+    $("count")
+        .textContent =
+        selected;
 }
 
 
-// ============================================================
-// SYMPTOM EVENTS
-// ============================================================
-
-function setupSymptomEvents() {
-
-    const boxes =
-        getSymptomCheckboxes();
-
-    boxes.forEach(
-        function (box) {
+getSymptomBoxes()
+    .forEach(
+        box => {
 
             box.addEventListener(
                 "change",
                 updateCount
             );
+
         }
     );
 
-    updateCount();
-}
-
 
 // ============================================================
-// SEARCH SYMPTOMS
+// SEARCH
 // ============================================================
 
-if (searchInput) {
-
-    searchInput.addEventListener(
+$("search")
+    .addEventListener(
         "input",
-        function (event) {
+        event => {
 
-            const searchText =
-                event.target.value
+            const text =
+                event.target
+                    .value
                     .toLowerCase()
                     .trim();
 
-            const symptoms =
-                document.querySelectorAll(
-                    "#symptomGrid .symptom"
-                );
-
-            symptoms.forEach(
-                function (symptom) {
-
-                    const name =
-                        (
-                            symptom.dataset.name ||
-                            symptom.textContent ||
-                            ""
-                        )
-                        .toLowerCase();
-
-                    symptom.style.display =
-                        name.includes(
-                            searchText
-                        )
-                            ? ""
-                            : "none";
-                }
-            );
-        }
-    );
-}
-
-
-// ============================================================
-// CLEAR SYMPTOMS
-// ============================================================
-
-if (clearBtn) {
-
-    clearBtn.addEventListener(
-        "click",
-        function () {
-
-            getSymptomCheckboxes()
-                .forEach(
-                    box =>
-                        box.checked = false
-                );
-
-            updateCount();
-
-            if (result) {
-                result.classList.add(
-                    "hidden"
-                );
-            }
-
-            if (searchInput) {
-                searchInput.value = "";
-            }
 
             document
                 .querySelectorAll(
-                    "#symptomGrid .symptom"
+                    ".symptom"
                 )
                 .forEach(
-                    symptom =>
-                        symptom.style.display = ""
+                    symptom => {
+
+                        const name =
+                            symptom.dataset.name
+                                .toLowerCase();
+
+
+                        symptom.style.display =
+                            name.includes(text)
+                                ? ""
+                                : "none";
+                    }
                 );
         }
     );
-}
 
 
 // ============================================================
-// DISEASE -> SPECIALIST
+// CLEAR
 // ============================================================
 
-function getSpecialistForDisease(
-    diseaseName
-) {
+$("clearBtn")
+    .addEventListener(
+        "click",
+        () => {
 
-    const diseaseText =
-        String(
-            diseaseName || ""
-        ).toLowerCase();
+            getSymptomBoxes()
+                .forEach(
+                    box => {
 
-    const mapping = {
+                        box.checked =
+                            false;
 
-        arthritis:
-            "Rheumatologist",
+                    }
+                );
 
-        "osteoarthritis":
-            "Orthopedic Doctor",
 
-        "rheumatoid arthritis":
-            "Rheumatologist",
+            $("search")
+                .value = "";
 
-        migraine:
-            "Neurologist",
 
-        "migraine headache":
-            "Neurologist",
+            document
+                .querySelectorAll(
+                    ".symptom"
+                )
+                .forEach(
+                    symptom => {
 
-        hypertension:
-            "Cardiologist",
+                        symptom.style.display =
+                            "";
 
-        "high blood pressure":
-            "Cardiologist",
+                    }
+                );
 
-        diabetes:
-            "Endocrinologist",
 
-        "type 2 diabetes":
-            "Endocrinologist",
+            updateCount();
 
-        asthma:
-            "Pulmonologist",
-
-        bronchitis:
-            "Pulmonologist",
-
-        pneumonia:
-            "Pulmonologist",
-
-        tuberculosis:
-            "Pulmonologist",
-
-        "heart attack":
-            "Cardiologist",
-
-        "coronary artery disease":
-            "Cardiologist",
-
-        gastritis:
-            "Gastroenterologist",
-
-        "gerd":
-            "Gastroenterologist",
-
-        hepatitis:
-            "Hepatologist",
-
-        jaundice:
-            "Gastroenterologist",
-
-        "urinary tract infection":
-            "Urologist",
-
-        "kidney disease":
-            "Nephrologist",
-
-        "kidney stone":
-            "Urologist",
-
-        psoriasis:
-            "Dermatologist",
-
-        "fungal infection":
-            "Dermatologist",
-
-        eczema:
-            "Dermatologist",
-
-        acne:
-            "Dermatologist",
-
-        glaucoma:
-            "Ophthalmologist",
-
-        "conjunctivitis":
-            "Ophthalmologist",
-
-        dengue:
-            "General Physician",
-
-        malaria:
-            "General Physician",
-
-        typhoid:
-            "General Physician",
-
-        flu:
-            "General Physician",
-
-        "common cold":
-            "General Physician"
-    };
-
-    for (
-        const key in mapping
-    ) {
-
-        if (
-            diseaseText.includes(
-                key
-            )
-        ) {
-
-            return mapping[key];
+            $("result")
+                .classList
+                .add("hidden");
         }
-    }
-
-    return "General Physician";
-}
+    );
 
 
 // ============================================================
-// SHOW DOCTOR RECOMMENDATION
+// PREDICTION
 // ============================================================
 
-function showDoctorRecommendation(
-    data
-) {
+async function analyzeSymptoms() {
 
-    if (!specialistBox) {
-        return;
-    }
+    if (!currentProfile) {
 
-    const predictedDisease =
-        data.disease ||
-        "Unknown";
-
-    const specialist =
-        data.specialist ||
-        data.specialist_name ||
-        data.recommended_specialist ||
-        getSpecialistForDisease(
-            predictedDisease
+        showPage(
+            "profile"
         );
 
-    const doctor =
-        data.doctor ||
-        data.recommended_doctor ||
-        "";
+        showProfileMessage(
+            "Patient Profile is mandatory before prediction.",
+            true
+        );
 
-    specialistBox.innerHTML = `
-        <strong>Recommended Specialist</strong>
-        <br>
-        <span>
-            ${escapeHtml(specialist)}
-        </span>
-
-        ${
-            doctor
-                ? `
-                    <br><br>
-                    <strong>Recommended Doctor</strong>
-                    <br>
-                    <span>
-                        ${escapeHtml(doctor)}
-                    </span>
-                  `
-                : ""
-        }
-
-        <br><br>
-
-        <small>
-            Recommendation is based on the predicted
-            condition and is for educational demonstration.
-        </small>
-    `;
-}
-
-
-// ============================================================
-// MAKE PREDICTION
-// ============================================================
-
-async function makePrediction() {
-
-    const profileReady =
-        await ensureProfileBeforePrediction();
-
-    if (!profileReady) {
         return;
     }
 
-    const boxes =
-        getSymptomCheckboxes();
 
     const selectedSymptoms = [];
 
-    boxes.forEach(
-        function (box) {
 
-            if (box.checked) {
+    getSymptomBoxes()
+        .forEach(
+            box => {
 
-                selectedSymptoms.push(
-                    box.value
-                );
+                if (box.checked) {
+
+                    selectedSymptoms
+                        .push(
+                            box.value
+                        );
+                }
+
             }
-        }
-    );
+        );
+
 
     if (
         selectedSymptoms.length === 0
@@ -1800,13 +1335,15 @@ async function makePrediction() {
         return;
     }
 
-    if (predictBtn) {
 
-        predictBtn.disabled = true;
+    const button =
+        $("predictBtn");
 
-        predictBtn.textContent =
-            "Analyzing...";
-    }
+    button.disabled = true;
+
+    button.textContent =
+        "Analyzing Random Forest + Qiskit...";
+
 
     try {
 
@@ -1814,7 +1351,8 @@ async function makePrediction() {
             await fetch(
                 "/predict",
                 {
-                    method: "POST",
+                    method:
+                        "POST",
 
                     headers: {
                         "Content-Type":
@@ -1822,19 +1360,22 @@ async function makePrediction() {
                     },
 
                     body:
-                        JSON.stringify(
-                            {
-                                symptoms:
-                                    selectedSymptoms
-                            }
-                        )
+                        JSON.stringify({
+                            symptoms:
+                                selectedSymptoms
+                        })
                 }
             );
+
 
         const data =
             await response.json();
 
-        if (!response.ok) {
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
 
             throw new Error(
                 data.error ||
@@ -1843,202 +1384,31 @@ async function makePrediction() {
         }
 
 
-        // --------------------------------------------------------
-        // TIMESTAMP
-        // --------------------------------------------------------
-
-        const timestamp =
-            new Date();
-
-        latestPredictionTimestamp =
-            timestamp;
+        currentResult =
+            data;
 
 
-        // --------------------------------------------------------
-        // STORE LATEST PREDICTION
-        // --------------------------------------------------------
-
-        latestPrediction = {
-
-            ...data,
-
-            symptoms:
-                selectedSymptoms,
-
-            timestamp:
-                timestamp,
-
-            profile:
-                currentProfile
-        };
-
-
-        // --------------------------------------------------------
-        // SHOW RESULT
-        // --------------------------------------------------------
-
-        if (result) {
-            result.classList.remove(
-                "hidden"
-            );
-        }
-
-        if (disease) {
-
-            disease.textContent =
-                data.disease ||
-                "Unknown";
-        }
-
-
-        const confidence =
-            Number(
-                data.confidence || 0
-            );
-
-
-        if (confidenceText) {
-
-            confidenceText.textContent =
-                `Confidence: ${confidence}%`;
-        }
-
-
-        if (confidenceBar) {
-
-            confidenceBar.style.width =
-                `${Math.max(
-                    0,
-                    Math.min(
-                        100,
-                        confidence
-                    )
-                )}%`;
-        }
-
-
-        // --------------------------------------------------------
-        // TOP PREDICTIONS
-        // --------------------------------------------------------
-
-        if (topPredictions) {
-
-            topPredictions.innerHTML =
-                "";
-
-            if (
-                data.top_predictions &&
-                data.top_predictions.length
-            ) {
-
-                data.top_predictions
-                    .forEach(
-                        function (item) {
-
-                            const div =
-                                document.createElement(
-                                    "div"
-                                );
-
-                            div.className =
-                                "prediction-item";
-
-                            div.innerHTML = `
-                                <span>
-                                    ${escapeHtml(
-                                        item.disease
-                                    )}
-                                </span>
-
-                                <strong>
-                                    ${Number(
-                                        item.confidence || 0
-                                    )}%
-                                </strong>
-                            `;
-
-                            topPredictions.appendChild(
-                                div
-                            );
-                        }
-                    );
-            }
-        }
-
-
-        // --------------------------------------------------------
-        // MESSAGE
-        // --------------------------------------------------------
-
-        if (message) {
-
-            message.textContent =
-                data.message ||
-                "Educational ML prediction only.";
-        }
-
-
-        // --------------------------------------------------------
-        // DOCTOR RECOMMENDATION
-        // --------------------------------------------------------
-
-        showDoctorRecommendation(
+        renderResult(
             data
         );
 
 
-        // --------------------------------------------------------
-        // ADD TIMESTAMP + PDF BUTTON
-        // --------------------------------------------------------
-
-        addPredictionTools(
-            latestPrediction
+        showPage(
+            "prediction"
         );
 
 
-        // --------------------------------------------------------
-        // SAVE TO FIRESTORE
-        // --------------------------------------------------------
-
-        await savePrediction(
-            selectedSymptoms,
-            data,
-            timestamp
-        );
+        $("result")
+            .classList
+            .remove("hidden");
 
 
-        // --------------------------------------------------------
-        // REFRESH HISTORY
-        // --------------------------------------------------------
+        $("result")
+            .scrollIntoView({
+                behavior:
+                    "smooth"
+            });
 
-        await loadPredictionHistory();
-
-
-        // --------------------------------------------------------
-        // UPDATE DASHBOARD
-        // --------------------------------------------------------
-
-        if (latestDisease) {
-
-            latestDisease.textContent =
-                data.disease ||
-                "—";
-        }
-
-
-        // --------------------------------------------------------
-        // SCROLL
-        // --------------------------------------------------------
-
-        if (result) {
-
-            result.scrollIntoView(
-                {
-                    behavior: "smooth",
-                    block: "start"
-                }
-            );
-        }
 
     } catch (error) {
 
@@ -2048,366 +1418,599 @@ async function makePrediction() {
         );
 
         alert(
-            "Prediction failed: " +
             error.message
         );
 
     } finally {
 
-        if (predictBtn) {
+        button.disabled =
+            false;
 
-            predictBtn.disabled = false;
-
-            predictBtn.textContent =
-                "Predict Possible Disease";
-        }
+        button.textContent =
+            "🔍 Analyze Symptoms";
     }
 }
 
 
 // ============================================================
-// ADD TIMESTAMP + DOWNLOAD BUTTON
+// RENDER RESULT
 // ============================================================
 
-function addPredictionTools(
-    prediction
+function renderResult(
+    data
 ) {
 
-    if (!result || !prediction) {
-        return;
-    }
-
-    let tools =
-        document.getElementById(
-            "predictionTools"
+    const rfScore =
+        Number(
+            data.rf_confidence || 0
         );
 
-    if (!tools) {
-
-        tools =
-            document.createElement(
-                "div"
-            );
-
-        tools.id =
-            "predictionTools";
-
-        tools.className =
-            "prediction-tools";
-
-        result.appendChild(
-            tools
+    const qScore =
+        Number(
+            data.qiskit_score || 0
         );
-    }
 
-    const timestamp =
-        prediction.timestamp instanceof Date
-            ? prediction.timestamp
-            : new Date();
 
-    tools.innerHTML = `
+    $("disease")
+        .textContent =
+        data.rf_disease ||
+        data.disease ||
+        "—";
 
-        <div class="prediction-timestamp">
 
-            📅
+    $("qiskitDisease")
+        .textContent =
+        data.qiskit_disease ||
+        data.disease ||
+        "—";
 
-            <span>
-                Prediction Date & Time:
-            </span>
 
+    $("confidenceText")
+        .textContent =
+        rfScore.toFixed(2) +
+        "%";
+
+
+    $("confidenceBar")
+        .style.width =
+        Math.min(
+            Math.max(
+                rfScore,
+                0
+            ),
+            100
+        ) + "%";
+
+
+    $("qiskitScore")
+        .textContent =
+        qScore.toFixed(2) +
+        "%";
+
+
+    $("qiskitScoreBar")
+        .style.width =
+        Math.min(
+            Math.max(
+                qScore,
+                0
+            ),
+            100
+        ) + "%";
+
+
+    $("qiskitQubits")
+        .textContent =
+        data.qiskit_qubits ??
+        "—";
+
+
+    $("qiskitDepth")
+        .textContent =
+        data.qiskit_depth ??
+        "—";
+
+
+    $("quantumMessage")
+        .textContent =
+        data.quantum_message ||
+        "Experimental Qiskit score.";
+
+
+    $("comparisonRF")
+        .textContent =
+        rfScore.toFixed(2) +
+        "%";
+
+
+    $("comparisonQuantum")
+        .textContent =
+        qScore.toFixed(2) +
+        "%";
+
+
+    $("scoreDifference")
+        .textContent =
+        Number(
+            data.score_difference || 0
+        ).toFixed(2) +
+        "%";
+
+
+    $("comparisonDisease")
+        .textContent =
+        data.disease ||
+        "—";
+
+
+    $("agreementBadge")
+        .textContent =
+        data.model_agreement ||
+        "—";
+
+
+    renderAgreement(
+        data.model_agreement
+    );
+
+
+    renderTopPredictions(
+        data.top_predictions
+    );
+
+
+    renderDoctors(
+        data.doctors || [],
+        data.specialty
+    );
+
+
+    // Comparison page
+
+    $("pageRFDisease")
+        .textContent =
+        data.rf_disease ||
+        data.disease ||
+        "—";
+
+
+    $("pageRFScore")
+        .textContent =
+        rfScore.toFixed(2) +
+        "%";
+
+
+    $("pageQuantumDisease")
+        .textContent =
+        data.qiskit_disease ||
+        data.disease ||
+        "—";
+
+
+    $("pageQuantumScore")
+        .textContent =
+        qScore.toFixed(2) +
+        "%";
+
+
+    $("pageAgreement")
+        .textContent =
+        `${data.model_agreement} agreement • ` +
+        `${Number(data.score_difference || 0).toFixed(2)}% score difference`;
+
+
+    $("dashboardLatest")
+        .innerHTML = `
             <strong>
-                ${formatDateTime(timestamp)}
+                ${escapeHTML(
+                    data.disease || "—"
+                )}
             </strong>
 
-        </div>
+            <br>
 
-        <div class="report-actions">
+            Random Forest:
+            ${rfScore.toFixed(2)}%
 
-            <button
-                id="downloadReportBtn"
-                class="download-report"
-                type="button"
-            >
-                📄 Download Report
-            </button>
+            <br>
 
-        </div>
-    `;
+            Qiskit:
+            ${qScore.toFixed(2)}%
+        `;
+}
 
 
-    const downloadButton =
-        document.getElementById(
-            "downloadReportBtn"
-        );
+// ============================================================
+// AGREEMENT
+// ============================================================
 
-    if (downloadButton) {
+function renderAgreement(
+    agreement
+) {
 
-        downloadButton.addEventListener(
-            "click",
-            function () {
+    const badge =
+        $("agreementBadge");
 
-                downloadPredictionPDF(
-                    prediction
-                );
-            }
-        );
+    badge.className =
+        "agreement-badge";
+
+
+    if (
+        agreement === "High"
+    ) {
+
+        badge.classList
+            .add("high");
+
+    } else if (
+        agreement === "Moderate"
+    ) {
+
+        badge.classList
+            .add("moderate");
+
+    } else {
+
+        badge.classList
+            .add("low");
     }
 }
 
 
 // ============================================================
-// SAVE PREDICTION
+// TOP PREDICTIONS
 // ============================================================
 
-async function savePrediction(
-    selectedSymptoms,
-    data,
-    timestamp
+function renderTopPredictions(
+    predictions
 ) {
 
-    const user =
-        auth.currentUser;
+    const container =
+        $("topPredictions");
 
-    if (!user) {
+    if (
+        !Array.isArray(
+            predictions
+        ) ||
+        predictions.length === 0
+    ) {
+
+        container.innerHTML =
+            "<p>No predictions available.</p>";
+
         return;
     }
+
+
+    container.innerHTML =
+        predictions
+            .map(
+                prediction => `
+
+                    <div class="prediction-row">
+
+                        <span>
+                            ${escapeHTML(
+                                prediction.disease
+                            )}
+                        </span>
+
+                        <strong>
+                            ${Number(
+                                prediction.confidence
+                            ).toFixed(2)}%
+                        </strong>
+
+                    </div>
+
+                `
+            )
+            .join("");
+}
+
+
+// ============================================================
+// DOCTORS
+// ============================================================
+
+function doctorCard(
+    doctor
+) {
+
+    return `
+
+        <div class="doctor-card">
+
+            <div class="doctor-icon">
+                👨‍⚕️
+            </div>
+
+            <h3>
+                ${escapeHTML(
+                    doctor.name ||
+                    "Doctor"
+                )}
+            </h3>
+
+            <span class="doctor-specialty">
+                ${escapeHTML(
+                    doctor.specialization ||
+                    ""
+                )}
+            </span>
+
+            <p>
+                ${escapeHTML(
+                    doctor.hospital ||
+                    ""
+                )}
+            </p>
+
+            <p>
+                📍
+                ${escapeHTML(
+                    doctor.location ||
+                    ""
+                )}
+            </p>
+
+            <p>
+                Experience:
+                ${escapeHTML(
+                    doctor.experience ||
+                    "—"
+                )}
+            </p>
+
+        </div>
+
+    `;
+}
+
+
+function renderDoctors(
+    doctors,
+    specialty
+) {
+
+    $("specialistBox")
+        .innerHTML = `
+
+            <strong>
+                Recommended Specialty:
+            </strong>
+
+            <span>
+                ${escapeHTML(
+                    specialty ||
+                    "General Physician"
+                )}
+            </span>
+
+        `;
+
+
+    $("recommendedDoctors")
+        .innerHTML =
+        doctors
+            .slice(0, 3)
+            .map(
+                doctorCard
+            )
+            .join("");
+
+
+    if (
+        doctors.length === 0
+    ) {
+
+        $("recommendedDoctors")
+            .innerHTML = `
+                <div class="empty-state">
+                    No matching dummy doctor found.
+                </div>
+            `;
+    }
+}
+
+
+async function loadDoctors() {
 
     try {
 
-        const profile =
-            currentProfile ||
-            getProfileData();
+        const response =
+            await fetch(
+                "/doctors"
+            );
+
+        const data =
+            await response.json();
 
 
-        await addDoc(
-            collection(
-                db,
-                "predictions"
-            ),
-            {
-
-                userId:
-                    user.uid,
-
-                userEmail:
-                    user.email || null,
-
-                phoneNumber:
-                    user.phoneNumber || null,
-
-                patientName:
-                    profile.name || null,
-
-                patientGender:
-                    profile.gender || null,
-
-                patientAge:
-                    profile.age || null,
-
-                patientHeight:
-                    profile.height || null,
-
-                patientWeight:
-                    profile.weight || null,
-
-                symptoms:
-                    selectedSymptoms,
-
-                disease:
-                    data.disease || null,
-
-                confidence:
-                    Number(
-                        data.confidence || 0
-                    ),
-
-                topPredictions:
-                    data.top_predictions ||
-                    [],
-
-                quantumDisease:
-                    data.quantum_disease ||
-                    data.quantum_prediction ||
-                    data.qiskit_disease ||
-                    null,
-
-                quantumScore:
-                    data.quantum_score ||
-                    data.experimental_score ||
-                    data.qiskit_score ||
-                    null,
-
-                specialist:
-                    data.specialist ||
-                    data.recommended_specialist ||
-                    getSpecialistForDisease(
-                        data.disease
-                    ),
-
-                createdAt:
-                    serverTimestamp(),
-
-                clientTimestamp:
-                    timestamp.toISOString()
-            }
-        );
-
-        console.log(
-            "Prediction saved successfully."
-        );
+        $("doctorList")
+            .innerHTML =
+            (data.doctors || [])
+                .map(
+                    doctorCard
+                )
+                .join("");
 
     } catch (error) {
 
         console.error(
-            "Firestore save error:",
             error
         );
+
+        $("doctorList")
+            .innerHTML =
+            "<p>Unable to load doctors.</p>";
     }
 }
 
 
 // ============================================================
-// LOAD PREDICTION HISTORY
+// SAVE HISTORY
 // ============================================================
 
-async function loadPredictionHistory() {
+async function saveCurrentHistory() {
 
-    const user =
-        auth.currentUser;
+    if (
+        !currentUser ||
+        !currentProfile ||
+        !currentResult
+    ) {
 
-    if (!user || !historyList) {
         return;
     }
 
-    historyList.innerHTML =
-        `<p class="muted">Loading history...</p>`;
+
+    const button =
+        $("saveHistoryBtn");
+
+    button.disabled = true;
+
+    button.textContent =
+        "Saving...";
+
 
     try {
 
-        const predictionsRef =
+        await addDoc(
             collection(
                 db,
-                "predictions"
+                "users",
+                currentUser.uid,
+                "history"
+            ),
+            {
+
+                disease:
+                    currentResult.disease,
+
+                rfDisease:
+                    currentResult.rf_disease,
+
+                rfConfidence:
+                    currentResult.rf_confidence,
+
+                qiskitDisease:
+                    currentResult.qiskit_disease,
+
+                qiskitScore:
+                    currentResult.qiskit_score,
+
+                scoreDifference:
+                    currentResult.score_difference,
+
+                modelAgreement:
+                    currentResult.model_agreement,
+
+                specialty:
+                    currentResult.specialty,
+
+                symptoms:
+                    currentResult.selected_symptoms,
+
+                patientName:
+                    currentProfile.name,
+
+                createdAt:
+                    serverTimestamp()
+            }
+        );
+
+
+        $("saveHistoryMessage")
+            .textContent =
+            "✓ Saved to Prediction History";
+
+
+        await loadHistory();
+
+
+    } catch (error) {
+
+        console.error(
+            "History save error:",
+            error
+        );
+
+        $("saveHistoryMessage")
+            .textContent =
+            "Could not save history. Check Firestore rules.";
+
+    } finally {
+
+        button.disabled = false;
+
+        button.textContent =
+            "💾 Save to History";
+    }
+}
+
+
+// ============================================================
+// LOAD HISTORY
+// ============================================================
+
+let historyData = [];
+
+
+async function loadHistory() {
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    try {
+
+        const historyReference =
+            collection(
+                db,
+                "users",
+                currentUser.uid,
+                "history"
             );
 
-        const q =
+
+        const historyQuery =
             query(
-                predictionsRef,
-
-                where(
-                    "userId",
-                    "==",
-                    user.uid
-                ),
-
+                historyReference,
                 orderBy(
                     "createdAt",
                     "desc"
                 )
             );
 
+
         const snapshot =
-            await getDocs(q);
+            await getDocs(
+                historyQuery
+            );
 
-        historyList.innerHTML = "";
 
-        if (snapshot.empty) {
-
-            historyList.innerHTML =
-                `<p class="muted">
-                    No predictions yet.
-                </p>`;
-
-            return;
-        }
+        historyData = [];
 
 
         snapshot.forEach(
-            function (docSnap) {
+            item => {
 
-                const data =
-                    docSnap.data();
+                historyData.push({
+                    id:
+                        item.id,
 
-                const item =
-                    document.createElement(
-                        "div"
-                    );
+                    ...item.data()
+                });
 
-                item.className =
-                    "history-item";
-
-
-                const timestamp =
-                    getPredictionDate(
-                        data
-                    );
-
-
-                const symptoms =
-                    Array.isArray(
-                        data.symptoms
-                    )
-                        ? data.symptoms.join(
-                            ", "
-                        )
-                        : "—";
-
-
-                item.innerHTML = `
-
-                    <div>
-
-                        <div class="history-disease">
-                            ${escapeHtml(
-                                data.disease ||
-                                "Unknown"
-                            )}
-                        </div>
-
-                        <div class="history-symptoms">
-                            ${escapeHtml(
-                                symptoms
-                            )}
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <div class="history-date">
-                            ${formatDateTime(
-                                timestamp
-                            )}
-                        </div>
-
-                        <small class="muted">
-                            Prediction Date & Time
-                        </small>
-
-                    </div>
-
-
-                    <div class="history-confidence">
-
-                        ${
-                            data.confidence !==
-                            undefined
-                                ? Number(
-                                    data.confidence
-                                ) + "%"
-                                : "—"
-                        }
-
-                    </div>
-                `;
-
-
-                historyList.appendChild(
-                    item
-                );
             }
         );
+
+
+        renderHistory();
+
+        updateDashboardStats();
+
 
     } catch (error) {
 
@@ -2416,1034 +2019,132 @@ async function loadPredictionHistory() {
             error
         );
 
-        // If Firestore needs an index,
-        // try a simpler query.
-
-        try {
-
-            const fallbackQuery =
-                query(
-                    collection(
-                        db,
-                        "predictions"
-                    ),
-
-                    where(
-                        "userId",
-                        "==",
-                        user.uid
-                    )
-                );
-
-            const snapshot =
-                await getDocs(
-                    fallbackQuery
-                );
-
-            historyList.innerHTML =
-                "";
-
-            const records = [];
-
-            snapshot.forEach(
-                snap => {
-
-                    records.push(
-                        {
-                            id:
-                                snap.id,
-
-                            ...snap.data()
-                        }
-                    );
-                }
-            );
-
-            records.sort(
-                function (a, b) {
-
-                    return (
-                        getPredictionDate(b)
-                            .getTime() -
-
-                        getPredictionDate(a)
-                            .getTime()
-                    );
-                }
-            );
-
-            records.forEach(
-                function (data) {
-
-                    const item =
-                        document.createElement(
-                            "div"
-                        );
-
-                    item.className =
-                        "history-item";
-
-                    const timestamp =
-                        getPredictionDate(
-                            data
-                        );
-
-                    const symptoms =
-                        Array.isArray(
-                            data.symptoms
-                        )
-                            ? data.symptoms.join(
-                                ", "
-                            )
-                            : "—";
-
-                    item.innerHTML = `
-
-                        <div>
-
-                            <div class="history-disease">
-                                ${escapeHtml(
-                                    data.disease ||
-                                    "Unknown"
-                                )}
-                            </div>
-
-                            <div class="history-symptoms">
-                                ${escapeHtml(
-                                    symptoms
-                                )}
-                            </div>
-
-                        </div>
-
-                        <div>
-
-                            <div class="history-date">
-                                ${formatDateTime(
-                                    timestamp
-                                )}
-                            </div>
-
-                            <small class="muted">
-                                Prediction Date & Time
-                            </small>
-
-                        </div>
-
-                        <div class="history-confidence">
-                            ${
-                                data.confidence !==
-                                undefined
-                                    ? Number(
-                                        data.confidence
-                                    ) + "%"
-                                    : "—"
-                            }
-                        </div>
-                    `;
-
-                    historyList.appendChild(
-                        item
-                    );
-                }
-            );
-
-            if (!records.length) {
-
-                historyList.innerHTML =
-                    `<p class="muted">
-                        No predictions yet.
-                    </p>`;
-            }
-
-        } catch (fallbackError) {
-
-            console.error(
-                "History fallback error:",
-                fallbackError
-            );
-
-            historyList.innerHTML =
-                `<p class="muted">
-                    Unable to load prediction history.
-                </p>`;
-        }
+        $("historyList")
+            .innerHTML = `
+                <div class="empty-state">
+                    Unable to load history.
+                    Check Firestore rules.
+                </div>
+            `;
     }
 }
 
 
 // ============================================================
-// GET PREDICTION DATE
+// RENDER HISTORY
 // ============================================================
 
-function getPredictionDate(
-    data
-) {
+function renderHistory() {
+
+    const container =
+        $("historyList");
+
 
     if (
-        data.createdAt &&
-        typeof data.createdAt.toDate ===
-            "function"
+        historyData.length === 0
     ) {
 
-        return data.createdAt.toDate();
-    }
-
-    if (
-        data.clientTimestamp
-    ) {
-
-        const date =
-            new Date(
-                data.clientTimestamp
-            );
-
-        if (!isNaN(
-            date.getTime()
-        )) {
-
-            return date;
-        }
-    }
-
-    return new Date();
-}
-
-
-// ============================================================
-// FORMAT DATE + TIME
-// ============================================================
-
-function formatDateTime(
-    date
-) {
-
-    const d =
-        date instanceof Date
-            ? date
-            : new Date(date);
-
-    if (
-        isNaN(
-            d.getTime()
-        )
-    ) {
-        return "Date unavailable";
-    }
-
-    return d.toLocaleString(
-        "en-IN",
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: true
-        }
-    );
-}
-
-
-// ============================================================
-// LOAD jsPDF
-// ============================================================
-
-let jsPDFPromise = null;
-
-function loadJsPDF() {
-
-    if (window.jspdf) {
-        return Promise.resolve(
-            window.jspdf
-        );
-    }
-
-    if (jsPDFPromise) {
-        return jsPDFPromise;
-    }
-
-    jsPDFPromise =
-        new Promise(
-            function (resolve, reject) {
-
-                const script =
-                    document.createElement(
-                        "script"
-                    );
-
-                script.src =
-                    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-
-                script.onload =
-                    function () {
-
-                        if (
-                            window.jspdf
-                        ) {
-
-                            resolve(
-                                window.jspdf
-                            );
-
-                        } else {
-
-                            reject(
-                                new Error(
-                                    "jsPDF could not be loaded."
-                                )
-                            );
-                        }
-                    };
-
-                script.onerror =
-                    function () {
-
-                        reject(
-                            new Error(
-                                "Could not load PDF library."
-                            )
-                        );
-                    };
-
-                document.head.appendChild(
-                    script
-                );
-            }
-        );
-
-    return jsPDFPromise;
-}
-
-
-// ============================================================
-// DOWNLOAD PDF REPORT
-// ============================================================
-
-async function downloadPredictionPDF(
-    prediction
-) {
-
-    if (!prediction) {
-
-        alert(
-            "No prediction available for the report."
-        );
+        container.innerHTML = `
+            <div class="empty-state">
+                No predictions saved yet.
+            </div>
+        `;
 
         return;
     }
 
-    try {
 
-        const jspdf =
-            await loadJsPDF();
+    container.innerHTML =
+        historyData
+            .map(
+                item => `
 
-        const jsPDF =
-            jspdf.jsPDF;
+                    <div class="history-card">
 
-        const pdf =
-            new jsPDF();
+                        <div>
 
+                            <span class="eyebrow">
+                                PREDICTION
+                            </span>
 
-        const profile =
-            prediction.profile ||
-            currentProfile ||
-            getProfileData();
+                            <h3>
+                                ${escapeHTML(
+                                    item.disease ||
+                                    "Unknown"
+                                )}
+                            </h3>
 
+                            <p>
+                                Specialty:
+                                ${escapeHTML(
+                                    item.specialty ||
+                                    "General Physician"
+                                )}
+                            </p>
 
-        const user =
-            auth.currentUser;
-
-
-        const patientName =
-            profile.name ||
-            "Patient";
-
-        const email =
-            user?.email ||
-            "Not provided";
-
-        const phone =
-            user?.phoneNumber ||
-            "Not provided";
+                        </div>
 
 
-        const predictionDate =
-            prediction.timestamp instanceof Date
-                ? prediction.timestamp
-                : new Date();
+                        <div class="history-scores">
 
+                            <span>
+                                🌲 RF:
+                                ${Number(
+                                    item.rfConfidence || 0
+                                ).toFixed(2)}%
+                            </span>
 
-        const diseaseName =
-            prediction.disease ||
-            "Unknown";
+                            <span>
+                                ⚛️ Qiskit:
+                                ${Number(
+                                    item.qiskitScore || 0
+                                ).toFixed(2)}%
+                            </span>
 
+                            <span>
+                                Agreement:
+                                ${escapeHTML(
+                                    item.modelAgreement ||
+                                    "—"
+                                )}
+                            </span>
 
-        const confidence =
-            Number(
-                prediction.confidence ||
-                0
-            );
+                        </div>
 
+                    </div>
 
-        const symptoms =
-            Array.isArray(
-                prediction.symptoms
+                `
             )
-                ? prediction.symptoms
-                : [];
-
-
-        const specialist =
-            prediction.specialist ||
-            prediction.recommended_specialist ||
-            getSpecialistForDisease(
-                diseaseName
-            );
-
-
-        const quantumDisease =
-            prediction.quantum_disease ||
-            prediction.quantum_prediction ||
-            prediction.qiskit_disease ||
-            "Not available";
-
-
-        const quantumScore =
-            prediction.quantum_score ||
-            prediction.experimental_score ||
-            prediction.qiskit_score ||
-            "Not available";
-
-
-        // --------------------------------------------------------
-        // PDF HEADER
-        // --------------------------------------------------------
-
-        pdf.setFontSize(22);
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "QuantumDiagnose",
-            20,
-            22
-        );
-
-
-        pdf.setFontSize(11);
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-        pdf.text(
-            "Intelligent Symptom Analysis Platform",
-            20,
-            30
-        );
-
-
-        pdf.setDrawColor(
-            49,
-            91,
-            234
-        );
-
-        pdf.line(
-            20,
-            35,
-            190,
-            35
-        );
-
-
-        let y = 48;
-
-
-        // --------------------------------------------------------
-        // REPORT TITLE
-        // --------------------------------------------------------
-
-        pdf.setFontSize(16);
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "Prediction Report",
-            20,
-            y
-        );
-
-        y += 12;
-
-
-        // --------------------------------------------------------
-        // PATIENT INFORMATION
-        // --------------------------------------------------------
-
-        pdf.setFontSize(13);
-
-        pdf.text(
-            "Patient Information",
-            20,
-            y
-        );
-
-        y += 9;
-
-        pdf.setFontSize(10);
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-        pdf.text(
-            `Name: ${patientName}`,
-            20,
-            y
-        );
-
-        y += 7;
-
-        pdf.text(
-            `Email: ${email}`,
-            20,
-            y
-        );
-
-        y += 7;
-
-        pdf.text(
-            `Phone: ${phone}`,
-            20,
-            y
-        );
-
-        y += 7;
-
-        if (profile.gender) {
-
-            pdf.text(
-                `Gender: ${profile.gender}`,
-                20,
-                y
-            );
-
-            y += 7;
-        }
-
-        if (profile.age) {
-
-            pdf.text(
-                `Age: ${profile.age}`,
-                20,
-                y
-            );
-
-            y += 7;
-        }
-
-
-        // --------------------------------------------------------
-        // TIMESTAMP
-        // --------------------------------------------------------
-
-        y += 4;
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "Prediction Date & Time",
-            20,
-            y
-        );
-
-        y += 7;
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-        pdf.text(
-            formatDateTime(
-                predictionDate
-            ),
-            20,
-            y
-        );
-
-        y += 12;
-
-
-        // --------------------------------------------------------
-        // SYMPTOMS
-        // --------------------------------------------------------
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "Symptoms Selected",
-            20,
-            y
-        );
-
-        y += 7;
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-
-        if (symptoms.length) {
-
-            symptoms.forEach(
-                function (symptom) {
-
-                    const lines =
-                        pdf.splitTextToSize(
-                            "• " +
-                            symptom,
-                            165
-                        );
-
-                    pdf.text(
-                        lines,
-                        25,
-                        y
-                    );
-
-                    y +=
-                        6 *
-                        lines.length;
-                }
-            );
-
-        } else {
-
-            pdf.text(
-                "No symptoms recorded.",
-                25,
-                y
-            );
-
-            y += 7;
-        }
-
-
-        y += 5;
-
-
-        // --------------------------------------------------------
-        // RANDOM FOREST RESULT
-        // --------------------------------------------------------
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "Random Forest Prediction",
-            20,
-            y
-        );
-
-        y += 8;
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-        pdf.text(
-            `Disease: ${diseaseName}`,
-            20,
-            y
-        );
-
-        y += 7;
-
-        pdf.text(
-            `Confidence: ${confidence}%`,
-            20,
-            y
-        );
-
-        y += 12;
-
-
-        // --------------------------------------------------------
-        // QISKIT RESULT
-        // --------------------------------------------------------
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "Qiskit Experimental Analysis",
-            20,
-            y
-        );
-
-        y += 8;
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-        pdf.text(
-            `Disease: ${quantumDisease}`,
-            20,
-            y
-        );
-
-        y += 7;
-
-        pdf.text(
-            `Experimental Score: ${quantumScore}`,
-            20,
-            y
-        );
-
-        y += 12;
-
-
-        // --------------------------------------------------------
-        // DOCTOR RECOMMENDATION
-        // --------------------------------------------------------
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "Recommended Specialist",
-            20,
-            y
-        );
-
-        y += 8;
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-        pdf.text(
-            specialist,
-            20,
-            y
-        );
-
-        y += 15;
-
-
-        // --------------------------------------------------------
-        // DISCLAIMER
-        // --------------------------------------------------------
-
-        pdf.setFont(
-            "helvetica",
-            "bold"
-        );
-
-        pdf.text(
-            "Disclaimer",
-            20,
-            y
-        );
-
-        y += 7;
-
-        pdf.setFont(
-            "helvetica",
-            "normal"
-        );
-
-        const disclaimer =
-            "This report is generated by an educational prediction system and is not a substitute for professional medical diagnosis or advice.";
-
-        const disclaimerLines =
-            pdf.splitTextToSize(
-                disclaimer,
-                165
-            );
-
-        pdf.text(
-            disclaimerLines,
-            20,
-            y
-        );
-
-        y +=
-            6 *
-            disclaimerLines.length;
-
-
-        // --------------------------------------------------------
-        // FOOTER
-        // --------------------------------------------------------
-
-        pdf.setFontSize(9);
-
-        pdf.setTextColor(
-            100,
-            100,
-            100
-        );
-
-        pdf.text(
-            "Generated by QuantumDiagnose",
-            20,
-            285
-        );
-
-
-        // --------------------------------------------------------
-        // SAVE
-        // --------------------------------------------------------
-
-        const safeName =
-            patientName
-                .replace(
-                    /[^a-z0-9]/gi,
-                    "_"
-                )
-                .toLowerCase();
-
-        pdf.save(
-            `QuantumDiagnose_Report_${safeName}.pdf`
-        );
-
-    } catch (error) {
-
-        console.error(
-            "PDF generation error:",
-            error
-        );
-
-        alert(
-            "Could not generate the PDF report. Please try again."
-        );
-    }
+            .join("");
 }
 
 
 // ============================================================
-// QUANTUM ANALYSIS
+// DASHBOARD STATS
 // ============================================================
 
-if (quantumBtn) {
+function updateDashboardStats() {
 
-    quantumBtn.addEventListener(
-        "click",
-        async function () {
-
-            const boxes =
-                getSymptomCheckboxes();
-
-            const selectedSymptoms =
-                [];
-
-            boxes.forEach(
-                function (box) {
-
-                    if (box.checked) {
-
-                        selectedSymptoms.push(
-                            box.value
-                        );
-                    }
-                }
-            );
+    $("predictionCount")
+        .textContent =
+        historyData.length;
 
 
-            if (
-                selectedSymptoms.length === 0
-            ) {
+    if (
+        historyData.length > 0
+    ) {
 
-                alert(
-                    "Please select symptoms first."
-                );
+        $("latestDisease")
+            .textContent =
+            historyData[0].disease ||
+            "—";
 
-                return;
-            }
+    } else {
 
-
-            quantumBtn.disabled =
-                true;
-
-            quantumBtn.textContent =
-                "Running...";
-
-
-            if (quantumResult) {
-
-                quantumResult.innerHTML =
-                    "Running experimental quantum analysis...";
-            }
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/quantum_predict",
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify(
-                                    {
-                                        symptoms:
-                                            selectedSymptoms
-                                    }
-                                )
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.error ||
-                        "Quantum analysis failed."
-                    );
-                }
-
-
-                const quantumDisease =
-                    data.disease ||
-                    data.quantum_disease ||
-                    data.prediction ||
-                    "Unknown";
-
-
-                const score =
-                    data.experimental_score ??
-                    data.quantum_score ??
-                    data.score ??
-                    "—";
-
-
-                if (quantumResult) {
-
-                    quantumResult.innerHTML = `
-
-                        <div class="quantum-result-inner">
-
-                            <h3>
-                                Qiskit Result
-                            </h3>
-
-                            <div class="quantum-metrics">
-
-                                <div class="quantum-metric">
-
-                                    <span>
-                                        Disease
-                                    </span>
-
-                                    <strong>
-                                        ${escapeHtml(
-                                            quantumDisease
-                                        )}
-                                    </strong>
-
-                                </div>
-
-                                <div class="quantum-metric">
-
-                                    <span>
-                                        Experimental Score
-                                    </span>
-
-                                    <strong>
-                                        ${escapeHtml(
-                                            String(score)
-                                        )}
-                                    </strong>
-
-                                </div>
-
-                                <div class="quantum-metric">
-
-                                    <span>
-                                        Status
-                                    </span>
-
-                                    <strong>
-                                        Experimental
-                                    </strong>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-                    `;
-                }
-
-            } catch (error) {
-
-                console.error(
-                    "Quantum analysis error:",
-                    error
-                );
-
-                if (quantumResult) {
-
-                    quantumResult.innerHTML = `
-                        <div class="error-box">
-                            Quantum analysis failed:
-                            ${escapeHtml(
-                                error.message
-                            )}
-                        </div>
-                    `;
-                }
-
-            } finally {
-
-                quantumBtn.disabled =
-                    false;
-
-                quantumBtn.textContent =
-                    "Run Quantum Analysis";
-            }
-        }
-    );
+        $("latestDisease")
+            .textContent =
+            "—";
+    }
 }
 
 
@@ -3460,81 +2161,48 @@ async function loadPerformance() {
                 "/performance"
             );
 
-        if (!response.ok) {
-            return;
-        }
-
         const data =
             await response.json();
 
 
-        const accuracy =
-            data.accuracy ??
-            data.test_accuracy ??
-            data.rf_accuracy;
+        $("perfAccuracy")
+            .textContent =
+            `${data.accuracy}%`;
+
+        $("perfPrecision")
+            .textContent =
+            `${data.precision}%`;
+
+        $("perfRecall")
+            .textContent =
+            `${data.recall}%`;
+
+        $("perfF1")
+            .textContent =
+            `${data.f1}%`;
 
 
-        const precision =
-            data.precision;
+        $("trainingSamples")
+            .textContent =
+            data.training_samples;
 
+        $("testingSamples")
+            .textContent =
+            data.testing_samples;
 
-        const recall =
-            data.recall;
+        $("symptomTotal")
+            .textContent =
+            data.number_of_symptoms;
 
+        $("diseaseTotal")
+            .textContent =
+            data.number_of_diseases;
 
-        const f1 =
-            data.f1 ??
-            data.f1_score;
-
-
-        if (metricAccuracy) {
-
-            metricAccuracy.textContent =
-                formatMetric(
-                    accuracy
-                );
-        }
-
-
-        if (metricPrecision) {
-
-            metricPrecision.textContent =
-                formatMetric(
-                    precision
-                );
-        }
-
-
-        if (metricRecall) {
-
-            metricRecall.textContent =
-                formatMetric(
-                    recall
-                );
-        }
-
-
-        if (metricF1) {
-
-            metricF1.textContent =
-                formatMetric(
-                    f1
-                );
-        }
-
-
-        if (rfAccuracy) {
-
-            rfAccuracy.textContent =
-                formatMetric(
-                    accuracy
-                );
-        }
 
     } catch (error) {
 
-        console.log(
-            "Performance endpoint unavailable:",
+        console.error(
+            "Performance error:",
             error
         );
     }
@@ -3542,387 +2210,196 @@ async function loadPerformance() {
 
 
 // ============================================================
-// FORMAT METRIC
+// LOGOUT
 // ============================================================
 
-function formatMetric(
-    value
-) {
+async function logoutUser() {
 
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return "—";
+    try {
+
+        await signOut(
+            auth
+        );
+
+        currentUser =
+            null;
+
+        currentProfile =
+            null;
+
+        currentResult =
+            null;
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+        alert(
+            "Logout failed."
+        );
     }
-
-    const number =
-        Number(value);
-
-    if (isNaN(number)) {
-        return String(value);
-    }
-
-    if (number <= 1) {
-
-        return (
-            number * 100
-        ).toFixed(1) + "%";
-    }
-
-    return (
-        number
-    ).toFixed(1) + "%";
 }
-
-
-// ============================================================
-// BUTTON EVENTS
-// ============================================================
-
-if (loginBtn) {
-
-    loginBtn.addEventListener(
-        "click",
-        function () {
-
-            openAuthModal(
-                "login"
-            );
-        }
-    );
-}
-
-
-if (signupBtn) {
-
-    signupBtn.addEventListener(
-        "click",
-        function () {
-
-            openAuthModal(
-                "signup"
-            );
-        }
-    );
-}
-
-
-if (logoutBtn) {
-
-    logoutBtn.addEventListener(
-        "click",
-        logoutUser
-    );
-}
-
-
-if (closeModal) {
-
-    closeModal.addEventListener(
-        "click",
-        closeAuthModal
-    );
-}
-
-
-if (authModal) {
-
-    authModal.addEventListener(
-        "click",
-        function (event) {
-
-            if (
-                event.target ===
-                authModal
-            ) {
-
-                closeAuthModal();
-            }
-        }
-    );
-}
-
-
-if (emailTab) {
-
-    emailTab.addEventListener(
-        "click",
-        showEmailAuth
-    );
-}
-
-
-if (phoneTab) {
-
-    phoneTab.addEventListener(
-        "click",
-        showPhoneAuth
-    );
-}
-
-
-if (authSubmit) {
-
-    authSubmit.addEventListener(
-        "click",
-        handleEmailAuthentication
-    );
-}
-
-
-if (sendOtpBtn) {
-
-    sendOtpBtn.addEventListener(
-        "click",
-        sendPhoneOTP
-    );
-}
-
-
-if (verifyOtpBtn) {
-
-    verifyOtpBtn.addEventListener(
-        "click",
-        verifyPhoneOTP
-    );
-}
-
-
-if (saveProfileBtn) {
-
-    saveProfileBtn.addEventListener(
-        "click",
-        saveProfile
-    );
-}
-
-
-if (predictBtn) {
-
-    predictBtn.addEventListener(
-        "click",
-        makePrediction
-    );
-}
-
-
-if (authPassword) {
-
-    authPassword.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                handleEmailAuthentication();
-            }
-        }
-    );
-}
-
-
-if (otpCode) {
-
-    otpCode.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                verifyPhoneOTP();
-            }
-        }
-    );
-}
-
-
-// ============================================================
-// NAVIGATION
-// ============================================================
-
-document
-    .querySelectorAll(
-        ".nav-item"
-    )
-    .forEach(
-        function (button) {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const pageName =
-                        button.dataset.page;
-
-                    if (!pageName) {
-                        return;
-                    }
-
-                    document
-                        .querySelectorAll(
-                            ".page"
-                        )
-                        .forEach(
-                            page =>
-                                page.classList.remove(
-                                    "active-page"
-                                )
-                        );
-
-
-                    const target =
-                        document.getElementById(
-                            pageName
-                        );
-
-                    if (target) {
-
-                        target.classList.add(
-                            "active-page"
-                        );
-                    }
-
-
-                    document
-                        .querySelectorAll(
-                            ".nav-item"
-                        )
-                        .forEach(
-                            item =>
-                                item.classList.remove(
-                                    "active"
-                                )
-                        );
-
-
-                    button.classList.add(
-                        "active"
-                    );
-
-
-                    if (
-                        pageName ===
-                        "history"
-                    ) {
-
-                        loadPredictionHistory();
-                    }
-
-
-                    if (
-                        pageName ===
-                        "performance"
-                    ) {
-
-                        loadPerformance();
-                    }
-                }
-            );
-        }
-    );
-
-
-// ============================================================
-// QUICK ACTIONS
-// ============================================================
-
-document
-    .querySelectorAll(
-        "[data-go]"
-    )
-    .forEach(
-        function (button) {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const pageName =
-                        button.dataset.go;
-
-                    const target =
-                        document.getElementById(
-                            pageName
-                        );
-
-                    if (!target) {
-                        return;
-                    }
-
-                    document
-                        .querySelectorAll(
-                            ".page"
-                        )
-                        .forEach(
-                            page =>
-                                page.classList.remove(
-                                    "active-page"
-                                )
-                        );
-
-                    target.classList.add(
-                        "active-page"
-                    );
-
-
-                    document
-                        .querySelectorAll(
-                            ".nav-item"
-                        )
-                        .forEach(
-                            item => {
-
-                                item.classList.toggle(
-                                    "active",
-                                    item.dataset.page ===
-                                        pageName
-                                );
-                            }
-                        );
-                }
-            );
-        }
-    );
 
 
 // ============================================================
 // ESCAPE HTML
 // ============================================================
 
-function escapeHtml(
+function escapeHTML(
     value
 ) {
 
-    const div =
-        document.createElement(
-            "div"
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
         );
-
-    div.textContent =
-        value ?? "";
-
-    return div.innerHTML;
 }
+
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+
+$("loginTab")
+    .addEventListener(
+        "click",
+        () => {
+
+            setAuthMode(
+                "login"
+            );
+
+        }
+    );
+
+
+$("signupTab")
+    .addEventListener(
+        "click",
+        () => {
+
+            setAuthMode(
+                "signup"
+            );
+
+        }
+    );
+
+
+$("emailTab")
+    .addEventListener(
+        "click",
+        showEmailMethod
+    );
+
+
+$("phoneTab")
+    .addEventListener(
+        "click",
+        showPhoneMethod
+    );
+
+
+$("refreshCaptcha")
+    .addEventListener(
+        "click",
+        generateCaptcha
+    );
+
+
+$("authSubmit")
+    .addEventListener(
+        "click",
+        handleEmailAuth
+    );
+
+
+$("sendOtpBtn")
+    .addEventListener(
+        "click",
+        sendOTP
+    );
+
+
+$("verifyOtpBtn")
+    .addEventListener(
+        "click",
+        verifyOTP
+    );
+
+
+$("logoutBtn")
+    .addEventListener(
+        "click",
+        logoutUser
+    );
+
+
+$("saveProfileBtn")
+    .addEventListener(
+        "click",
+        saveProfile
+    );
+
+
+$("predictBtn")
+    .addEventListener(
+        "click",
+        analyzeSymptoms
+    );
+
+
+$("saveHistoryBtn")
+    .addEventListener(
+        "click",
+        saveCurrentHistory
+    );
+
+
+$("authPassword")
+    .addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                handleEmailAuth();
+            }
+        }
+    );
 
 
 // ============================================================
 // INITIALIZE
 // ============================================================
 
-setupSymptomEvents();
+generateCaptcha();
 
-loadPerformance();
-
-console.log(
-    "QuantumDiagnose JavaScript loaded successfully."
-);
+updateCount();
 
 console.log(
-    "Firebase initialized successfully."
+    "QuantumDiagnose loaded successfully."
 );
