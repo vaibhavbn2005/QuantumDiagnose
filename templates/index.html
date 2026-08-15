@@ -1,82 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>QuantumDiagnose</title>
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Quantum Diagnose</title>
 
     <link
         rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
+        href="/static/style.css"
     >
+
 </head>
+
 
 <body>
 
-<div id="authScreen" class="auth-screen">
+<!-- =====================================================
+     LOGIN / SIGNUP
+===================================================== -->
+
+<div
+    id="authPage"
+    class="auth-page"
+>
 
     <div class="auth-card">
 
-        <div class="brand-logo">
-            Q
+        <div class="logo-circle">
+            ⚛️
         </div>
 
-        <h1>QuantumDiagnose</h1>
+        <h1>
+            Quantum Diagnose
+        </h1>
 
-        <p class="subtitle">
-            Intelligent Symptom Analysis Platform
+        <p class="auth-subtitle">
+            AI & Quantum Assisted Health Analysis
         </p>
 
-        <div class="auth-tabs">
+
+        <!-- LOGIN -->
+
+        <div id="loginBox">
+
+            <h2>
+                Welcome Back
+            </h2>
+
+            <p>
+                Login to continue
+            </p>
+
+            <input
+                type="email"
+                id="loginEmail"
+                placeholder="Email address"
+            >
+
+            <input
+                type="password"
+                id="loginPassword"
+                placeholder="Password"
+            >
 
             <button
-                id="loginTab"
-                class="auth-tab active"
-                type="button"
+                id="loginBtn"
+                class="primary-btn"
             >
                 Login
             </button>
 
-            <button
-                id="signupTab"
-                class="auth-tab"
-                type="button"
-            >
-                Sign Up
-            </button>
+            <p
+                id="loginError"
+                class="auth-error"
+            ></p>
+
+            <p class="switch-text">
+
+                Don't have an account?
+
+                <button
+                    id="showSignupBtn"
+                    class="link-btn"
+                >
+                    Create Account
+                </button>
+
+            </p>
 
         </div>
 
-        <div class="auth-form">
 
-            <label>Email Address</label>
+        <!-- SIGNUP -->
+
+        <div
+            id="signupBox"
+            class="hidden"
+        >
+
+            <h2>
+                Create Account
+            </h2>
+
+            <p>
+                Register as a patient
+            </p>
 
             <input
-                id="authEmail"
-                type="email"
-                placeholder="Enter your email"
-                autocomplete="email"
+                type="text"
+                id="signupName"
+                placeholder="Full name"
             >
 
-            <label>Password</label>
+            <input
+                type="email"
+                id="signupEmail"
+                placeholder="Email address"
+            >
 
             <input
-                id="authPassword"
                 type="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
+                id="signupPassword"
+                placeholder="Password"
             >
 
             <button
-                id="authSubmit"
-                class="primary-btn full-btn"
-                type="button"
+                id="signupBtn"
+                class="primary-btn"
             >
-                Login
+                Create Account
             </button>
 
-            <p id="authMessage" class="auth-message"></p>
+            <p
+                id="signupError"
+                class="auth-error"
+            ></p>
+
+            <p class="switch-text">
+
+                Already have an account?
+
+                <button
+                    id="showLoginBtn"
+                    class="link-btn"
+                >
+                    Login
+                </button>
+
+            </p>
 
         </div>
 
@@ -85,90 +163,96 @@
 </div>
 
 
-<div id="app" class="app hidden">
 
-    <!-- ================= SIDEBAR ================= -->
+<!-- =====================================================
+     MAIN APPLICATION
+===================================================== -->
+
+<div
+    id="appPage"
+    class="app hidden"
+>
+
+
+    <!-- SIDEBAR -->
 
     <aside class="sidebar">
 
-        <div class="sidebar-header">
+        <div class="brand">
 
-            <div class="small-logo">
-                Q
+            <div class="brand-icon">
+                ⚛️
             </div>
 
             <div>
-                <h2>QuantumDiagnose</h2>
-                <span>AI Health Platform</span>
+
+                <strong>
+                    Quantum
+                </strong>
+
+                <span>
+                    Diagnose
+                </span>
+
             </div>
 
         </div>
 
 
-        <nav class="sidebar-nav">
+        <nav>
 
             <button
-                class="nav-item active"
-                data-page="dashboard"
-                type="button"
+                class="nav-btn active"
+                data-section="dashboardSection"
             >
-                🏠 Dashboard
+                🏠
+                <span>
+                    Dashboard
+                </span>
             </button>
 
-            <button
-                class="nav-item"
-                data-page="profile"
-                type="button"
-            >
-                👤 Patient Profile
-            </button>
 
             <button
-                class="nav-item"
-                data-page="prediction"
-                type="button"
+                class="nav-btn"
+                data-section="profileSection"
             >
-                🩺 New Prediction
+                👤
+                <span>
+                    Patient Profile
+                </span>
             </button>
 
-            <button
-                class="nav-item"
-                data-page="history"
-                type="button"
-            >
-                📋 Prediction History
-            </button>
 
             <button
-                class="nav-item"
-                data-page="doctors"
-                type="button"
+                class="nav-btn"
+                data-section="analysisSection"
             >
-                👨‍⚕️ Doctors
+                🔬
+                <span>
+                    Prediction
+                </span>
             </button>
 
-            <button
-                class="nav-item"
-                data-page="quantum"
-                type="button"
-            >
-                ⚛️ Quantum Analysis
-            </button>
 
             <button
-                class="nav-item"
-                data-page="comparison"
-                type="button"
+                class="nav-btn"
+                data-section="historySection"
             >
-                🔬 RF vs Quantum
+                📋
+                <span>
+                    History
+                </span>
             </button>
 
+
             <button
-                class="nav-item"
-                data-page="performance"
-                type="button"
+                class="nav-btn"
+                data-section="doctorSection"
             >
-                📊 Performance
+                👨‍⚕️
+                <span>
+                    Doctor Recommendation
+                </span>
             </button>
 
         </nav>
@@ -176,17 +260,11 @@
 
         <div class="sidebar-bottom">
 
-            <div class="logged-user">
-                <span>Logged in as</span>
-                <strong id="userEmail">User</strong>
-            </div>
-
             <button
                 id="logoutBtn"
                 class="logout-btn"
-                type="button"
             >
-                Logout
+                🚪 Logout
             </button>
 
         </div>
@@ -194,797 +272,197 @@
     </aside>
 
 
-    <!-- ================= MAIN ================= -->
+
+    <!-- MAIN -->
 
     <main class="main-content">
+
+
+        <!-- TOP BAR -->
 
         <header class="topbar">
 
             <div>
-                <h2 id="pageTitle">Dashboard</h2>
+
+                <h2 id="pageTitle">
+                    Dashboard
+                </h2>
 
                 <p>
-                    Machine-learning based symptom analysis
+                    AI-powered health analysis
                 </p>
+
             </div>
 
-            <div class="topbar-badge">
-                Educational Project
+
+            <div class="user-area">
+
+                <div class="user-avatar">
+                    👤
+                </div>
+
+                <div>
+
+                    <strong id="topUserName">
+                        Patient
+                    </strong>
+
+                    <span id="topUserEmail">
+                        --
+                    </span>
+
+                </div>
+
             </div>
 
         </header>
 
 
-        <!-- ================= DASHBOARD ================= -->
+
+        <!-- =================================================
+             DASHBOARD
+        ================================================== -->
 
         <section
-            id="dashboard"
-            class="page active-page"
+            id="dashboardSection"
+            class="page-section"
         >
 
-            <div class="welcome-card">
+            <div class="hero-card">
 
                 <div>
 
-                    <span class="eyebrow">
-                        PATIENT DASHBOARD
+                    <span class="small-label">
+                        QUANTUM HEALTH PLATFORM
                     </span>
 
                     <h1>
-                        Welcome back,
-                        <span id="welcomeName">
-                            Patient
-                        </span>
+                        AI + Quantum
+                        <br>
+                        Health Analysis
                     </h1>
 
                     <p>
-                        Analyze symptoms, review prediction history
-                        and explore experimental quantum analysis.
+                        Analyze patient health parameters
+                        using Random Forest and Qiskit
+                        quantum machine learning.
                     </p>
+
+                    <button
+                        class="hero-btn"
+                        onclick="openSection('analysisSection')"
+                    >
+                        🔬 Start Analysis
+                    </button>
 
                 </div>
 
-                <button
-                    class="primary-btn"
-                    data-go="prediction"
-                    type="button"
-                >
-                    Start New Analysis
-                </button>
+                <div class="hero-icon">
+                    ⚛️
+                </div>
 
             </div>
 
+
+
+            <!-- STAT CARDS -->
 
             <div class="stats-grid">
 
                 <div class="stat-card">
-                    <span>Total Predictions</span>
-                    <strong id="predictionCount">0</strong>
-                </div>
 
-                <div class="stat-card">
-                    <span>Latest Prediction</span>
-                    <strong id="latestDisease">—</strong>
-                </div>
-
-                <div class="stat-card">
-                    <span>ML Model</span>
-                    <strong>Random Forest</strong>
-                </div>
-
-                <div class="stat-card">
-                    <span>Quantum Engine</span>
-                    <strong>Qiskit</strong>
-                </div>
-
-            </div>
-
-
-            <div class="section-grid">
-
-                <div class="content-card">
-
-                    <div class="card-header">
-                        <div>
-                            <span class="eyebrow">
-                                QUICK ACTIONS
-                            </span>
-
-                            <h2>What would you like to do?</h2>
-                        </div>
-                    </div>
-
-                    <div class="action-grid">
-
-                        <button
-                            class="action-card"
-                            data-go="prediction"
-                            type="button"
-                        >
-                            <span>🩺</span>
-                            <strong>New Prediction</strong>
-                            <small>Analyze symptoms</small>
-                        </button>
-
-                        <button
-                            class="action-card"
-                            data-go="history"
-                            type="button"
-                        >
-                            <span>📋</span>
-                            <strong>View History</strong>
-                            <small>Previous analyses</small>
-                        </button>
-
-                        <button
-                            class="action-card"
-                            data-go="doctors"
-                            type="button"
-                        >
-                            <span>👨‍⚕️</span>
-                            <strong>Find Doctors</strong>
-                            <small>View recommendations</small>
-                        </button>
-
-                        <button
-                            class="action-card"
-                            data-go="performance"
-                            type="button"
-                        >
-                            <span>📊</span>
-                            <strong>Performance</strong>
-                            <small>Model evaluation</small>
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-                <div class="content-card">
-
-                    <span class="eyebrow">
-                        LATEST RESULT
-                    </span>
-
-                    <h2 id="dashboardLatest">
-                        No prediction yet
-                    </h2>
-
-                    <p class="muted">
-                        Your latest prediction will appear here.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= PROFILE ================= -->
-
-        <section
-            id="profile"
-            class="page"
-        >
-
-            <div class="page-intro">
-
-                <span class="eyebrow">
-                    PATIENT INFORMATION
-                </span>
-
-                <h1>Patient Profile</h1>
-
-                <p>
-                    Complete your profile before using the
-                    prediction system.
-                </p>
-
-            </div>
-
-
-            <div class="content-card">
-
-                <div class="form-grid">
-
-                    <div class="form-group full-width">
-
-                        <label>Full Name</label>
-
-                        <input
-                            id="profileName"
-                            type="text"
-                            placeholder="Enter your full name"
-                        >
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>Gender</label>
-
-                        <select id="profileGender">
-
-                            <option value="">
-                                Select gender
-                            </option>
-
-                            <option value="Male">
-                                Male
-                            </option>
-
-                            <option value="Female">
-                                Female
-                            </option>
-
-                            <option value="Other">
-                                Other
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>Age</label>
-
-                        <input
-                            id="profileAge"
-                            type="number"
-                            placeholder="Age"
-                            min="1"
-                            max="120"
-                        >
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>Height (cm)</label>
-
-                        <input
-                            id="profileHeight"
-                            type="number"
-                            placeholder="Height"
-                        >
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>Weight (kg)</label>
-
-                        <input
-                            id="profileWeight"
-                            type="number"
-                            placeholder="Weight"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    id="saveProfileBtn"
-                    class="primary-btn"
-                    type="button"
-                >
-                    Save Profile
-                </button>
-
-                <p id="profileMessage" class="status-message"></p>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= PREDICTION ================= -->
-
-        <section
-            id="prediction"
-            class="page"
-        >
-
-            <div class="page-intro">
-
-                <span class="eyebrow">
-                    AI ANALYSIS
-                </span>
-
-                <h1>New Prediction</h1>
-
-                <p>
-                    Select the symptoms reported by the patient.
-                </p>
-
-            </div>
-
-
-            <div class="content-card">
-
-                <div class="prediction-toolbar">
-
-                    <div>
-
-                        <h2>Select Symptoms</h2>
-
-                        <p class="muted">
-                            Choose one or more symptoms.
-                        </p>
-
-                    </div>
-
-                    <div class="selected-count">
-
-                        <strong id="count">0</strong>
-
-                        <span>selected</span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="search-row">
-
-                    <input
-                        id="search"
-                        type="search"
-                        placeholder="🔎 Search symptoms..."
-                    >
-
-                    <button
-                        id="clearBtn"
-                        class="secondary-btn"
-                        type="button"
-                    >
-                        Clear
-                    </button>
-
-                </div>
-
-
-                <div
-                    id="symptomGrid"
-                    class="symptom-grid"
-                >
-
-                    {% for symptom in symptoms %}
-
-                    <label
-                        class="symptom"
-                        data-name="{{ symptom|replace('_', ' ') }}"
-                    >
-
-                        <input
-                            type="checkbox"
-                            value="{{ symptom }}"
-                        >
-
-                        <span>
-                            {{ symptom|replace('_', ' ')|title }}
-                        </span>
-
-                    </label>
-
-                    {% endfor %}
-
-                </div>
-
-
-                <div class="analysis-action">
-
-                    <button
-                        id="predictBtn"
-                        class="primary-btn large-btn"
-                        type="button"
-                    >
-                        Analyze Symptoms
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <!-- RESULT -->
-
-            <div
-                id="result"
-                class="result-section hidden"
-            >
-
-                <div class="result-main-card">
-
-                    <div class="result-heading">
-
-                        <span class="eyebrow">
-                            RANDOM FOREST RESULT
-                        </span>
-
-                        <h2 id="disease">
-                            —
-                        </h2>
-
-                        <p id="confidenceText">
-                            Model confidence: —
-                        </p>
-
-                    </div>
-
-
-                    <div class="confidence-container">
-
-                        <div class="confidence-track">
-                            <div
-                                id="confidenceBar"
-                                class="confidence-bar"
-                            ></div>
-                        </div>
-
-                    </div>
-
-
-                    <div class="result-columns">
-
-                        <div>
-
-                            <h3>Top Predictions</h3>
-
-                            <div id="topPredictions"></div>
-
-                        </div>
-
-
-                        <div class="result-note">
-
-                            <span>ℹ️</span>
-
-                            <p id="message">
-                                This is an educational machine-learning
-                                prediction and is not a medical diagnosis.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="next-actions">
-
-                    <button
-                        class="secondary-btn"
-                        data-go="quantum"
-                        type="button"
-                    >
-                        ⚛️ Run Quantum Analysis
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        data-go="history"
-                        type="button"
-                    >
-                        📋 View History
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        data-go="doctors"
-                        type="button"
-                    >
-                        👨‍⚕️ View Doctors
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= HISTORY ================= -->
-
-        <section
-            id="history"
-            class="page"
-        >
-
-            <div class="page-intro">
-
-                <span class="eyebrow">
-                    RECORDS
-                </span>
-
-                <h1>Prediction History</h1>
-
-                <p>
-                    Review your previous symptom analyses.
-                </p>
-
-            </div>
-
-
-            <div class="content-card">
-
-                <div id="historyList">
-
-                    <div class="loading">
-                        Loading history...
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= DOCTORS ================= -->
-
-        <section
-            id="doctors"
-            class="page"
-        >
-
-            <div class="page-intro">
-
-                <span class="eyebrow">
-                    RECOMMENDATIONS
-                </span>
-
-                <h1>Doctor Recommendations</h1>
-
-                <p>
-                    Educational recommendations based on the
-                    project prediction.
-                </p>
-
-            </div>
-
-
-            <div
-                id="doctorList"
-                class="doctor-grid"
-            >
-
-                <div class="loading">
-                    Loading doctors...
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= QUANTUM ================= -->
-
-        <section
-            id="quantum"
-            class="page"
-        >
-
-            <div class="page-intro">
-
-                <span class="eyebrow">
-                    QUANTUM COMPUTING
-                </span>
-
-                <h1>Qiskit Quantum Analysis</h1>
-
-                <p>
-                    Experimental quantum feature encoding using Qiskit.
-                </p>
-
-            </div>
-
-
-            <div class="quantum-layout">
-
-                <div class="quantum-info-card">
-
-                    <div class="quantum-icon">
-                        ⚛️
-                    </div>
-
-                    <h2>Experimental Analysis</h2>
-
-                    <p>
-                        The selected symptoms are encoded into a
-                        small quantum circuit for educational
-                        demonstration.
-                    </p>
-
-                    <button
-                        id="quantumBtn"
-                        class="primary-btn"
-                        type="button"
-                    >
-                        Run Quantum Analysis
-                    </button>
-
-                </div>
-
-
-                <div
-                    id="quantumResult"
-                    class="quantum-result-card"
-                >
-
-                    <div class="empty-state">
-
-                        <div>⚛️</div>
-
-                        <h3>Ready for analysis</h3>
-
-                        <p>
-                            Select symptoms in New Prediction,
-                            then run the quantum analysis.
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="educational-note">
-
-                <strong>Educational / Research Demonstration</strong>
-
-                <p>
-                    The quantum component demonstrates quantum
-                    feature encoding. It should not be interpreted
-                    as a clinically superior model or a medical
-                    diagnosis.
-                </p>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= COMPARISON ================= -->
-
-        <section
-            id="comparison"
-            class="page"
-        >
-
-            <div class="page-intro">
-
-                <span class="eyebrow">
-                    MODEL COMPARISON
-                </span>
-
-                <h1>Random Forest vs Quantum</h1>
-
-                <p>
-                    Comparison between the classical ML baseline
-                    and the experimental quantum component.
-                </p>
-
-            </div>
-
-
-            <div class="comparison-grid">
-
-                <div class="comparison-card">
-
-                    <div class="comparison-icon">
+                    <div class="stat-icon">
                         🌲
                     </div>
 
-                    <h2>Random Forest</h2>
+                    <div>
 
-                    <span class="tag classical">
-                        Classical ML
-                    </span>
+                        <span>
+                            Random Forest
+                        </span>
 
-                    <div class="comparison-stat">
-
-                        <span>Purpose</span>
-
-                        <strong>
-                            Disease Prediction
+                        <strong id="dashboardRFAccuracy">
+                            --
                         </strong>
 
-                    </div>
-
-                    <div class="comparison-stat">
-
-                        <span>Input</span>
-
-                        <strong>
-                            Patient Symptoms
-                        </strong>
-
-                    </div>
-
-                    <div class="comparison-stat">
-
-                        <span>Role</span>
-
-                        <strong>
-                            Baseline Model
-                        </strong>
-
-                    </div>
-
-                    <div class="comparison-stat">
-
-                        <span>Testing Accuracy</span>
-
-                        <strong id="rfAccuracy">
-                            —
-                        </strong>
+                        <small>
+                            Test Accuracy
+                        </small>
 
                     </div>
 
                 </div>
 
 
-                <div class="comparison-card quantum-border">
+                <div class="stat-card">
 
-                    <div class="comparison-icon">
+                    <div class="stat-icon">
                         ⚛️
                     </div>
 
-                    <h2>Quantum Component</h2>
+                    <div>
 
-                    <span class="tag quantum-tag">
-                        Experimental
-                    </span>
-
-                    <div class="comparison-stat">
-
-                        <span>Purpose</span>
-
-                        <strong>
-                            Feature Analysis
-                        </strong>
-
-                    </div>
-
-                    <div class="comparison-stat">
-
-                        <span>Input</span>
-
-                        <strong>
-                            Encoded Symptoms
-                        </strong>
-
-                    </div>
-
-                    <div class="comparison-stat">
-
-                        <span>Technology</span>
-
-                        <strong>
+                        <span>
                             Qiskit
+                        </span>
+
+                        <strong id="dashboardQAccuracy">
+                            --
                         </strong>
+
+                        <small>
+                            Test Accuracy
+                        </small>
 
                     </div>
 
-                    <div class="comparison-stat">
+                </div>
 
-                        <span>Status</span>
 
-                        <strong>
-                            Proof of Concept
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🔬
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Last Prediction
+                        </span>
+
+                        <strong id="dashboardPrediction">
+                            --
                         </strong>
+
+                        <small>
+                            Latest result
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        📋
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Analyses
+                        </span>
+
+                        <strong id="historyCount">
+                            0
+                        </strong>
+
+                        <small>
+                            Saved locally
+                        </small>
 
                     </div>
 
@@ -993,198 +471,2585 @@
             </div>
 
 
-            <div class="content-card comparison-table-card">
 
-                <h2>Architecture Comparison</h2>
-
-                <div class="table-wrapper">
-
-                    <table>
-
-                        <thead>
-
-                            <tr>
-                                <th>Metric</th>
-                                <th>Random Forest</th>
-                                <th>Quantum Component</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            <tr>
-                                <td>Approach</td>
-                                <td>Classical Machine Learning</td>
-                                <td>Quantum Feature Encoding</td>
-                            </tr>
-
-                            <tr>
-                                <td>Input</td>
-                                <td>Symptoms</td>
-                                <td>Encoded Symptoms</td>
-                            </tr>
-
-                            <tr>
-                                <td>Purpose</td>
-                                <td>Disease Prediction</td>
-                                <td>Experimental Analysis</td>
-                            </tr>
-
-                            <tr>
-                                <td>Status</td>
-                                <td>Baseline</td>
-                                <td>Proof of Concept</td>
-                            </tr>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= PERFORMANCE ================= -->
-
-        <section
-            id="performance"
-            class="page"
-        >
-
-            <div class="page-intro">
-
-                <span class="eyebrow">
-                    MODEL EVALUATION
-                </span>
-
-                <h1>Performance Dashboard</h1>
-
-                <p>
-                    Evaluation metrics for the project's dataset.
-                </p>
-
-            </div>
-
-
-            <div class="metric-grid">
-
-                <div class="metric-card">
-
-                    <span>Accuracy</span>
-
-                    <strong id="metricAccuracy">
-                        —
-                    </strong>
-
-                </div>
-
-                <div class="metric-card">
-
-                    <span>Precision</span>
-
-                    <strong id="metricPrecision">
-                        —
-                    </strong>
-
-                </div>
-
-                <div class="metric-card">
-
-                    <span>Recall</span>
-
-                    <strong id="metricRecall">
-                        —
-                    </strong>
-
-                </div>
-
-                <div class="metric-card">
-
-                    <span>F1 Score</span>
-
-                    <strong id="metricF1">
-                        —
-                    </strong>
-
-                </div>
-
-            </div>
-
+            <!-- HOW IT WORKS -->
 
             <div class="content-card">
 
-                <h2>Dataset Information</h2>
+                <h2>
+                    How Quantum Diagnose Works
+                </h2>
 
-                <div class="dataset-grid">
+                <div class="workflow">
 
-                    <div>
-                        <span>Training Samples</span>
-                        <strong id="trainingSamples">—</strong>
+                    <div class="workflow-step">
+
+                        <div>
+                            1
+                        </div>
+
+                        <strong>
+                            Patient Profile
+                        </strong>
+
+                        <p>
+                            Enter patient information.
+                        </p>
+
                     </div>
 
-                    <div>
-                        <span>Testing Samples</span>
-                        <strong id="testingSamples">—</strong>
+
+                    <div class="workflow-line"></div>
+
+
+                    <div class="workflow-step">
+
+                        <div>
+                            2
+                        </div>
+
+                        <strong>
+                            Health Parameters
+                        </strong>
+
+                        <p>
+                            Enter clinical measurements.
+                        </p>
+
                     </div>
 
-                    <div>
-                        <span>Symptoms</span>
-                        <strong id="symptomTotal">—</strong>
+
+                    <div class="workflow-line"></div>
+
+
+                    <div class="workflow-step">
+
+                        <div>
+                            3
+                        </div>
+
+                        <strong>
+                            AI Analysis
+                        </strong>
+
+                        <p>
+                            Run Random Forest and Qiskit.
+                        </p>
+
                     </div>
 
-                    <div>
-                        <span>Diseases</span>
-                        <strong id="diseaseTotal">—</strong>
+
+                    <div class="workflow-line"></div>
+
+
+                    <div class="workflow-step">
+
+                        <div>
+                            4
+                        </div>
+
+                        <strong>
+                            Compare
+                        </strong>
+
+                        <p>
+                            Compare model outputs.
+                        </p>
+
                     </div>
 
                 </div>
 
             </div>
 
+        </section>
 
-            <div class="educational-note">
 
-                <strong>Important</strong>
 
-                <p>
-                    These metrics describe the performance of the
-                    project model on its dataset/test setup.
-                    They do not establish clinical reliability.
-                </p>
+        <!-- =================================================
+             PROFILE
+        ================================================== -->
+
+        <section
+            id="profileSection"
+            class="page-section hidden"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h1>
+                        Patient Profile
+                    </h1>
+
+                    <p>
+                        Your registered account information
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="profile-card">
+
+                <div class="profile-avatar">
+                    👤
+                </div>
+
+                <div class="profile-info">
+
+                    <h2 id="profileName">
+                        Patient
+                    </h2>
+
+                    <p id="profileEmail">
+                        --
+                    </p>
+
+                    <span class="status-badge">
+                        ● Active Account
+                    </span>
+
+                </div>
 
             </div>
 
         </section>
 
 
-        <footer>
 
-            <span>
-                QuantumDiagnose • Educational Project
-            </span>
+        <!-- =================================================
+             ANALYSIS
+        ================================================== -->
 
-            <a
-                href="/health"
-                target="_blank"
+        <section
+            id="analysisSection"
+            class="page-section hidden"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h1>
+                        🔬 Analyze Symptoms
+                    </h1>
+
+                    <p>
+                        Enter the patient health parameters
+                        and run both models.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- WARNING -->
+
+            <div class="info-alert">
+
+                <strong>
+                    ℹ️ Important
+                </strong>
+
+                <p>
+                    These results are machine-learning
+                    predictions and should not be treated
+                    as a confirmed medical diagnosis.
+                </p>
+
+            </div>
+
+
+            <!-- FORM -->
+
+            <form
+                id="symptomForm"
+                class="analysis-form"
             >
-                System Status
-            </a>
 
-        </footer>
+                <div class="form-card">
+
+                    <div class="form-card-title">
+
+                        <h2>
+                            Patient Health Parameters
+                        </h2>
+
+                        <span>
+                            Required
+                        </span>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+
+                        <!-- PREGNANCIES -->
+
+                        <div class="input-group">
+
+                            <label>
+                                Pregnancies
+                            </label>
+
+                            <input
+                                type="number"
+                                name="Pregnancies"
+                                id="Pregnancies"
+                                min="0"
+                                step="1"
+                                placeholder="e.g. 2"
+                                required
+                            >
+
+                            <small>
+                                Number of pregnancies
+                            </small>
+
+                        </div>
+
+
+                        <!-- GLUCOSE -->
+
+                        <div class="input-group">
+
+                            <label>
+                                Glucose
+                            </label>
+
+                            <input
+                                type="number"
+                                name="Glucose"
+                                id="Glucose"
+                                min="0"
+                                step="0.1"
+                                placeholder="e.g. 120"
+                                required
+                            >
+
+                            <small>
+                                Plasma glucose concentration
+                            </small>
+
+                        </div>
+
+
+                        <!-- BLOOD PRESSURE -->
+
+                        <div class="input-group">
+
+                            <label>
+                                Blood Pressure
+                            </label>
+
+                            <input
+                                type="number"
+                                name="BloodPressure"
+                                id="BloodPressure"
+                                min="0"
+                                step="0.1"
+                                placeholder="e.g. 70"
+                                required
+                            >
+
+                            <small>
+                                Diastolic blood pressure
+                            </small>
+
+                        </div>
+
+
+                        <!-- SKIN THICKNESS -->
+
+                        <div class="input-group">
+
+                            <label>
+                                Skin Thickness
+                            </label>
+
+                            <input
+                                type="number"
+                                name="SkinThickness"
+                                id="SkinThickness"
+                                min="0"
+                                step="0.1"
+                                placeholder="e.g. 20"
+                                required
+                            >
+
+                            <small>
+                                Triceps skin fold thickness
+                            </small>
+
+                        </div>
+
+
+                        <!-- INSULIN -->
+
+                        <div class="input-group">
+
+                            <label>
+                                Insulin
+                            </label>
+
+                            <input
+                                type="number"
+                                name="Insulin"
+                                id="Insulin"
+                                min="0"
+                                step="0.1"
+                                placeholder="e.g. 80"
+                                required
+                            >
+
+                            <small>
+                                2-hour serum insulin
+                            </small>
+
+                        </div>
+
+
+                        <!-- BMI -->
+
+                        <div class="input-group">
+
+                            <label>
+                                BMI
+                            </label>
+
+                            <input
+                                type="number"
+                                name="BMI"
+                                id="BMI"
+                                min="0"
+                                step="0.1"
+                                placeholder="e.g. 25.5"
+                                required
+                            >
+
+                            <small>
+                                Body mass index
+                            </small>
+
+                        </div>
+
+
+                        <!-- PEDIGREE -->
+
+                        <div class="input-group">
+
+                            <label>
+                                Diabetes Pedigree Function
+                            </label>
+
+                            <input
+                                type="number"
+                                name="DiabetesPedigreeFunction"
+                                id="DiabetesPedigreeFunction"
+                                min="0"
+                                step="0.001"
+                                placeholder="e.g. 0.35"
+                                required
+                            >
+
+                            <small>
+                                Family history indicator
+                            </small>
+
+                        </div>
+
+
+                        <!-- AGE -->
+
+                        <div class="input-group">
+
+                            <label>
+                                Age
+                            </label>
+
+                            <input
+                                type="number"
+                                name="Age"
+                                id="Age"
+                                min="1"
+                                step="1"
+                                placeholder="e.g. 35"
+                                required
+                            >
+
+                            <small>
+                                Patient age
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        id="analyzeBtn"
+                        class="analyze-btn"
+                    >
+
+                        🔬
+                        Analyze Symptoms
+
+                    </button>
+
+                </div>
+
+            </form>
+
+
+            <!-- ERROR -->
+
+            <div
+                id="errorMessage"
+                class="error-message hidden"
+            ></div>
+
+
+            <!-- LOADING -->
+
+            <div
+                id="analysisLoading"
+                class="loading-card hidden"
+            >
+
+                <div class="spinner">
+                    ⚛️
+                </div>
+
+                <h3>
+                    Running AI Analysis
+                </h3>
+
+                <p>
+                    Random Forest and Qiskit are
+                    analyzing the patient data...
+                </p>
+
+            </div>
+
+
+            <!-- =================================================
+                 RESULTS
+            ================================================== -->
+
+            <div
+                id="resultsSection"
+                class="hidden"
+            >
+
+                <div class="results-title">
+
+                    <span class="small-label">
+                        ANALYSIS COMPLETE
+                    </span>
+
+                    <h2>
+                        Model Results
+                    </h2>
+
+                    <p>
+                        Both models have analyzed the
+                        submitted health parameters.
+                    </p>
+
+                </div>
+
+
+                <!-- MODEL CARDS -->
+
+                <div class="model-grid">
+
+
+                    <!-- RANDOM FOREST -->
+
+                    <div class="model-card rf-card">
+
+                        <div class="model-header">
+
+                            <div class="model-symbol">
+                                🌲
+                            </div>
+
+                            <div>
+
+                                <h3>
+                                    Random Forest
+                                </h3>
+
+                                <p>
+                                    Classical Machine Learning
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="prediction-box">
+
+                            <span>
+                                Prediction
+                            </span>
+
+                            <strong id="rfPrediction">
+                                --
+                            </strong>
+
+                        </div>
+
+
+                        <div class="confidence-section">
+
+                            <div class="metric-heading">
+
+                                <span>
+                                    Model Confidence
+                                </span>
+
+                                <strong id="rfConfidence">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="progress-track">
+
+                                <div
+                                    id="rfProgress"
+                                    class="progress-fill"
+                                ></div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="metrics-grid">
+
+                            <div class="metric">
+
+                                <span>
+                                    Accuracy
+                                </span>
+
+                                <strong id="rfAccuracy">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="metric">
+
+                                <span>
+                                    Precision
+                                </span>
+
+                                <strong id="rfPrecision">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="metric">
+
+                                <span>
+                                    Recall
+                                </span>
+
+                                <strong id="rfRecall">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="metric">
+
+                                <span>
+                                    F1 Score
+                                </span>
+
+                                <strong id="rfF1">
+                                    --
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- QISKIT -->
+
+                    <div class="model-card quantum-card">
+
+                        <div class="model-header">
+
+                            <div class="model-symbol">
+                                ⚛️
+                            </div>
+
+                            <div>
+
+                                <h3>
+                                    Qiskit Quantum
+                                </h3>
+
+                                <p>
+                                    Quantum Kernel QSVC
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="prediction-box">
+
+                            <span>
+                                Prediction
+                            </span>
+
+                            <strong id="qPrediction">
+                                --
+                            </strong>
+
+                        </div>
+
+
+                        <div class="confidence-section">
+
+                            <div class="metric-heading">
+
+                                <span>
+                                    Model Confidence
+                                </span>
+
+                                <strong id="qConfidence">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="progress-track">
+
+                                <div
+                                    id="qProgress"
+                                    class="progress-fill quantum-progress"
+                                ></div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="metrics-grid">
+
+                            <div class="metric">
+
+                                <span>
+                                    Accuracy
+                                </span>
+
+                                <strong id="qAccuracy">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="metric">
+
+                                <span>
+                                    Precision
+                                </span>
+
+                                <strong id="qPrecision">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="metric">
+
+                                <span>
+                                    Recall
+                                </span>
+
+                                <strong id="qRecall">
+                                    --
+                                </strong>
+
+                            </div>
+
+                            <div class="metric">
+
+                                <span>
+                                    F1 Score
+                                </span>
+
+                                <strong id="qF1">
+                                    --
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     COMPARISON
+                ================================================== -->
+
+                <div
+                    id="modelComparison"
+                    class="comparison-card"
+                >
+
+                    <h2>
+                        ⚖️ Random Forest vs Qiskit
+                    </h2>
+
+                    <div class="comparison-results">
+
+                        <div class="comparison-model">
+
+                            <span>
+                                🌲 Random Forest
+                            </span>
+
+                            <strong id="compareRF">
+                                --
+                            </strong>
+
+                        </div>
+
+
+                        <div class="versus">
+                            VS
+                        </div>
+
+
+                        <div class="comparison-model">
+
+                            <span>
+                                ⚛️ Qiskit
+                            </span>
+
+                            <strong id="compareQ">
+                                --
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="winnerText"
+                        class="winner-text"
+                    >
+                        --
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     CLASS PROBABILITIES
+                ================================================== -->
+
+                <div class="probability-card">
+
+                    <h2>
+                        📊 Random Forest Class Probabilities
+                    </h2>
+
+                    <p>
+                        Probability distribution produced
+                        by the Random Forest classifier.
+                    </p>
+
+                    <div
+                        id="classProbabilities"
+                    ></div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     RECOMMENDATION
+                ================================================== -->
+
+                <div class="recommendation-card">
+
+                    <div class="recommendation-icon">
+                        👨‍⚕️
+                    </div>
+
+                    <div>
+
+                        <h2>
+                            Doctor Recommendation
+                        </h2>
+
+                        <p id="doctorRecommendation">
+                            Please complete the analysis
+                            to receive a recommendation.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             HISTORY
+        ================================================== -->
+
+        <section
+            id="historySection"
+            class="page-section hidden"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h1>
+                        📋 Prediction History
+                    </h1>
+
+                    <p>
+                        Your previous analyses
+                    </p>
+
+                </div>
+
+                <button
+                    id="clearHistoryBtn"
+                    class="secondary-btn"
+                >
+                    Clear History
+                </button>
+
+            </div>
+
+
+            <div
+                id="historyContainer"
+                class="history-container"
+            >
+
+                <div class="empty-history">
+
+                    <div>
+                        📋
+                    </div>
+
+                    <h3>
+                        No predictions yet
+                    </h3>
+
+                    <p>
+                        Your analysis results will
+                        appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             DOCTOR
+        ================================================== -->
+
+        <section
+            id="doctorSection"
+            class="page-section hidden"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h1>
+                        👨‍⚕️ Doctor Recommendation
+                    </h1>
+
+                    <p>
+                        General guidance based on
+                        model output
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="doctor-grid">
+
+                <div class="doctor-card">
+
+                    <div class="doctor-icon">
+                        🩺
+                    </div>
+
+                    <h2>
+                        Medical Consultation
+                    </h2>
+
+                    <p>
+                        If your model result indicates
+                        a potential health risk, discuss
+                        the result with a qualified
+                        healthcare professional.
+                    </p>
+
+                    <div class="doctor-status">
+                        Professional consultation recommended
+                    </div>
+
+                </div>
+
+
+                <div class="doctor-card">
+
+                    <div class="doctor-icon">
+                        📊
+                    </div>
+
+                    <h2>
+                        Review Your Results
+                    </h2>
+
+                    <p>
+                        Compare the Random Forest and
+                        Qiskit outputs rather than relying
+                        on a single model.
+                    </p>
+
+                    <div class="doctor-status">
+                        Compare both models
+                    </div>
+
+                </div>
+
+
+                <div class="doctor-card">
+
+                    <div class="doctor-icon">
+                        ⚠️
+                    </div>
+
+                    <h2>
+                        Important Notice
+                    </h2>
+
+                    <p>
+                        This platform is an educational
+                        machine-learning project and does
+                        not replace professional medical
+                        diagnosis.
+                    </p>
+
+                    <div class="doctor-status">
+                        Educational use
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
 
     </main>
 
 </div>
 
 
-<script
-    type="module"
-    src="{{ url_for('static', filename='script.js') }}"
-></script>
 
-</body>
-</html>
+<!-- =====================================================
+     FIREBASE
+===================================================== -->
+
+<script type="module">
+
+    import {
+        initializeApp
+    } from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+    import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        onAuthStateChanged,
+        signOut,
+        updateProfile
+    } from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+    /*
+     * YOUR FIREBASE CONFIGURATION
+     */
+
+    const firebaseConfig = {
+
+        apiKey:
+            "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
+
+        authDomain:
+            "quantumdiagnose.firebaseapp.com",
+
+        projectId:
+            "quantumdiagnose",
+
+        storageBucket:
+            "quantumdiagnose.firebasestorage.app",
+
+        messagingSenderId:
+            "727641186346",
+
+        appId:
+            "1:727641186346:web:958942c8d9f6906a69e353",
+
+        measurementId:
+            "G-YM0HMMVBFR"
+    };
+
+
+    const app =
+        initializeApp(firebaseConfig);
+
+
+    const auth =
+        getAuth(app);
+
+
+    // =====================================================
+    // LOGIN
+    // =====================================================
+
+    document
+        .getElementById("loginBtn")
+        .addEventListener(
+            "click",
+            async () => {
+
+                const email =
+                    document
+                    .getElementById("loginEmail")
+                    .value
+                    .trim();
+
+                const password =
+                    document
+                    .getElementById("loginPassword")
+                    .value;
+
+
+                if (!email || !password) {
+
+                    document
+                        .getElementById("loginError")
+                        .textContent =
+                        "Please enter email and password.";
+
+                    return;
+                }
+
+
+                try {
+
+                    await signInWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+                }
+
+                catch (error) {
+
+                    document
+                        .getElementById("loginError")
+                        .textContent =
+                        getFirebaseError(error);
+
+                }
+
+            }
+        );
+
+
+
+    // =====================================================
+    // SIGNUP
+    // =====================================================
+
+    document
+        .getElementById("signupBtn")
+        .addEventListener(
+            "click",
+            async () => {
+
+                const name =
+                    document
+                    .getElementById("signupName")
+                    .value
+                    .trim();
+
+                const email =
+                    document
+                    .getElementById("signupEmail")
+                    .value
+                    .trim();
+
+                const password =
+                    document
+                    .getElementById("signupPassword")
+                    .value;
+
+
+                if (!name ||
+                    !email ||
+                    !password) {
+
+                    document
+                        .getElementById("signupError")
+                        .textContent =
+                        "Please fill all fields.";
+
+                    return;
+                }
+
+
+                if (password.length < 6) {
+
+                    document
+                        .getElementById("signupError")
+                        .textContent =
+                        "Password must contain at least 6 characters.";
+
+                    return;
+                }
+
+
+                try {
+
+                    const result =
+                        await createUserWithEmailAndPassword(
+                            auth,
+                            email,
+                            password
+                        );
+
+
+                    await updateProfile(
+                        result.user,
+                        {
+                            displayName: name
+                        }
+                    );
+
+
+                }
+
+                catch (error) {
+
+                    document
+                        .getElementById("signupError")
+                        .textContent =
+                        getFirebaseError(error);
+
+                }
+
+            }
+        );
+
+
+
+    // =====================================================
+    // LOGOUT
+    // =====================================================
+
+    document
+        .getElementById("logoutBtn")
+        .addEventListener(
+            "click",
+            async () => {
+
+                await signOut(auth);
+
+            }
+        );
+
+
+
+    // =====================================================
+    // AUTH STATE
+    // =====================================================
+
+    onAuthStateChanged(
+        auth,
+        user => {
+
+            const authPage =
+                document.getElementById(
+                    "authPage"
+                );
+
+            const appPage =
+                document.getElementById(
+                    "appPage"
+                );
+
+
+            if (user) {
+
+                authPage.classList.add(
+                    "hidden"
+                );
+
+                appPage.classList.remove(
+                    "hidden"
+                );
+
+
+                const name =
+                    user.displayName ||
+                    "Patient";
+
+
+                document
+                    .getElementById(
+                        "topUserName"
+                    )
+                    .textContent =
+                    name;
+
+
+                document
+                    .getElementById(
+                        "topUserEmail"
+                    )
+                    .textContent =
+                    user.email;
+
+
+                document
+                    .getElementById(
+                        "profileName"
+                    )
+                    .textContent =
+                    name;
+
+
+                document
+                    .getElementById(
+                        "profileEmail"
+                    )
+                    .textContent =
+                    user.email;
+
+
+                loadHistory();
+
+                checkBackendStatus();
+
+            }
+
+            else {
+
+                authPage.classList.remove(
+                    "hidden"
+                );
+
+                appPage.classList.add(
+                    "hidden"
+                );
+
+            }
+
+        }
+    );
+
+
+
+    // =====================================================
+    // FIREBASE ERROR
+    // =====================================================
+
+    function getFirebaseError(error) {
+
+        switch (error.code) {
+
+            case "auth/invalid-credential":
+                return "Invalid email or password.";
+
+            case "auth/email-already-in-use":
+                return "This email is already registered.";
+
+            case "auth/invalid-email":
+                return "Please enter a valid email.";
+
+            case "auth/weak-password":
+                return "Password is too weak.";
+
+            case "auth/user-not-found":
+                return "No account found with this email.";
+
+            case "auth/wrong-password":
+                return "Incorrect password.";
+
+            default:
+                return error.message ||
+                    "Authentication failed.";
+        }
+
+    }
+
+});
+
+
+
+// =========================================================
+// LOGIN / SIGNUP SWITCH
+// =========================================================
+
+document
+    .getElementById("showSignupBtn")
+    .addEventListener(
+        "click",
+        () => {
+
+            document
+                .getElementById("loginBox")
+                .classList.add("hidden");
+
+            document
+                .getElementById("signupBox")
+                .classList.remove("hidden");
+
+        }
+    );
+
+
+document
+    .getElementById("showLoginBtn")
+    .addEventListener(
+        "click",
+        () => {
+
+            document
+                .getElementById("signupBox")
+                .classList.add("hidden");
+
+            document
+                .getElementById("loginBox")
+                .classList.remove("hidden");
+
+        }
+    );
+
+
+
+// =========================================================
+// NAVIGATION
+// =========================================================
+
+document
+    .querySelectorAll(".nav-btn")
+    .forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const section =
+                        button.dataset.section;
+
+                    openSection(
+                        section
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+
+function openSection(sectionId) {
+
+    document
+        .querySelectorAll(".page-section")
+        .forEach(
+            section => {
+
+                section.classList.add(
+                    "hidden"
+                );
+
+            }
+        );
+
+
+    const selected =
+        document.getElementById(
+            sectionId
+        );
+
+
+    if (selected) {
+
+        selected.classList.remove(
+            "hidden"
+        );
+
+    }
+
+
+    document
+        .querySelectorAll(".nav-btn")
+        .forEach(
+            button => {
+
+                button.classList.remove(
+                    "active"
+                );
+
+
+                if (
+                    button.dataset.section ===
+                    sectionId
+                ) {
+
+                    button.classList.add(
+                        "active"
+                    );
+
+                }
+
+            }
+        );
+
+
+    const titles = {
+
+        dashboardSection:
+            "Dashboard",
+
+        profileSection:
+            "Patient Profile",
+
+        analysisSection:
+            "Prediction",
+
+        historySection:
+            "Prediction History",
+
+        doctorSection:
+            "Doctor Recommendation"
+
+    };
+
+
+    document
+        .getElementById(
+            "pageTitle"
+        )
+        .textContent =
+        titles[sectionId] ||
+        "Dashboard";
+
+
+
+    if (
+        sectionId ===
+        "historySection"
+    ) {
+
+        loadHistory();
+
+    }
+
+}
+
+
+
+// =========================================================
+// ANALYZE FORM
+// =========================================================
+
+document
+    .getElementById("symptomForm")
+    .addEventListener(
+        "submit",
+        analyzeSymptoms
+    );
+
+
+
+async function analyzeSymptoms(event) {
+
+    event.preventDefault();
+
+
+    const button =
+        document.getElementById(
+            "analyzeBtn"
+        );
+
+    const loading =
+        document.getElementById(
+            "analysisLoading"
+        );
+
+    const results =
+        document.getElementById(
+            "resultsSection"
+        );
+
+    const error =
+        document.getElementById(
+            "errorMessage"
+        );
+
+
+    error.classList.add(
+        "hidden"
+    );
+
+    results.classList.add(
+        "hidden"
+    );
+
+
+    button.disabled = true;
+
+    button.innerHTML =
+        "⏳ Analyzing...";
+
+
+    loading.classList.remove(
+        "hidden"
+    );
+
+
+    try {
+
+        const formData =
+            new FormData(
+                document.getElementById(
+                    "symptomForm"
+                )
+            );
+
+
+        const data = {};
+
+
+        formData.forEach(
+            (value, key) => {
+
+                data[key] =
+                    Number(value);
+
+            }
+        );
+
+
+        console.log(
+            "Sending:",
+            data
+        );
+
+
+        const response =
+            await fetch(
+                "/api/analyze",
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            data
+                        )
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Backend result:",
+            result
+        );
+
+
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+
+            throw new Error(
+                result.error ||
+                "Analysis failed."
+            );
+
+        }
+
+
+        displayResults(
+            result
+        );
+
+
+        saveHistory(
+            data,
+            result
+        );
+
+
+        loadHistory();
+
+
+    }
+
+    catch (err) {
+
+        console.error(
+            err
+        );
+
+
+        error.textContent =
+            "⚠️ " +
+            err.message;
+
+
+        error.classList.remove(
+            "hidden"
+        );
+
+    }
+
+    finally {
+
+        loading.classList.add(
+            "hidden"
+        );
+
+
+        button.disabled = false;
+
+        button.innerHTML =
+            "🔬 Analyze Symptoms";
+
+    }
+
+}
+
+
+
+// =========================================================
+// DISPLAY RESULTS
+// =========================================================
+
+function displayResults(result) {
+
+    const results =
+        document.getElementById(
+            "resultsSection"
+        );
+
+
+    results.classList.remove(
+        "hidden"
+    );
+
+
+    // -------------------------------------------------------
+    // RANDOM FOREST
+    // -------------------------------------------------------
+
+    const rf =
+        result.random_forest;
+
+
+    if (rf) {
+
+        document
+            .getElementById(
+                "rfPrediction"
+            )
+            .textContent =
+            rf.prediction;
+
+
+        document
+            .getElementById(
+                "rfConfidence"
+            )
+            .textContent =
+            rf.confidence +
+            "%";
+
+
+        document
+            .getElementById(
+                "rfAccuracy"
+            )
+            .textContent =
+            rf.test_accuracy +
+            "%";
+
+
+        document
+            .getElementById(
+                "rfPrecision"
+            )
+            .textContent =
+            rf.precision +
+            "%";
+
+
+        document
+            .getElementById(
+                "rfRecall"
+            )
+            .textContent =
+            rf.recall +
+            "%";
+
+
+        document
+            .getElementById(
+                "rfF1"
+            )
+            .textContent =
+            rf.f1_score +
+            "%";
+
+
+        document
+            .getElementById(
+                "rfProgress"
+            )
+            .style.width =
+            Math.min(
+                100,
+                Number(
+                    rf.confidence
+                )
+            ) +
+            "%";
+
+
+        document
+            .getElementById(
+                "dashboardRFAccuracy"
+            )
+            .textContent =
+            rf.test_accuracy +
+            "%";
+
+    }
+
+
+
+    // -------------------------------------------------------
+    // QISKIT
+    // -------------------------------------------------------
+
+    const q =
+        result.qiskit;
+
+
+    if (q) {
+
+        document
+            .getElementById(
+                "qPrediction"
+            )
+            .textContent =
+            q.prediction;
+
+
+        document
+            .getElementById(
+                "qConfidence"
+            )
+            .textContent =
+            q.confidence +
+            "%";
+
+
+        document
+            .getElementById(
+                "qAccuracy"
+            )
+            .textContent =
+            q.test_accuracy +
+            "%";
+
+
+        document
+            .getElementById(
+                "qPrecision"
+            )
+            .textContent =
+            q.precision +
+            "%";
+
+
+        document
+            .getElementById(
+                "qRecall"
+            )
+            .textContent =
+            q.recall +
+            "%";
+
+
+        document
+            .getElementById(
+                "qF1"
+            )
+            .textContent =
+            q.f1_score +
+            "%";
+
+
+        document
+            .getElementById(
+                "qProgress"
+            )
+            .style.width =
+            Math.min(
+                100,
+                Number(
+                    q.confidence
+                )
+            ) +
+            "%";
+
+
+        document
+            .getElementById(
+                "dashboardQAccuracy"
+            )
+            .textContent =
+            q.test_accuracy +
+            "%";
+
+    }
+
+    else {
+
+        document
+            .getElementById(
+                "qPrediction"
+            )
+            .textContent =
+            "Unavailable";
+
+
+        document
+            .getElementById(
+                "qConfidence"
+            )
+            .textContent =
+            "--";
+
+    }
+
+
+
+    // -------------------------------------------------------
+    // COMPARISON
+    // -------------------------------------------------------
+
+    if (rf) {
+
+        document
+            .getElementById(
+                "compareRF"
+            )
+            .textContent =
+            rf.prediction +
+            " (" +
+            rf.confidence +
+            "%)";
+
+    }
+
+
+    if (q) {
+
+        document
+            .getElementById(
+                "compareQ"
+            )
+            .textContent =
+            q.prediction +
+            " (" +
+            q.confidence +
+            "%)";
+
+    }
+
+
+    const winner =
+        document.getElementById(
+            "winnerText"
+        );
+
+
+    if (rf && q) {
+
+        const rfConfidence =
+            Number(
+                rf.confidence
+            );
+
+        const qConfidence =
+            Number(
+                q.confidence
+            );
+
+
+        if (
+            rf.prediction ===
+            q.prediction
+        ) {
+
+            winner.innerHTML =
+                "🤝 Both models predict <strong>" +
+                escapeHTML(
+                    rf.prediction
+                ) +
+                "</strong>.";
+
+        }
+
+        else if (
+            rfConfidence >
+            qConfidence
+        ) {
+
+            winner.innerHTML =
+                "🌲 Random Forest has the higher model confidence.";
+
+        }
+
+        else {
+
+            winner.innerHTML =
+                "⚛️ Qiskit has the higher model confidence.";
+
+        }
+
+    }
+
+
+
+    // -------------------------------------------------------
+    // CLASS PROBABILITIES
+    // -------------------------------------------------------
+
+    displayProbabilities(
+        rf ?
+        rf.probabilities :
+        null
+    );
+
+
+    // -------------------------------------------------------
+    // DOCTOR RECOMMENDATION
+    // -------------------------------------------------------
+
+    generateRecommendation(
+        rf,
+        q
+    );
+
+
+    results.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+
+}
+
+
+
+// =========================================================
+// PROBABILITIES
+// =========================================================
+
+function displayProbabilities(
+    probabilities
+) {
+
+    const container =
+        document.getElementById(
+            "classProbabilities"
+        );
+
+
+    container.innerHTML = "";
+
+
+    if (!probabilities) {
+
+        container.innerHTML =
+            "<p>No probability data available.</p>";
+
+        return;
+
+    }
+
+
+    Object.entries(
+        probabilities
+    ).forEach(
+        ([label, value]) => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "probability-row";
+
+
+            row.innerHTML = `
+
+                <div class="probability-header">
+
+                    <span>
+                        ${escapeHTML(label)}
+                    </span>
+
+                    <strong>
+                        ${value}%
+                    </strong>
+
+                </div>
+
+                <div class="probability-track">
+
+                    <div
+                        class="probability-fill"
+                        style="width:${value}%"
+                    ></div>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
+
+
+
+// =========================================================
+// DOCTOR RECOMMENDATION
+// =========================================================
+
+function generateRecommendation(
+    rf,
+    q
+) {
+
+    const box =
+        document.getElementById(
+            "doctorRecommendation"
+        );
+
+
+    if (!rf) {
+
+        box.textContent =
+            "Please complete an analysis first.";
+
+        return;
+
+    }
+
+
+    const prediction =
+        String(
+            rf.prediction
+        ).toLowerCase();
+
+
+    if (
+        prediction === "1" ||
+        prediction.includes(
+            "positive"
+        ) ||
+        prediction.includes(
+            "diabetes"
+        )
+    ) {
+
+        box.textContent =
+            "The model indicates a potentially positive result. Please discuss these results with a qualified healthcare professional for proper evaluation and confirmation.";
+
+    }
+
+    else {
+
+        box.textContent =
+            "The model indicates a lower predicted risk based on the submitted data. Continue appropriate health monitoring and consult a healthcare professional if you have concerns or symptoms.";
+
+    }
+
+}
+
+
+
+// =========================================================
+// HISTORY
+// =========================================================
+
+function saveHistory(
+    input,
+    result
+) {
+
+    const history =
+        JSON.parse(
+            localStorage.getItem(
+                "quantumDiagnoseHistory"
+            ) ||
+            "[]"
+        );
+
+
+    const item = {
+
+        date:
+            new Date()
+            .toLocaleString(),
+
+        input:
+            input,
+
+        rf:
+            result.random_forest
+            ? {
+                prediction:
+                    result.random_forest.prediction,
+
+                confidence:
+                    result.random_forest.confidence
+            }
+            : null,
+
+        qiskit:
+            result.qiskit
+            ? {
+                prediction:
+                    result.qiskit.prediction,
+
+                confidence:
+                    result.qiskit.confidence
+            }
+            : null
+
+    };
+
+
+    history.unshift(
+        item
+    );
+
+
+    if (
+        history.length >
+        20
+    ) {
+
+        history.pop();
+
+    }
+
+
+    localStorage.setItem(
+        "quantumDiagnoseHistory",
+        JSON.stringify(
+            history
+        )
+    );
+
+
+    updateHistoryCount(
+        history.length
+    );
+
+
+
+    if (result.random_forest) {
+
+        document
+            .getElementById(
+                "dashboardPrediction"
+            )
+            .textContent =
+            result
+                .random_forest
+                .prediction;
+
+    }
+
+}
+
+
+
+// =========================================================
+// LOAD HISTORY
+// =========================================================
+
+function loadHistory() {
+
+    const history =
+        JSON.parse(
+            localStorage.getItem(
+                "quantumDiagnoseHistory"
+            ) ||
+            "[]"
+        );
+
+
+    updateHistoryCount(
+        history.length
+    );
+
+
+    const container =
+        document.getElementById(
+            "historyContainer"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (history.length === 0) {
+
+        container.innerHTML = `
+
+            <div class="empty-history">
+
+                <div>
+                    📋
+                </div>
+
+                <h3>
+                    No predictions yet
+                </h3>
+
+                <p>
+                    Your analysis results will appear here.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    container.innerHTML = "";
+
+
+    history.forEach(
+        item => {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "history-card";
+
+
+            card.innerHTML = `
+
+                <div class="history-date">
+
+                    ${escapeHTML(item.date)}
+
+                </div>
+
+
+                <div class="history-models">
+
+                    <div>
+
+                        <span>
+                            🌲 Random Forest
+                        </span>
+
+                        <strong>
+                            ${escapeHTML(
+                                item.rf
+                                ? item.rf.prediction
+                                : "--"
+                            )}
+                        </strong>
+
+                        <small>
+                            ${item.rf
+                            ? item.rf.confidence + "%"
+                            : "--"}
+                        </small>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            ⚛️ Qiskit
+                        </span>
+
+                        <strong>
+                            ${escapeHTML(
+                                item.qiskit
+                                ? item.qiskit.prediction
+                                : "--"
+                            )}
+                        </strong>
+
+                        <small>
+                            ${item.qiskit
+                            ? item.qiskit.confidence + "%"
+                            : "--"}
+                        </small>
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                card
+            );
+
+        }
+    );
+
+}
+
+
+
+// =========================================================
+// CLEAR HISTORY
+// =========================================================
+
+document
+    .getElementById(
+        "clearHistoryBtn"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            localStorage.removeItem(
+                "quantumDiagnoseHistory"
+            );
+
+
+            loadHistory();
+
+        }
+    );
+
+
+
+// =========================================================
+// UPDATE HISTORY COUNT
+// =========================================================
+
+function updateHistoryCount(
+    count
+) {
+
+    document
+        .getElementById(
+            "historyCount"
+        )
+        .textContent =
+        count;
+
+}
+
+
+
+// =========================================================
+// BACKEND STATUS
+// =========================================================
+
+async function checkBackendStatus() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/status"
+            );
+
+
+        if (!response.ok) {
+            return;
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            data.random_forest &&
+            data.random_forest.available
+        ) {
+
+            document
+                .getElementById(
+                    "dashboardRFAccuracy"
+                )
+                .textContent =
+                data
+                .random_forest
+                .accuracy +
+                "%";
+
+        }
+
+
+        if (
+            data.qiskit &&
+            data.qiskit.available
+        ) {
+
+            document
+                .getElementById(
+                    "dashboardQAccuracy"
+                )
+                .textContent =
+                data
+                .qiskit
+                .accuracy +
+                "%";
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.log(
+            "Backend status unavailable:",
+            error
+        );
+
+    }
+
+}
+
+
+
+// =========================================================
+// HTML ESCAPE
+// =========================================================
+
+function escapeHTML(
+    value
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        value;
+
+
+    return div.innerHTML;
+
+}
+
+
+
+// =========================================================
+// MAKE OPEN SECTION AVAILABLE
+// =========================================================
+
+window.openSection =
+    openSection;
