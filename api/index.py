@@ -1,778 +1,931 @@
-from flask import Flask, request, jsonify
-import os
+from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
 
+from pathlib import Path
+
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
-app = Flask(__name__)
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix
+)
 
 # ============================================================
-# QISKIT IMPORTS
+# PATHS
 # ============================================================
 
-QISKIT_AVAILABLE = True
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+TRAIN_PATH = BASE_DIR / "data" / "Training.csv"
+TEST_PATH = BASE_DIR / "data" / "Testing.csv"
+
+TEMPLATE_DIR = BASE_DIR / "templates"
+STATIC_DIR = BASE_DIR / "static"
+
+
+# ============================================================
+# FLASK
+# ============================================================
+
+app = Flask(
+    __name__,
+    template_folder=str(TEMPLATE_DIR),
+    static_folder=str(STATIC_DIR),
+    static_url_path="/static"
+)
+
+
+# ============================================================
+# LOAD DATA
+# ============================================================
 
 try:
-    from qiskit.circuit.library import ZZFeatureMap
-    from qiskit_machine_learning.kernels import FidelityQuantumKernel
-    from qiskit_machine_learning.algorithms import QSVC
-except Exception as e:
-    QISKIT_AVAILABLE = False
-    print("Qiskit unavailable:", e)
 
+    training_df = pd.read_csv(TRAIN_PATH)
+    testing_df = pd.read_csv(TEST_PATH)
 
-# ============================================================
-# GLOBAL VARIABLES
-# ============================================================
+except Exception as error:
 
-rf_model = None
-qiskit_model = None
-
-scaler = None
-label_encoder = None
-
-feature_columns = None
-class_names = None
-
-rf_accuracy = 0
-rf_precision = 0
-rf_recall = 0
-rf_f1 = 0
-
-q_accuracy = 0
-q_precision = 0
-q_recall = 0
-q_f1 = 0
-
-models_loaded = False
-
-
-# ============================================================
-# FIND DATASET
-# ============================================================
-
-def find_file(possible_names):
-
-    for name in possible_names:
-
-        paths = [
-            os.path.join("data", name),
-            os.path.join(".", name),
-            os.path.join("api", "data", name)
-        ]
-
-        for path in paths:
-            if os.path.exists(path):
-                return path
-
-    return None
-
-
-# ============================================================
-# LOAD DATASETS
-# ============================================================
-
-def load_datasets():
-
-    train_path = find_file([
-        "train.csv",
-        "training.csv",
-        "Training.csv",
-        "diabetes_train.csv"
-    ])
-
-    test_path = find_file([
-        "test.csv",
-        "testing.csv",
-        "Testing.csv",
-        "diabetes_test.csv"
-    ])
-
-    if train_path is None:
-        raise FileNotFoundError(
-            "Training dataset not found. Put train.csv inside data/"
-        )
-
-    if test_path is None:
-        raise FileNotFoundError(
-            "Testing dataset not found. Put test.csv inside data/"
-        )
-
-    train_df = pd.read_csv(train_path)
-    test_df = pd.read_csv(test_path)
-
-    return train_df, test_df
-
-
-# ============================================================
-# FIND TARGET COLUMN
-# ============================================================
-
-def find_target_column(df):
-
-    possible_targets = [
-        "Outcome",
-        "outcome",
-        "target",
-        "Target",
-        "label",
-        "Label",
-        "diagnosis",
-        "Diagnosis",
-        "class",
-        "Class"
-    ]
-
-    for column in possible_targets:
-
-        if column in df.columns:
-            return column
-
-    # fallback: last column
-    return df.columns[-1]
-
-
-# ============================================================
-# PREPARE DATA
-# ============================================================
-
-def prepare_data():
-
-    global scaler
-    global label_encoder
-    global feature_columns
-    global class_names
-
-    train_df, test_df = load_datasets()
-
-    target_column = find_target_column(train_df)
-
-    # Make sure test contains target
-    if target_column not in test_df.columns:
-        raise ValueError(
-            f"Testing dataset does not contain target column: {target_column}"
-        )
-
-    X_train = train_df.drop(columns=[target_column]).copy()
-    X_test = test_df.drop(columns=[target_column]).copy()
-
-    y_train = train_df[target_column].copy()
-    y_test = test_df[target_column].copy()
-
-    # Keep same columns
-    feature_columns = list(X_train.columns)
-
-    X_test = X_test[feature_columns]
-
-    # Convert categorical columns if any
-    for column in feature_columns:
-
-        if X_train[column].dtype == "object":
-
-            combined = pd.concat(
-                [X_train[column], X_test[column]]
-            ).astype(str)
-
-            mapping = {
-                value: index
-                for index, value in enumerate(
-                    combined.unique()
-                )
-            }
-
-            X_train[column] = (
-                X_train[column]
-                .astype(str)
-                .map(mapping)
-            )
-
-            X_test[column] = (
-                X_test[column]
-                .astype(str)
-                .map(mapping)
-            )
-
-    # Fill missing values
-    X_train = X_train.replace(
-        [np.inf, -np.inf],
-        np.nan
+    raise RuntimeError(
+        f"Could not load datasets: {error}"
     )
 
-    X_test = X_test.replace(
-        [np.inf, -np.inf],
-        np.nan
+
+# Remove accidental pandas index columns
+
+training_df = training_df.loc[
+    :,
+    ~training_df.columns.astype(str).str.startswith("Unnamed")
+]
+
+testing_df = testing_df.loc[
+    :,
+    ~testing_df.columns.astype(str).str.startswith("Unnamed")
+]
+
+
+# Clean column names
+
+training_df.columns = (
+    training_df.columns
+    .astype(str)
+    .str.strip()
+)
+
+testing_df.columns = (
+    testing_df.columns
+    .astype(str)
+    .str.strip()
+)
+
+
+# ============================================================
+# TARGET COLUMN
+# ============================================================
+
+TARGET_COLUMN = None
+
+possible_targets = [
+    "prognosis",
+    "disease",
+    "Disease",
+    "Prognosis"
+]
+
+for column in possible_targets:
+
+    if column in training_df.columns:
+
+        TARGET_COLUMN = column
+        break
+
+
+if TARGET_COLUMN is None:
+
+    raise RuntimeError(
+        "Could not find target column. "
+        f"Training columns: {list(training_df.columns)}"
     )
 
-    X_train = X_train.fillna(X_train.median(numeric_only=True))
-    X_test = X_test.fillna(X_train.median(numeric_only=True))
 
-    # Encode labels
-    label_encoder = LabelEncoder()
+# ============================================================
+# FIND SYMPTOM COLUMNS
+# ============================================================
 
-    combined_y = pd.concat(
-        [
-            y_train.astype(str),
-            y_test.astype(str)
-        ]
+symptom_columns = [
+    column
+    for column in training_df.columns
+    if column != TARGET_COLUMN
+]
+
+
+# ============================================================
+# MAKE TRAINING AND TESTING COLUMNS MATCH
+# ============================================================
+
+missing_in_test = [
+    column
+    for column in symptom_columns
+    if column not in testing_df.columns
+]
+
+if missing_in_test:
+
+    raise RuntimeError(
+        "Testing.csv is missing symptom columns: "
+        + ", ".join(missing_in_test[:20])
     )
 
-    label_encoder.fit(combined_y)
 
-    y_train_encoded = label_encoder.transform(
-        y_train.astype(str)
+# ============================================================
+# CLEAN SYMPTOMS
+# ============================================================
+
+for column in symptom_columns:
+
+    training_df[column] = pd.to_numeric(
+        training_df[column],
+        errors="coerce"
+    ).fillna(0)
+
+    testing_df[column] = pd.to_numeric(
+        testing_df[column],
+        errors="coerce"
+    ).fillna(0)
+
+
+# ============================================================
+# TRAINING DATA
+# ============================================================
+
+X_train = training_df[symptom_columns]
+
+y_train = (
+    training_df[TARGET_COLUMN]
+    .astype(str)
+    .str.strip()
+)
+
+
+# ============================================================
+# TESTING DATA
+# ============================================================
+
+X_test = testing_df[symptom_columns]
+
+y_test = (
+    testing_df[TARGET_COLUMN]
+    .astype(str)
+    .str.strip()
+)
+
+
+# ============================================================
+# RANDOM FOREST
+# ============================================================
+
+model = RandomForestClassifier(
+    n_estimators=300,
+    random_state=42,
+    class_weight="balanced",
+    max_features="sqrt",
+    n_jobs=1
+)
+
+model.fit(
+    X_train,
+    y_train
+)
+
+
+# ============================================================
+# MODEL EVALUATION
+# ============================================================
+
+test_predictions = model.predict(X_test)
+
+
+accuracy = accuracy_score(
+    y_test,
+    test_predictions
+)
+
+precision = precision_score(
+    y_test,
+    test_predictions,
+    average="weighted",
+    zero_division=0
+)
+
+recall = recall_score(
+    y_test,
+    test_predictions,
+    average="weighted",
+    zero_division=0
+)
+
+f1 = f1_score(
+    y_test,
+    test_predictions,
+    average="weighted",
+    zero_division=0
+)
+
+
+# Confusion matrix
+
+labels = sorted(
+    list(
+        set(y_test)
+        | set(test_predictions)
     )
+)
 
-    y_test_encoded = label_encoder.transform(
-        y_test.astype(str)
-    )
+cm = confusion_matrix(
+    y_test,
+    test_predictions,
+    labels=labels
+)
 
-    class_names = list(
-        label_encoder.classes_
-    )
 
-    # Scaling
-    scaler = StandardScaler()
+# ============================================================
+# SYMPTOM NORMALIZATION
+# ============================================================
 
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+def normalize_symptom(value):
 
     return (
-        X_train_scaled,
-        X_test_scaled,
-        y_train_encoded,
-        y_test_encoded
+        str(value)
+        .strip()
+        .lower()
+        .replace("_", " ")
+        .replace("-", " ")
     )
+
+
+symptom_map = {
+    normalize_symptom(column): column
+    for column in symptom_columns
+}
 
 
 # ============================================================
-# TRAIN RANDOM FOREST
+# SPECIALIST MAPPING
 # ============================================================
 
-def train_random_forest(
-    X_train,
-    X_test,
-    y_train,
-    y_test
-):
+SPECIALTY_KEYWORDS = {
 
-    global rf_model
-    global rf_accuracy
-    global rf_precision
-    global rf_recall
-    global rf_f1
+    "skin": "Dermatologist",
+    "rash": "Dermatologist",
+    "acne": "Dermatologist",
 
-    rf_model = RandomForestClassifier(
-        n_estimators=200,
-        random_state=42,
-        class_weight="balanced"
-    )
+    "heart": "Cardiologist",
+    "cardiac": "Cardiologist",
 
-    rf_model.fit(
-        X_train,
-        y_train
-    )
+    "lung": "Pulmonologist",
+    "respiratory": "Pulmonologist",
+    "bronch": "Pulmonologist",
 
-    predictions = rf_model.predict(
-        X_test
-    )
+    "brain": "Neurologist",
+    "migraine": "Neurologist",
 
-    rf_accuracy = accuracy_score(
-        y_test,
-        predictions
-    )
+    "joint": "Rheumatologist",
+    "arthritis": "Rheumatologist",
 
-    rf_precision = precision_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
+    "stomach": "Gastroenterologist",
+    "gastric": "Gastroenterologist",
+    "digest": "Gastroenterologist",
 
-    rf_recall = recall_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
+    "kidney": "Nephrologist",
+    "urinary": "Urologist",
 
-    rf_f1 = f1_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
+    "eye": "Ophthalmologist",
+
+    "ear": "ENT Specialist",
+
+    "general": "General Physician"
+}
+
+
+def recommend_specialty(disease):
+
+    disease_text = str(
+        disease
+    ).lower()
+
+    for keyword, specialty in SPECIALTY_KEYWORDS.items():
+
+        if keyword in disease_text:
+
+            return specialty
+
+    return "General Physician"
 
 
 # ============================================================
-# TRAIN QISKIT MODEL
+# DUMMY DOCTORS
 # ============================================================
 
-def train_qiskit(
-    X_train,
-    X_test,
-    y_train,
-    y_test
-):
+DOCTORS = [
 
-    global qiskit_model
-    global q_accuracy
-    global q_precision
-    global q_recall
-    global q_f1
+    {
+        "name": "Dr. Ananya Sharma",
+        "specialization": "General Physician",
+        "hospital": "CityCare Medical Center",
+        "location": "Vijayawada",
+        "experience": "8 years"
+    },
 
-    if not QISKIT_AVAILABLE:
+    {
+        "name": "Dr. Rahul Mehta",
+        "specialization": "Pulmonologist",
+        "hospital": "Apollo Medical Center",
+        "location": "Vijayawada",
+        "experience": "12 years"
+    },
 
-        print(
-            "Qiskit Machine Learning is not available."
-        )
+    {
+        "name": "Dr. Priya Reddy",
+        "specialization": "Dermatologist",
+        "hospital": "SkinCare Hospital",
+        "location": "Vijayawada",
+        "experience": "9 years"
+    },
 
-        return
+    {
+        "name": "Dr. Arjun Rao",
+        "specialization": "Neurologist",
+        "hospital": "NeuroCare Hospital",
+        "location": "Vijayawada",
+        "experience": "11 years"
+    },
 
-    # Quantum circuits become expensive with many features.
-    # Use maximum 8 features.
-    number_of_features = min(
-        X_train.shape[1],
-        8
-    )
+    {
+        "name": "Dr. Sneha Kapoor",
+        "specialization": "Cardiologist",
+        "hospital": "HeartCare Institute",
+        "location": "Vijayawada",
+        "experience": "14 years"
+    },
 
-    X_train_q = X_train[:, :number_of_features]
-    X_test_q = X_test[:, :number_of_features]
+    {
+        "name": "Dr. Karthik Iyer",
+        "specialization": "Gastroenterologist",
+        "hospital": "Digestive Health Center",
+        "location": "Vijayawada",
+        "experience": "10 years"
+    },
 
-    feature_map = ZZFeatureMap(
-        feature_dimension=number_of_features,
-        reps=2
-    )
+    {
+        "name": "Dr. Meera Nair",
+        "specialization": "Rheumatologist",
+        "hospital": "JointCare Hospital",
+        "location": "Vijayawada",
+        "experience": "7 years"
+    },
 
-    quantum_kernel = FidelityQuantumKernel(
-        feature_map=feature_map
-    )
-
-    qiskit_model = QSVC(
-        quantum_kernel=quantum_kernel
-    )
-
-    qiskit_model.fit(
-        X_train_q,
-        y_train
-    )
-
-    predictions = qiskit_model.predict(
-        X_test_q
-    )
-
-    q_accuracy = accuracy_score(
-        y_test,
-        predictions
-    )
-
-    q_precision = precision_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
-
-    q_recall = recall_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
-
-    q_f1 = f1_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
+    {
+        "name": "Dr. Vikram Singh",
+        "specialization": "ENT Specialist",
+        "hospital": "Vision & ENT Center",
+        "location": "Vijayawada",
+        "experience": "9 years"
+    }
+]
 
 
 # ============================================================
-# LOAD MODELS
-# ============================================================
-
-def initialize_models():
-
-    global models_loaded
-
-    if models_loaded:
-        return
-
-    print("Loading datasets...")
-
-    (
-        X_train,
-        X_test,
-        y_train,
-        y_test
-    ) = prepare_data()
-
-    print("Training Random Forest...")
-
-    train_random_forest(
-        X_train,
-        X_test,
-        y_train,
-        y_test
-    )
-
-    print("Training Qiskit...")
-
-    try:
-
-        train_qiskit(
-            X_train,
-            X_test,
-            y_train,
-            y_test
-        )
-
-    except Exception as e:
-
-        print(
-            "Qiskit training failed:",
-            str(e)
-        )
-
-    models_loaded = True
-
-    print("Models loaded successfully.")
-
-
-# ============================================================
-# ROOT
+# HOME
 # ============================================================
 
 @app.route("/")
 def home():
 
+    return render_template(
+        "index.html",
+        symptoms=symptom_columns
+    )
+
+
+# ============================================================
+# HEALTH
+# ============================================================
+
+@app.route("/health")
+def health():
+
     return jsonify({
-        "status": "Quantum Diagnose API running",
-        "models": {
-            "random_forest": rf_model is not None,
-            "qiskit": qiskit_model is not None
-        }
+
+        "status": "ok",
+
+        "model": "Random Forest",
+
+        "target_column":
+            TARGET_COLUMN,
+
+        "training_rows":
+            len(training_df),
+
+        "testing_rows":
+            len(testing_df),
+
+        "symptoms":
+            len(symptom_columns),
+
+        "diseases":
+            len(model.classes_)
+
     })
 
 
 # ============================================================
-# MODEL STATUS
+# MODEL PERFORMANCE
 # ============================================================
 
-@app.route("/api/status")
-def status():
+@app.route("/performance")
+def performance():
 
     return jsonify({
 
-        "success": True,
+        "accuracy":
+            round(accuracy * 100, 2),
 
-        "random_forest": {
-            "available": rf_model is not None,
-            "accuracy": round(
-                rf_accuracy * 100,
-                2
-            )
-        },
+        "precision":
+            round(precision * 100, 2),
 
-        "qiskit": {
-            "available": qiskit_model is not None,
-            "accuracy": round(
-                q_accuracy * 100,
-                2
-            )
-        },
+        "recall":
+            round(recall * 100, 2),
 
-        "features": feature_columns,
-        "classes": class_names
+        "f1":
+            round(f1 * 100, 2),
+
+        "training_samples":
+            len(training_df),
+
+        "testing_samples":
+            len(testing_df),
+
+        "number_of_symptoms":
+            len(symptom_columns),
+
+        "number_of_diseases":
+            len(model.classes_),
+
+        "model":
+            "Random Forest"
+
     })
 
 
 # ============================================================
-# ANALYZE SYMPTOMS
+# SYMPTOMS
+# ============================================================
+
+@app.route("/symptoms")
+def symptoms():
+
+    return jsonify({
+        "symptoms": symptom_columns
+    })
+
+
+# ============================================================
+# DOCTORS
+# ============================================================
+
+@app.route("/doctors")
+def doctors():
+
+    specialty = request.args.get(
+        "specialty",
+        ""
+    )
+
+    if specialty:
+
+        filtered = [
+
+            doctor
+            for doctor in DOCTORS
+
+            if doctor["specialization"].lower()
+            == specialty.lower()
+
+        ]
+
+    else:
+
+        filtered = DOCTORS
+
+
+    return jsonify({
+        "doctors": filtered
+    })
+
+
+# ============================================================
+# PREDICTION
 # ============================================================
 
 @app.route(
-    "/api/analyze",
+    "/predict",
     methods=["POST"]
 )
-def analyze():
+def predict():
 
     try:
 
-        initialize_models()
-
-        data = request.get_json()
+        data = request.get_json(
+            silent=True
+        )
 
         if not data:
+
             return jsonify({
-                "success": False,
-                "error": "No symptom data received."
+                "error":
+                    "Invalid JSON request."
             }), 400
 
-        # ====================================================
-        # CREATE INPUT
-        # ====================================================
 
-        values = []
-
-        for feature in feature_columns:
-
-            value = data.get(feature, 0)
-
-            try:
-                value = float(value)
-            except:
-                value = 0
-
-            values.append(value)
-
-        input_array = np.array(
-            [values],
-            dtype=float
+        selected_symptoms = data.get(
+            "symptoms",
+            []
         )
 
-        input_scaled = scaler.transform(
-            input_array
-        )
 
-        # ====================================================
-        # RANDOM FOREST
-        # ====================================================
-
-        rf_prediction = rf_model.predict(
-            input_scaled
-        )[0]
-
-        rf_probabilities = rf_model.predict_proba(
-            input_scaled
-        )[0]
-
-        rf_index = int(
-            np.argmax(rf_probabilities)
-        )
-
-        rf_label = label_encoder.inverse_transform(
-            [rf_prediction]
-        )[0]
-
-        rf_confidence = float(
-            rf_probabilities[rf_index]
-        )
-
-        # ====================================================
-        # RANDOM FOREST ALL CLASS PROBABILITIES
-        # ====================================================
-
-        rf_all = {}
-
-        for index, probability in enumerate(
-            rf_probabilities
+        if not isinstance(
+            selected_symptoms,
+            list
         ):
 
-            label = label_encoder.inverse_transform(
-                [index]
-            )[0]
+            return jsonify({
+                "error":
+                    "Symptoms must be provided as a list."
+            }), 400
 
-            rf_all[str(label)] = round(
-                float(probability) * 100,
-                2
+
+        if len(selected_symptoms) == 0:
+
+            return jsonify({
+                "error":
+                    "Please select at least one symptom."
+            }), 400
+
+
+        # Create empty vector
+
+        input_data = {
+            symptom: 0
+            for symptom in symptom_columns
+        }
+
+
+        matched_symptoms = []
+
+
+        # Match symptoms
+
+        for symptom in selected_symptoms:
+
+            normalized = normalize_symptom(
+                symptom
             )
 
-        # ====================================================
-        # QISKIT
-        # ====================================================
+            if normalized in symptom_map:
 
-        q_result = None
-
-        if qiskit_model is not None:
-
-            quantum_features = min(
-                input_scaled.shape[1],
-                8
-            )
-
-            quantum_input = (
-                input_scaled[
-                    :,
-                    :quantum_features
+                actual_column = symptom_map[
+                    normalized
                 ]
-            )
 
-            q_prediction = qiskit_model.predict(
-                quantum_input
-            )[0]
+                input_data[
+                    actual_column
+                ] = 1
 
-            q_label = label_encoder.inverse_transform(
-                [q_prediction]
-            )[0]
-
-            # QSVC decision function
-            try:
-
-                decision = qiskit_model.decision_function(
-                    quantum_input
+                matched_symptoms.append(
+                    actual_column
                 )
 
-                decision = np.asarray(
-                    decision
-                ).flatten()
 
-                # Convert decision scores into
-                # confidence-like percentages
-                if len(class_names) == 2:
+        if not matched_symptoms:
 
-                    score = float(
-                        decision[0]
+            return jsonify({
+
+                "error":
+                    "Selected symptoms were not "
+                    "found in the training dataset."
+
+            }), 400
+
+
+        # DataFrame
+
+        input_df = pd.DataFrame(
+            [input_data],
+            columns=symptom_columns
+        )
+
+
+        # Prediction
+
+        prediction = model.predict(
+            input_df
+        )[0]
+
+
+        probabilities = model.predict_proba(
+            input_df
+        )[0]
+
+
+        classes = model.classes_
+
+
+        # Sort
+
+        results = sorted(
+            zip(
+                classes,
+                probabilities
+            ),
+            key=lambda item:
+                item[1],
+            reverse=True
+        )
+
+
+        # Top 5
+
+        top_predictions = [
+
+            {
+                "disease":
+                    str(disease),
+
+                "confidence":
+                    round(
+                        float(probability)
+                        * 100,
+                        2
                     )
-
-                    positive = (
-                        1 /
-                        (
-                            1 +
-                            np.exp(-score)
-                        )
-                    )
-
-                    if int(q_prediction) == 1:
-                        q_confidence = positive
-                    else:
-                        q_confidence = (
-                            1 - positive
-                        )
-
-                else:
-
-                    exp_scores = np.exp(
-                        decision -
-                        np.max(decision)
-                    )
-
-                    probabilities = (
-                        exp_scores /
-                        np.sum(exp_scores)
-                    )
-
-                    q_index = int(
-                        q_prediction
-                    )
-
-                    q_confidence = float(
-                        probabilities[q_index]
-                    )
-
-            except Exception:
-
-                q_confidence = 0.5
-
-            q_result = {
-
-                "prediction": str(
-                    q_label
-                ),
-
-                "confidence": round(
-                    q_confidence * 100,
-                    2
-                ),
-
-                "type": "Quantum Kernel QSVC",
-
-                "test_accuracy": round(
-                    q_accuracy * 100,
-                    2
-                ),
-
-                "precision": round(
-                    q_precision * 100,
-                    2
-                ),
-
-                "recall": round(
-                    q_recall * 100,
-                    2
-                ),
-
-                "f1_score": round(
-                    q_f1 * 100,
-                    2
-                )
             }
 
-        # ====================================================
-        # FINAL RESPONSE
-        # ====================================================
+            for disease, probability
+            in results[:5]
 
-        response = {
+        ]
+
+
+        confidence = (
+            top_predictions[0]["confidence"]
+            if top_predictions
+            else 0
+        )
+
+
+        # Specialist
+
+        specialty = recommend_specialty(
+            prediction
+        )
+
+
+        # Doctors
+
+        recommended_doctors = [
+
+            doctor
+            for doctor in DOCTORS
+
+            if doctor["specialization"].lower()
+            == specialty.lower()
+
+        ]
+
+
+        return jsonify({
 
             "success": True,
 
-            "random_forest": {
+            "disease":
+                str(prediction),
 
-                "prediction": str(
-                    rf_label
-                ),
+            "confidence":
+                confidence,
 
-                "confidence": round(
-                    rf_confidence * 100,
-                    2
-                ),
+            "top_predictions":
+                top_predictions,
 
-                "probabilities": rf_all,
+            "selected_symptoms":
+                matched_symptoms,
 
-                "type": "Random Forest",
+            "specialty":
+                specialty,
 
-                "test_accuracy": round(
-                    rf_accuracy * 100,
-                    2
-                ),
+            "doctors":
+                recommended_doctors,
 
-                "precision": round(
-                    rf_precision * 100,
-                    2
-                ),
-
-                "recall": round(
-                    rf_recall * 100,
-                    2
-                ),
-
-                "f1_score": round(
-                    rf_f1 * 100,
-                    2
-                )
-            },
-
-            "qiskit": q_result,
-
-            "features_used": feature_columns,
+            "model":
+                "Random Forest",
 
             "message":
-                "Results are model predictions and should not be treated as a medical diagnosis."
-        }
+                (
+                    "This is an educational "
+                    "machine-learning prediction "
+                    "and is not a medical diagnosis."
+                )
 
-        return jsonify(response)
+        })
 
-    except Exception as e:
+
+    except Exception as error:
 
         print(
-            "Analysis error:",
-            str(e)
+            "Prediction error:",
+            repr(error)
         )
 
         return jsonify({
 
             "success": False,
 
-            "error": str(e)
+            "error":
+                str(error)
 
         }), 500
 
 
 # ============================================================
-# VERCEL
+# QUANTUM ANALYSIS
+# ============================================================
+
+@app.route(
+    "/quantum",
+    methods=["POST"]
+)
+def quantum_analysis():
+
+    try:
+
+        data = request.get_json(
+            silent=True
+        )
+
+        if not data:
+
+            return jsonify({
+                "error":
+                    "No quantum input received."
+            }), 400
+
+
+        selected_symptoms = data.get(
+            "symptoms",
+            []
+        )
+
+
+        if not selected_symptoms:
+
+            return jsonify({
+                "error":
+                    "Select symptoms first."
+            }), 400
+
+
+        # ----------------------------------------------------
+        # QISKIT
+        # ----------------------------------------------------
+
+        try:
+
+            from qiskit import QuantumCircuit
+
+        except ImportError:
+
+            return jsonify({
+
+                "error":
+                    "Qiskit is not installed on the server.",
+
+                "message":
+                    "Install qiskit in requirements.txt."
+
+            }), 500
+
+
+        # Use at most 4 qubits for a lightweight demonstration
+
+        number_of_qubits = min(
+            max(len(selected_symptoms), 1),
+            4
+        )
+
+
+        circuit = QuantumCircuit(
+            number_of_qubits,
+            number_of_qubits
+        )
+
+
+        # Encode selected symptoms
+
+        for index in range(
+            number_of_qubits
+        ):
+
+            circuit.h(index)
+
+
+            if index < len(
+                selected_symptoms
+            ):
+
+                circuit.ry(
+                    np.pi / 2,
+                    index
+                )
+
+
+        circuit.measure(
+            range(number_of_qubits),
+            range(number_of_qubits)
+        )
+
+
+        # ----------------------------------------------------
+        # EXPERIMENTAL QUANTUM SCORE
+        # ----------------------------------------------------
+
+        # This is intentionally an experimental
+        # quantum feature representation.
+        #
+        # It should NOT be described as a
+        # clinically validated quantum diagnosis.
+
+        quantum_score = round(
+            min(
+                len(selected_symptoms)
+                / max(len(symptom_columns), 1),
+                1
+            ) * 100,
+            2
+        )
+
+
+        return jsonify({
+
+            "success": True,
+
+            "model":
+                "Qiskit Quantum Analysis",
+
+            "qubits":
+                number_of_qubits,
+
+            "circuit_depth":
+                circuit.depth(),
+
+            "circuit":
+
+                str(circuit),
+
+            "quantum_score":
+                quantum_score,
+
+            "interpretation":
+                (
+                    "Experimental quantum feature "
+                    "encoding completed. This quantum "
+                    "component is a research/educational "
+                    "demonstration and is not a "
+                    "medical diagnosis."
+                )
+
+        })
+
+
+    except Exception as error:
+
+        print(
+            "Quantum error:",
+            repr(error)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                str(error)
+
+        }), 500
+
+
+# ============================================================
+# RUN
 # ============================================================
 
 if __name__ == "__main__":
