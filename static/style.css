@@ -8,251 +8,176 @@
 
 body {
     margin: 0;
-
     min-height: 100vh;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
+    font-family: Arial, Helvetica, sans-serif;
     background: #f5f7fb;
-
     color: #182238;
+}
 
+
+/* =====================================================
+   HIDDEN UTILITY
+   ===================================================== */
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =====================================================
+   AUTH SCREEN
+   ===================================================== */
+
+.auth-screen {
+    min-height: 100vh;
     display: flex;
-
     justify-content: center;
-
     align-items: center;
-
     padding: 30px;
 }
 
-
-/* =====================================================
-   MAIN CONTAINER
-   ===================================================== */
-
-.app-container {
-
+.auth-card {
     width: 100%;
-
-    max-width: 850px;
-
+    max-width: 480px;
     background: white;
-
     border-radius: 30px;
-
-    padding: 70px 80px;
-
-    box-shadow:
-        0 20px 60px rgba(30, 50, 90, 0.12);
-
+    padding: 60px 50px;
+    box-shadow: 0 20px 60px rgba(30, 50, 90, 0.12);
+    text-align: center;
 }
-
-
-/* =====================================================
-   LOGO
-   ===================================================== */
 
 .logo {
-
-    width: 130px;
-
-    height: 130px;
-
-    margin: 0 auto 35px;
-
-    border-radius: 35px;
-
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 25px;
+    border-radius: 26px;
     background: #3560f5;
-
     display: flex;
-
     justify-content: center;
-
     align-items: center;
-}
-
-
-.logo span {
-
     color: white;
-
-    font-size: 70px;
-
+    font-size: 46px;
     font-weight: 800;
 }
 
-
-/* =====================================================
-   TITLE
-   ===================================================== */
-
-h1 {
-
-    text-align: center;
-
-    font-size: 54px;
-
-    margin: 0 0 15px;
-
-    font-weight: 750;
-
-    letter-spacing: -2px;
+.logo.large {
+    width: 110px;
+    height: 110px;
+    font-size: 56px;
 }
 
+.auth-card h1 {
+    font-size: 34px;
+    margin: 0 0 10px;
+    font-weight: 750;
+    letter-spacing: -1px;
+}
 
 .subtitle {
-
-    text-align: center;
-
-    font-size: 25px;
-
+    font-size: 17px;
     color: #70798a;
-
-    margin: 0 0 55px;
+    margin: 0 0 30px;
 }
 
-
-/* =====================================================
-   TABS
-   ===================================================== */
-
-.tabs {
-
+.auth-tabs {
     display: flex;
-
     background: #f1f2f5;
-
-    padding: 7px;
-
-    border-radius: 25px;
-
-    margin-bottom: 35px;
+    padding: 6px;
+    border-radius: 20px;
+    margin-bottom: 25px;
 }
 
-
-.tab {
-
+.auth-tab {
     flex: 1;
-
     border: none;
-
     background: transparent;
-
-    padding: 22px;
-
-    border-radius: 20px;
-
-    font-size: 26px;
-
+    padding: 16px;
+    border-radius: 16px;
+    font-size: 17px;
     color: #737b8b;
-
     cursor: pointer;
-
     transition: 0.2s;
 }
 
-
-.tab.active {
-
+.auth-tab.active {
     background: white;
-
     color: #182238;
-
-    box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
 }
 
 
 /* =====================================================
-   INPUTS
+   INPUTS AND BUTTONS
    ===================================================== */
 
 input,
-textarea {
-
+textarea,
+select {
     width: 100%;
-
     border: 2px solid #e1e4ea;
-
-    border-radius: 20px;
-
-    padding: 22px;
-
-    margin-bottom: 20px;
-
-    font-size: 22px;
-
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    font-size: 16px;
     font-family: inherit;
-
     outline: none;
-
     transition: 0.2s;
+    background: white;
+    color: #182238;
 }
-
 
 input:focus,
-textarea:focus {
-
+textarea:focus,
+select:focus {
     border-color: #3560f5;
-
-    box-shadow:
-        0 0 0 4px rgba(53, 96, 245, 0.1);
+    box-shadow: 0 0 0 4px rgba(53, 96, 245, 0.1);
 }
-
 
 textarea {
-
     resize: vertical;
-
-    min-height: 150px;
+    min-height: 120px;
 }
 
+button {
+    font-family: inherit;
+}
 
-/* =====================================================
-   MAIN BUTTON
-   ===================================================== */
-
-.main-button {
-
-    width: 100%;
-
+.primary {
     border: none;
-
-    border-radius: 20px;
-
-    padding: 22px;
-
+    border-radius: 16px;
+    padding: 16px 24px;
     background: #3560f5;
-
     color: white;
-
-    font-size: 25px;
-
+    font-size: 16px;
     cursor: pointer;
-
     transition: 0.2s;
 }
 
-
-.main-button:hover {
-
+.primary:hover {
     background: #284fd4;
-
-    transform: translateY(-1px);
 }
 
-
-.main-button:disabled {
-
+.primary:disabled {
     opacity: 0.6;
-
     cursor: not-allowed;
+}
 
-    transform: none;
+.primary.full {
+    width: 100%;
+}
+
+.secondary {
+    border: 2px solid #e1e4ea;
+    border-radius: 14px;
+    padding: 12px 20px;
+    background: white;
+    color: #182238;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.secondary:hover {
+    background: #f5f7fb;
 }
 
 
@@ -260,99 +185,159 @@ textarea {
    MESSAGES
    ===================================================== */
 
-#message {
-
+#authMessage,
+#profileMessage {
     text-align: center;
-
-    font-size: 20px;
-
-    margin: 18px 0 0;
-
-    min-height: 28px;
-}
-
-
-.success-message {
-
-    color: #26853a;
-}
-
-
-.error-message {
-
-    color: #d93025;
+    font-size: 15px;
+    margin: 14px 0 0;
+    min-height: 20px;
 }
 
 
 /* =====================================================
-   HIDDEN
+   APP LAYOUT
    ===================================================== */
 
-.hidden {
-
-    display: none !important;
-}
-
-
-/* =====================================================
-   DASHBOARD
-   ===================================================== */
-
-.dashboard-header {
-
+.app {
     display: flex;
+    min-height: 100vh;
+}
 
-    justify-content: space-between;
 
+/* =====================================================
+   SIDEBAR
+   ===================================================== */
+
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: white;
+    border-right: 1px solid #e2e6ee;
+    display: flex;
+    flex-direction: column;
+    padding: 25px 18px;
+}
+
+.sidebar-brand {
+    display: flex;
     align-items: center;
-
-    gap: 20px;
-
-    margin-bottom: 35px;
+    gap: 12px;
+    padding: 0 8px 25px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eef1f7;
 }
 
-
-.dashboard-header h1 {
-
-    text-align: left;
-
-    font-size: 40px;
-
-    margin: 0 0 8px;
-}
-
-
-.dashboard-header p {
-
-    color: #70798a;
-
-    font-size: 18px;
-
+.sidebar-brand .logo {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    border-radius: 14px;
     margin: 0;
 }
 
+.sidebar-brand strong {
+    display: block;
+    font-size: 15px;
+}
 
-.logout-button {
+.sidebar-brand small {
+    display: block;
+    color: #8a92a0;
+    font-size: 12px;
+}
 
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.nav-item {
+    text-align: left;
     border: none;
-
-    background: #eef1f7;
-
-    color: #182238;
-
-    padding: 14px 24px;
-
+    background: transparent;
+    padding: 13px 14px;
     border-radius: 14px;
+    font-size: 15px;
+    color: #4b5468;
+    cursor: pointer;
+    transition: 0.15s;
+}
 
-    font-size: 17px;
+.nav-item:hover {
+    background: #f5f7fb;
+}
 
+.nav-item.active {
+    background: #eef2ff;
+    color: #3560f5;
+    font-weight: 600;
+}
+
+.logout {
+    margin-top: 15px;
+    border: none;
+    background: #eef1f7;
+    color: #182238;
+    padding: 13px;
+    border-radius: 14px;
+    font-size: 15px;
     cursor: pointer;
 }
 
-
-.logout-button:hover {
-
+.logout:hover {
     background: #e1e5ee;
+}
+
+
+/* =====================================================
+   MAIN AREA
+   ===================================================== */
+
+.main {
+    flex: 1;
+    padding: 35px 40px;
+    max-width: 1100px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.topbar h2 {
+    margin: 0 0 4px;
+    font-size: 26px;
+}
+
+.topbar p {
+    margin: 0;
+    color: #70798a;
+    font-size: 14px;
+}
+
+.user-chip {
+    background: #f5f7fb;
+    padding: 10px 18px;
+    border-radius: 14px;
+    font-size: 14px;
+    color: #4b5468;
+}
+
+
+/* =====================================================
+   PAGE SWITCHING
+   ===================================================== */
+
+.page {
+    display: none;
+}
+
+.page.active-page {
+    display: block;
 }
 
 
@@ -360,38 +345,191 @@ textarea {
    CARDS
    ===================================================== */
 
-.welcome-card,
-.analysis-card {
-
+.card {
+    background: white;
     border: 1px solid #e2e6ee;
-
-    border-radius: 24px;
-
-    padding: 30px;
-
-    margin-bottom: 25px;
-
-    background: #ffffff;
+    border-radius: 22px;
+    padding: 28px;
+    margin-bottom: 22px;
 }
 
-
-.welcome-card h2,
-.analysis-card h2 {
-
+.card h2 {
     margin-top: 0;
+    font-size: 24px;
+}
 
-    font-size: 28px;
+.card h3 {
+    font-size: 18px;
+}
+
+.muted {
+    color: #70798a;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #3560f5;
+    margin-bottom: 6px;
+}
+
+.section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 18px;
 }
 
 
-.welcome-card p,
-.analysis-card p {
+/* =====================================================
+   WELCOME / DASHBOARD
+   ===================================================== */
 
-    color: #687285;
+.welcome {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    background: white;
+    border: 1px solid #e2e6ee;
+    border-radius: 22px;
+    padding: 30px;
+    margin-bottom: 22px;
+}
 
-    font-size: 18px;
+.welcome h1 {
+    font-size: 28px;
+    margin: 4px 0 10px;
+}
 
+.welcome p {
+    color: #70798a;
+    max-width: 480px;
     line-height: 1.6;
+    margin: 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e2e6ee;
+    border-radius: 18px;
+    padding: 20px;
+}
+
+.stat-card span {
+    display: block;
+    color: #8a92a0;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.stat-card strong {
+    font-size: 22px;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.quick {
+    border: 1px solid #e2e6ee;
+    background: #f9fafc;
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 24px;
+}
+
+.quick span {
+    display: block;
+    font-size: 13px;
+    margin-top: 8px;
+    color: #4b5468;
+}
+
+.quick:hover {
+    background: #eef2ff;
+}
+
+
+/* =====================================================
+   FORMS (PROFILE)
+   ===================================================== */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 16px;
+}
+
+.form-grid label {
+    display: block;
+    font-size: 13px;
+    color: #4b5468;
+    margin-bottom: 6px;
+}
+
+
+/* =====================================================
+   SYMPTOMS
+   ===================================================== */
+
+.symptom-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 18px 0;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.symptom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #e2e6ee;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.symptom:hover {
+    background: #f9fafc;
+}
+
+.symptom input {
+    width: auto;
+    margin: 0;
+}
+
+.prediction-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
 }
 
 
@@ -399,35 +537,213 @@ textarea {
    RESULT
    ===================================================== */
 
-.result-box {
-
-    margin-top: 25px;
-
-    padding: 25px;
-
-    background: #f5f7fb;
-
-    border-radius: 18px;
-
-    font-size: 18px;
-
-    line-height: 1.6;
-}
-
-
-.result-box h3 {
-
+.result-box,
+.result {
     margin-top: 0;
 }
 
+.confidence {
+    margin: 18px 0;
+}
+
+.confidence-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.confidence-bar {
+    background: #eef1f7;
+    border-radius: 10px;
+    height: 12px;
+    overflow: hidden;
+}
+
+.confidence-bar span {
+    display: block;
+    height: 100%;
+    background: #3560f5;
+    width: 0%;
+    transition: width 0.4s;
+}
+
+.top-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.prediction-item {
+    display: flex;
+    justify-content: space-between;
+    background: #f9fafc;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+}
+
+.recommendation {
+    margin-bottom: 10px;
+}
 
 .disclaimer {
-
-    font-size: 14px !important;
-
+    font-size: 13px !important;
     color: #8a92a0 !important;
+}
 
-    margin-top: 20px;
+
+/* =====================================================
+   HISTORY
+   ===================================================== */
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-item {
+    background: #f9fafc;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 14px;
+}
+
+
+/* =====================================================
+   DOCTORS
+   ===================================================== */
+
+.doctor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.doctor-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid #e2e6ee;
+    border-radius: 16px;
+    padding: 18px;
+    font-size: 14px;
+}
+
+.doctor-card strong {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.doctor-card span {
+    color: #70798a;
+}
+
+
+/* =====================================================
+   QUANTUM / COMPARISON
+   ===================================================== */
+
+.quantum-result {
+    margin-top: 18px;
+    background: #f9fafc;
+    border-radius: 16px;
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 18px 0;
+}
+
+.model-box {
+    border: 1px solid #e2e6ee;
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+}
+
+.model-box h3 {
+    margin-top: 0;
+}
+
+.model-box strong {
+    display: block;
+    font-size: 26px;
+    color: #3560f5;
+    margin: 8px 0;
+}
+
+.notice {
+    background: #fff7e6;
+    border: 1px solid #ffe1a8;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 14px;
+    color: #8a6d1f;
+}
+
+
+/* =====================================================
+   PERFORMANCE
+   ===================================================== */
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 18px 0;
+}
+
+.metric {
+    background: #f9fafc;
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+}
+
+.metric span {
+    display: block;
+    font-size: 13px;
+    color: #8a92a0;
+    margin-bottom: 8px;
+}
+
+.metric strong {
+    font-size: 22px;
+    color: #3560f5;
+}
+
+.performance-info {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    font-size: 13px;
+    color: #4b5468;
+}
+
+
+/* =====================================================
+   FOOTER
+   ===================================================== */
+
+footer {
+    display: flex;
+    justify-content: space-between;
+    color: #8a92a0;
+    font-size: 13px;
+    padding: 20px 4px;
+}
+
+footer a {
+    color: #3560f5;
+    text-decoration: none;
 }
 
 
@@ -435,98 +751,61 @@ textarea {
    MOBILE
    ===================================================== */
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
 
-    body {
-
-        padding: 15px;
-
-        align-items: flex-start;
-    }
-
-
-    .app-container {
-
-        margin-top: 15px;
-
-        padding: 40px 25px;
-
-        border-radius: 24px;
-    }
-
-
-    .logo {
-
-        width: 100px;
-
-        height: 100px;
-
-        border-radius: 28px;
-    }
-
-
-    .logo span {
-
-        font-size: 55px;
-    }
-
-
-    h1 {
-
-        font-size: 38px;
-    }
-
-
-    .subtitle {
-
-        font-size: 19px;
-
-        margin-bottom: 35px;
-    }
-
-
-    .tab {
-
-        font-size: 20px;
-
-        padding: 18px 10px;
-    }
-
-
-    input,
-    textarea {
-
-        font-size: 18px;
-
-        padding: 18px;
-    }
-
-
-    .main-button {
-
-        font-size: 20px;
-
-        padding: 19px;
-    }
-
-
-    .dashboard-header {
-
-        align-items: flex-start;
-
+    .app {
         flex-direction: column;
     }
 
-
-    .dashboard-header h1 {
-
-        font-size: 32px;
-    }
-
-
-    .logout-button {
-
+    .sidebar {
         width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid #e2e6ee;
+        padding: 14px;
     }
 
+    .sidebar-brand {
+        display: none;
+    }
+
+    .sidebar nav {
+        flex-direction: row;
+    }
+
+    .nav-item {
+        white-space: nowrap;
+    }
+
+    .logout {
+        margin-top: 0;
+        margin-left: 8px;
+    }
+
+    .main {
+        padding: 20px;
+    }
+
+    .welcome {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .stats-grid,
+    .dashboard-grid,
+    .quick-actions,
+    .form-grid,
+    .symptom-grid,
+    .doctor-grid,
+    .comparison-grid,
+    .metric-grid,
+    .performance-info {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-card {
+        padding: 40px 25px;
+        border-radius: 24px;
+    }
 }
