@@ -1355,3 +1355,191 @@ select:focus {
     }
 
 }
+/* ============================================================
+   UPDATED FEATURES
+   ============================================================ */
+
+/* Prediction date and time */
+.prediction-date-time {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+
+/* Save to History */
+.save-result {
+    margin: 22px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+#saveHistoryMessage {
+    color: var(--success);
+    font-weight: 700;
+}
+
+
+/* Download PDF */
+.download-report {
+    margin-top: 15px;
+}
+
+#downloadReportBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+
+/* History date and time */
+.history-date-time {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+
+/* Welcome back */
+.welcome-back {
+    margin-top: 5px;
+    color: var(--muted);
+}
+
+
+/* Doctor recommendation */
+.doctor-recommendation {
+    margin-top: 20px;
+}
+
+.specialist-box {
+    background: #edf3ff;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 18px;
+}
+
+.specialist-box span {
+    margin-left: 7px;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+
+/* History actions */
+.history-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+
+/* Quantum analysis */
+.quantum-result {
+    margin-top: 18px;
+}
+
+.quantum-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.quantum-metric {
+    background: #f7f9fc;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.quantum-metric span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.quantum-metric strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 20px;
+}
+
+
+/* Model comparison */
+.comparison-values {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.comparison-values div {
+    background: #f7f9fc;
+    padding: 18px;
+    border-radius: 12px;
+}
+
+.comparison-values span {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.comparison-values strong {
+    display: block;
+    font-size: 24px;
+    margin-top: 5px;
+}
+
+
+/* Error / success messages */
+.message {
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+.message.success {
+    color: var(--success);
+}
+
+.message.error {
+    color: var(--danger);
+}
+
+
+/* ============================================================
+   RESPONSIVE - NEW FEATURES
+   ============================================================ */
+
+@media (max-width: 850px) {
+
+    .quantum-metrics,
+    .comparison-values {
+        grid-template-columns: 1fr;
+    }
+
+    .save-result {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+}
+
+
+@media (max-width: 560px) {
+
+    .history-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .history-actions button {
+        width: 100%;
+    }
+
+}
