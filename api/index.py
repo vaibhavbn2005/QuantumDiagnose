@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from datetime import datetime, timezone
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
@@ -21,7 +22,9 @@ QISKIT_AVAILABLE = False
 try:
     from qiskit import QuantumCircuit
     from qiskit.quantum_info import Statevector
+
     QISKIT_AVAILABLE = True
+
 except Exception as error:
     print("Qiskit unavailable:", error)
 
@@ -56,16 +59,19 @@ app = Flask(
 # ============================================================
 
 try:
+
     training_df = pd.read_csv(TRAIN_PATH)
     testing_df = pd.read_csv(TEST_PATH)
 
 except Exception as error:
+
     raise RuntimeError(
         f"Could not load datasets: {error}"
     )
 
 
 # Remove accidental index columns
+
 training_df = training_df.loc[
     :,
     ~training_df.columns.astype(str).str.startswith("Unnamed")
@@ -78,6 +84,7 @@ testing_df = testing_df.loc[
 
 
 # Clean column names
+
 training_df.columns = (
     training_df.columns
     .astype(str)
@@ -111,11 +118,15 @@ possible_targets = [
 ]
 
 for column in possible_targets:
+
     if column in training_df.columns:
+
         TARGET_COLUMN = column
         break
 
+
 if TARGET_COLUMN is None:
+
     TARGET_COLUMN = training_df.columns[-1]
 
 
@@ -141,6 +152,7 @@ missing_in_test = [
 ]
 
 if missing_in_test:
+
     raise RuntimeError(
         "Testing.csv is missing symptom columns: "
         + ", ".join(missing_in_test[:20])
@@ -334,13 +346,14 @@ def recommend_specialty(disease):
     for keyword, specialty in SPECIALTY_KEYWORDS.items():
 
         if keyword in disease_text:
+
             return specialty
 
     return "General Physician"
 
 
 # ============================================================
-# DUMMY DOCTORS
+# DOCTORS
 # ============================================================
 
 DOCTORS = [
@@ -462,19 +475,17 @@ def quantum_experimental_score(
             ),
             "qubits": 0,
             "circuit_depth": 0,
-            "message": "Qiskit is not available on the server."
+            "message":
+                "Qiskit is not available on the server."
         }
 
-
-    # --------------------------------------------------------
-    # Use a small number of qubits for lightweight deployment
-    # --------------------------------------------------------
 
     selected_indices = [
         index
         for index, value in enumerate(input_vector)
         if value == 1
     ]
+
 
     number_of_qubits = min(
         max(len(selected_indices), 1),
@@ -487,9 +498,7 @@ def quantum_experimental_score(
     )
 
 
-    # --------------------------------------------------------
     # Encode symptom information
-    # --------------------------------------------------------
 
     for qubit in range(number_of_qubits):
 
@@ -514,7 +523,7 @@ def quantum_experimental_score(
             )
 
 
-    # Add small entanglement layer
+    # Entanglement
 
     for qubit in range(
         number_of_qubits - 1
@@ -526,9 +535,7 @@ def quantum_experimental_score(
         )
 
 
-    # --------------------------------------------------------
     # Statevector
-    # --------------------------------------------------------
 
     state = Statevector.from_instruction(
         circuit
@@ -536,18 +543,15 @@ def quantum_experimental_score(
 
     probabilities = state.probabilities()
 
-    quantum_signal = float(
-        np.max(probabilities)
-    ) * 100
+    quantum_signal = (
+        float(
+            np.max(probabilities)
+        )
+        * 100
+    )
 
 
-    # --------------------------------------------------------
-    # CALIBRATED EXPERIMENTAL SCORE
-    #
-    # This keeps the experimental quantum score reasonably
-    # close to the RF confidence without pretending that the
-    # quantum number is a clinically validated probability.
-    # --------------------------------------------------------
+    # Calibrated experimental score
 
     rf_confidence = float(
         np.clip(
@@ -565,6 +569,7 @@ def quantum_experimental_score(
         )
     )
 
+
     score = (
         0.80 * rf_confidence
         +
@@ -572,14 +577,26 @@ def quantum_experimental_score(
     )
 
 
-    # Keep the two scores reasonably comparable
-    difference = score - rf_confidence
+    difference = (
+        score -
+        rf_confidence
+    )
+
 
     if difference > 8:
-        score = rf_confidence + 8
+
+        score = (
+            rf_confidence +
+            8
+        )
+
 
     if difference < -8:
-        score = rf_confidence - 8
+
+        score = (
+            rf_confidence -
+            8
+        )
 
 
     score = float(
@@ -592,20 +609,34 @@ def quantum_experimental_score(
 
 
     return {
+
         "available": True,
-        "score": round(score, 2),
-        "qubits": number_of_qubits,
-        "circuit_depth": circuit.depth(),
-        "quantum_signal": round(
-            quantum_signal,
-            2
-        ),
-        "message": (
-            "Experimental Qiskit score generated "
-            "from the encoded symptom state and "
-            "calibrated for comparison with the "
-            "Random Forest result."
-        )
+
+        "score":
+            round(
+                score,
+                2
+            ),
+
+        "qubits":
+            number_of_qubits,
+
+        "circuit_depth":
+            circuit.depth(),
+
+        "quantum_signal":
+            round(
+                quantum_signal,
+                2
+            ),
+
+        "message":
+            (
+                "Experimental Qiskit score generated "
+                "from the encoded symptom state and "
+                "calibrated for comparison with the "
+                "Random Forest result."
+            )
     }
 
 
@@ -635,9 +666,11 @@ def health():
 
         "random_forest": True,
 
-        "qiskit": QISKIT_AVAILABLE,
+        "qiskit":
+            QISKIT_AVAILABLE,
 
-        "target_column": TARGET_COLUMN,
+        "target_column":
+            TARGET_COLUMN,
 
         "training_rows":
             len(training_df),
@@ -718,7 +751,10 @@ def performance():
 def symptoms():
 
     return jsonify({
-        "symptoms": symptom_columns
+
+        "symptoms":
+            symptom_columns
+
     })
 
 
@@ -734,16 +770,21 @@ def doctors():
         ""
     )
 
+
     if specialty:
 
         filtered = [
+
             doctor
+
             for doctor in DOCTORS
+
             if doctor[
                 "specialization"
             ].lower()
             ==
             specialty.lower()
+
         ]
 
     else:
@@ -752,7 +793,10 @@ def doctors():
 
 
     return jsonify({
-        "doctors": filtered
+
+        "doctors":
+            filtered
+
     })
 
 
@@ -768,16 +812,32 @@ def predict():
 
     try:
 
+        # ----------------------------------------------------
+        # PREDICTION TIMESTAMP
+        # ----------------------------------------------------
+
+        prediction_datetime = (
+            datetime.now(
+                timezone.utc
+            )
+            .isoformat()
+        )
+
+
         data = request.get_json(
             silent=True
         )
 
+
         if not data:
 
             return jsonify({
+
                 "success": False,
+
                 "error":
                     "Invalid JSON request."
+
             }), 400
 
 
@@ -793,18 +853,24 @@ def predict():
         ):
 
             return jsonify({
+
                 "success": False,
+
                 "error":
                     "Symptoms must be provided as a list."
+
             }), 400
 
 
         if len(selected_symptoms) == 0:
 
             return jsonify({
+
                 "success": False,
+
                 "error":
                     "Please select at least one symptom."
+
             }), 400
 
 
@@ -813,9 +879,13 @@ def predict():
         # ----------------------------------------------------
 
         input_data = {
+
             symptom: 0
+
             for symptom in symptom_columns
+
         }
+
 
         matched_symptoms = []
 
@@ -826,15 +896,20 @@ def predict():
                 symptom
             )
 
+
             if normalized in symptom_map:
 
-                actual_column = symptom_map[
-                    normalized
-                ]
+                actual_column = (
+                    symptom_map[
+                        normalized
+                    ]
+                )
+
 
                 input_data[
                     actual_column
                 ] = 1
+
 
                 matched_symptoms.append(
                     actual_column
@@ -844,9 +919,12 @@ def predict():
         if not matched_symptoms:
 
             return jsonify({
+
                 "success": False,
+
                 "error":
                     "Selected symptoms were not found in the dataset."
+
             }), 400
 
 
@@ -864,27 +942,36 @@ def predict():
             input_df
         )[0]
 
-        probabilities = model.predict_proba(
-            input_df
-        )[0]
+
+        probabilities = (
+            model.predict_proba(
+                input_df
+            )[0]
+        )
+
 
         classes = model.classes_
 
 
         results = sorted(
+
             zip(
                 classes,
                 probabilities
             ),
+
             key=lambda item:
                 item[1],
+
             reverse=True
+
         )
 
 
         top_predictions = [
 
             {
+
                 "disease":
                     str(disease),
 
@@ -894,17 +981,25 @@ def predict():
                         * 100,
                         2
                     )
+
             }
 
             for disease, probability
             in results[:5]
+
         ]
 
 
         rf_confidence = (
-            top_predictions[0]["confidence"]
+
+            top_predictions[0][
+                "confidence"
+            ]
+
             if top_predictions
+
             else 0
+
         )
 
 
@@ -913,8 +1008,14 @@ def predict():
         # ----------------------------------------------------
 
         input_vector = [
-            int(input_data[column])
-            for column in symptom_columns
+
+            int(
+                input_data[column]
+            )
+
+            for column
+            in symptom_columns
+
         ]
 
 
@@ -925,10 +1026,6 @@ def predict():
             )
         )
 
-
-        # ----------------------------------------------------
-        # SAME PREDICTED DISEASE
-        # ----------------------------------------------------
 
         quantum_disease = str(
             prediction
@@ -945,8 +1042,10 @@ def predict():
         # ----------------------------------------------------
 
         difference = abs(
+
             rf_confidence -
             quantum_score
+
         )
 
 
@@ -987,9 +1086,21 @@ def predict():
         ]
 
 
+        # ----------------------------------------------------
+        # RESPONSE
+        # ----------------------------------------------------
+
         return jsonify({
 
-            "success": True,
+            "success":
+                True,
+
+            # Timestamp
+            "prediction_datetime":
+                prediction_datetime,
+
+            "prediction_date":
+                prediction_datetime,
 
             # Random Forest
             "disease":
@@ -1006,7 +1117,6 @@ def predict():
 
             "top_predictions":
                 top_predictions,
-
 
             # Qiskit
             "qiskit_disease":
@@ -1039,7 +1149,6 @@ def predict():
                     0
                 ),
 
-
             # Comparison
             "score_difference":
                 round(
@@ -1050,11 +1159,9 @@ def predict():
             "model_agreement":
                 agreement,
 
-
             # Symptoms
             "selected_symptoms":
                 matched_symptoms,
-
 
             # Doctors
             "specialty":
@@ -1063,7 +1170,7 @@ def predict():
             "doctors":
                 recommended_doctors,
 
-
+            # Messages
             "message":
                 (
                     "Educational symptom-analysis "
@@ -1087,9 +1194,11 @@ def predict():
             repr(error)
         )
 
+
         return jsonify({
 
-            "success": False,
+            "success":
+                False,
 
             "error":
                 str(error)
@@ -1104,7 +1213,11 @@ def predict():
 if __name__ == "__main__":
 
     app.run(
+
         host="0.0.0.0",
+
         port=5000,
+
         debug=True
+
     )
