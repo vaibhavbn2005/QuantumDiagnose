@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,22 +50,17 @@
 
         </div>
 
-
         <input
             id="authEmail"
             type="email"
             placeholder="Email address"
-            autocomplete="email"
-        >
-
+            autocomplete="email">
 
         <input
             id="authPassword"
             type="password"
             placeholder="Password"
-            autocomplete="current-password"
-        >
-
+            autocomplete="current-password">
 
         <button
             id="authSubmit"
@@ -72,7 +68,6 @@
             type="button">
             Login
         </button>
-
 
         <div
             id="authMessage"
@@ -90,7 +85,9 @@
 
 <div id="app" class="app hidden">
 
-    <!-- SIDEBAR -->
+    <!-- =================================================
+         SIDEBAR
+         ================================================= -->
 
     <aside class="sidebar">
 
@@ -98,66 +95,65 @@
             QuantumDiagnose
         </div>
 
-
         <nav>
 
             <button
                 class="nav-item active"
-                data-page="dashboard">
+                data-page="dashboard"
+                type="button">
                 Dashboard
             </button>
 
-
             <button
                 class="nav-item"
-                data-page="profile">
+                data-page="profile"
+                type="button">
                 Patient Profile
             </button>
 
-
             <button
                 class="nav-item"
-                data-page="prediction">
+                data-page="prediction"
+                type="button">
                 New Prediction
             </button>
 
-
             <button
                 class="nav-item"
-                data-page="history">
+                data-page="history"
+                type="button">
                 Prediction History
             </button>
 
-
             <button
                 class="nav-item"
-                data-page="doctors">
+                data-page="doctors"
+                type="button">
                 Recommended Doctors
             </button>
 
-
             <button
                 class="nav-item"
-                data-page="quantum">
+                data-page="quantum"
+                type="button">
                 Quantum Analysis
             </button>
 
-
             <button
                 class="nav-item"
-                data-page="comparison">
+                data-page="comparison"
+                type="button">
                 Model Comparison
             </button>
 
-
             <button
                 class="nav-item"
-                data-page="performance">
+                data-page="performance"
+                type="button">
                 Performance
             </button>
 
         </nav>
-
 
         <div class="sidebar-bottom">
 
@@ -177,11 +173,15 @@
     </aside>
 
 
-    <!-- MAIN -->
+    <!-- =================================================
+         MAIN CONTENT
+         ================================================= -->
 
     <main class="main-content">
 
-        <!-- HEADER -->
+        <!-- =================================================
+             HEADER
+             ================================================= -->
 
         <header class="topbar">
 
@@ -264,8 +264,7 @@
                     Latest Analysis
                 </h2>
 
-                <div
-                    id="dashboardLatest">
+                <div id="dashboardLatest">
 
                     <p>
                         No predictions yet.
@@ -284,7 +283,6 @@
                     type="button">
                     Patient Profile
                 </button>
-
 
                 <button
                     class="primary"
@@ -331,7 +329,7 @@
                         id="profileName"
                         type="text"
                         placeholder="Enter your name"
-                    >
+                        autocomplete="name">
 
                 </div>
 
@@ -376,8 +374,7 @@
                         type="number"
                         min="1"
                         max="120"
-                        placeholder="Enter age"
-                    >
+                        placeholder="Enter age">
 
                 </div>
 
@@ -392,8 +389,7 @@
                         id="profileHeight"
                         type="number"
                         min="1"
-                        placeholder="Enter height"
-                    >
+                        placeholder="Enter height">
 
                 </div>
 
@@ -408,8 +404,7 @@
                         id="profileWeight"
                         type="number"
                         min="1"
-                        placeholder="Enter weight"
-                    >
+                        placeholder="Enter weight">
 
                 </div>
 
@@ -461,7 +456,7 @@
                         id="search"
                         type="text"
                         placeholder="Search symptoms..."
-                    >
+                        autocomplete="off">
 
                 </div>
 
@@ -470,12 +465,7 @@
                     id="symptomGrid"
                     class="symptom-grid">
 
-                    <!--
-                        Keep your existing symptom
-                        checkbox elements here if
-                        your current HTML contains
-                        the complete symptom list.
-                    -->
+                    <!-- Symptoms are loaded by JavaScript -->
 
                 </div>
 
@@ -513,20 +503,36 @@
             </div>
 
 
-            <!-- RESULTS -->
+            <!-- =================================================
+                 RESULTS
+                 ================================================= -->
 
             <div
                 id="result"
                 class="card hidden">
 
+
+                <!-- RESULT HEADER -->
+
                 <div class="result-header">
 
-                    <h2>
-                        Prediction Results
-                    </h2>
+                    <div>
+
+                        <h2>
+                            Prediction Results
+                        </h2>
+
+                        <p class="prediction-time-label">
+                            Prediction Date &amp; Time
+                        </p>
+
+                    </div>
+
 
                     <div
-                        id="predictionDateTime">
+                        id="predictionDateTime"
+                        class="prediction-datetime">
+                        —
                     </div>
 
                 </div>
@@ -668,15 +674,14 @@
                     </div>
 
 
-                    <p
-                        id="quantumInterpretation">
+                    <p id="quantumInterpretation">
                         Running Qiskit quantum analysis...
                     </p>
 
                 </div>
 
 
-                <!-- DOCTOR -->
+                <!-- DOCTOR RECOMMENDATION -->
 
                 <div class="result-section">
 
@@ -698,7 +703,46 @@
                 </div>
 
 
-                <!-- DOWNLOAD BUTTON IS CREATED BY JS -->
+                <!-- =================================================
+                     ACTION BUTTONS
+                     ================================================= -->
+
+                <div class="result-actions">
+
+                    <button
+                        id="saveHistoryBtn"
+                        class="primary"
+                        type="button">
+                        Save to History
+                    </button>
+
+
+                    <button
+                        id="downloadReportBtn"
+                        class="primary"
+                        type="button">
+                        Download Report PDF
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="historySaveMessage"
+                    class="message">
+                </div>
+
+
+                <div class="medical-disclaimer">
+
+                    <strong>Important:</strong>
+
+                    QuantumDiagnose provides educational
+                    AI-assisted analysis only. It is not a
+                    medical diagnosis and should not replace
+                    professional medical advice.
+
+                </div>
 
             </div>
 
@@ -720,7 +764,7 @@
                 </h2>
 
                 <p>
-                    Your previous prediction results.
+                    Your previous prediction results with date and time.
                 </p>
 
             </div>
