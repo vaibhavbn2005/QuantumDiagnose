@@ -2448,3 +2448,28 @@ footer a {
     }
 
 }
+/* ============================================================
+   FORGOT PASSWORD
+   ============================================================ */
+
+.forgot-password {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 14px;
+    margin: -4px 0 16px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+.forgot-password:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
