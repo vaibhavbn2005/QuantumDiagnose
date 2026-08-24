@@ -1,13 +1,8 @@
-# ============================================================
-# QuantumDiagnose
-# Professional ML + Qiskit Backend
-# Flask + Random Forest + Qiskit
-# ============================================================
-
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
-from pathlib import Path 
+from pathlib import Path
+from datetime import datetime, timezone
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
@@ -17,8 +12,6 @@ from sklearn.metrics import (
     f1_score,
     confusion_matrix
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_score
-
 
 # ============================================================
 # OPTIONAL QISKIT
@@ -50,7 +43,7 @@ STATIC_DIR = BASE_DIR / "static"
 
 
 # ============================================================
-# FLASK APPLICATION
+# FLASK
 # ============================================================
 
 app = Flask(
@@ -73,13 +66,11 @@ try:
 except Exception as error:
 
     raise RuntimeError(
-        f"Could not load dataset files: {error}"
+        f"Could not load datasets: {error}"
     )
 
 
-# ============================================================
-# REMOVE ACCIDENTAL INDEX COLUMNS
-# ============================================================
+# Remove accidental index columns
 
 training_df = training_df.loc[
     :,
@@ -92,9 +83,7 @@ testing_df = testing_df.loc[
 ]
 
 
-# ============================================================
-# CLEAN COLUMN NAMES
-# ============================================================
+# Clean column names
 
 training_df.columns = (
     training_df.columns
@@ -110,7 +99,7 @@ testing_df.columns = (
 
 
 # ============================================================
-# FIND TARGET COLUMN
+# TARGET COLUMN
 # ============================================================
 
 TARGET_COLUMN = None
@@ -142,7 +131,7 @@ if TARGET_COLUMN is None:
 
 
 # ============================================================
-# IDENTIFY SYMPTOM COLUMNS
+# SYMPTOM COLUMNS
 # ============================================================
 
 symptom_columns = [
@@ -153,7 +142,7 @@ symptom_columns = [
 
 
 # ============================================================
-# CHECK TESTING DATA
+# MAKE TRAINING / TESTING COLUMNS MATCH
 # ============================================================
 
 missing_in_test = [
@@ -171,7 +160,7 @@ if missing_in_test:
 
 
 # ============================================================
-# CLEAN SYMPTOM VALUES
+# CLEAN SYMPTOMS
 # ============================================================
 
 for column in symptom_columns:
@@ -188,31 +177,25 @@ for column in symptom_columns:
 
 
 # ============================================================
-# CONVERT SYMPTOMS TO BINARY
+# TRAINING DATA
 # ============================================================
 
-for column in symptom_columns:
+X_train = training_df[symptom_columns]
 
-    training_df[column] = (
-        training_df[column] > 0
-    ).astype(int)
-
-    testing_df[column] = (
-        testing_df[column] > 0
-    ).astype(int)
-
-
-# ============================================================
-# CLEAN TARGET
-# ============================================================
-
-training_df[TARGET_COLUMN] = (
+y_train = (
     training_df[TARGET_COLUMN]
     .astype(str)
     .str.strip()
 )
 
-testing_df[TARGET_COLUMN] = (
+
+# ============================================================
+# TESTING DATA
+# ============================================================
+
+X_test = testing_df[symptom_columns]
+
+y_test = (
     testing_df[TARGET_COLUMN]
     .astype(str)
     .str.strip()
@@ -220,265 +203,28 @@ testing_df[TARGET_COLUMN] = (
 
 
 # ============================================================
-# REMOVE INVALID TARGET ROWS
-# ============================================================
-
-training_df = training_df[
-    training_df[TARGET_COLUMN].notna()
-].copy()
-
-testing_df = testing_df[
-    testing_df[TARGET_COLUMN].notna()
-].copy()
-
-
-# ============================================================
-# CREATE TRAINING DATA
-# ============================================================
-
-X_train = training_df[
-    symptom_columns
-].copy()
-
-y_train = training_df[
-    TARGET_COLUMN
-].copy()
-
-
-# ============================================================
-# CREATE TEST DATA
-# ============================================================
-
-X_test = testing_df[
-    symptom_columns
-].copy()
-
-y_test = testing_df[
-    TARGET_COLUMN
-].copy()
-
-
-# ============================================================
-# REMOVE EXACT DUPLICATES
-#
-# Only completely identical symptom + disease records
-# are removed.
-# ============================================================
-
-training_combined = pd.concat(
-    [
-        X_train.reset_index(drop=True),
-        y_train.reset_index(drop=True).rename(
-            TARGET_COLUMN
-        )
-    ],
-    axis=1
-)
-
-before_duplicates = len(training_combined)
-
-training_combined = (
-    training_combined
-    .drop_duplicates()
-    .reset_index(drop=True)
-)
-
-duplicates_removed = (
-    before_duplicates -
-    len(training_combined)
-)
-
-X_train = training_combined[
-    symptom_columns
-].copy()
-
-y_train = training_combined[
-    TARGET_COLUMN
-].copy()
-
-
-# ============================================================
-# REMOVE CONSTANT FEATURES
-# ============================================================
-
-feature_variance = X_train.nunique()
-
-useful_symptoms = [
-    column
-    for column in symptom_columns
-    if feature_variance[column] > 1
-]
-
-if useful_symptoms:
-
-    symptom_columns = useful_symptoms
-
-    X_train = X_train[
-        symptom_columns
-    ].copy()
-
-    X_test = X_test[
-        symptom_columns
-    ].copy()
-
-
-# ============================================================
-# RANDOM FOREST MODEL
-#
-# The previous version used RandomizedSearchCV with many
-# large forests during application startup.
-#
-# For Vercel/serverless deployment, a strong fixed model is
-# much more reliable and much faster to initialize.
+# RANDOM FOREST
 # ============================================================
 
 model = RandomForestClassifier(
-
-    n_estimators=100,
-
-    criterion="gini",
-
-    max_depth=None,
-
-    min_samples_split=2,
-
-    min_samples_leaf=1,
-
-    max_features="sqrt",
-
-    bootstrap=True,
-
-    class_weight=None,
-
+    n_estimators=300,
     random_state=42,
-
-    n_jobs=-1
+    class_weight="balanced",
+    max_features="sqrt",
+    n_jobs=1
 )
-
-
-# ============================================================
-# TRAIN MODEL
-# ============================================================
-
-print()
-print("=" * 65)
-print("QuantumDiagnose - Random Forest")
-print("=" * 65)
-
-print(
-    f"Training samples       : {len(X_train)}"
-)
-
-print(
-    f"Testing samples        : {len(X_test)}"
-)
-
-print(
-    f"Symptoms used          : {len(symptom_columns)}"
-)
-
-print(
-    f"Diseases/classes       : {y_train.nunique()}"
-)
-
-print(
-    f"Duplicate rows removed : {duplicates_removed}"
-)
-
-print()
-
-print("Training Random Forest...")
 
 model.fit(
     X_train,
     y_train
 )
 
-print("Random Forest training completed.")
-
 
 # ============================================================
-# CROSS-VALIDATION
-#
-# Used only for reporting model performance.
-# This is much lighter than the previous RandomizedSearchCV.
+# MODEL PERFORMANCE
 # ============================================================
 
-cv_accuracy = 0.0
-
-try:
-
-    minimum_class_count = (
-        y_train.value_counts().min()
-    )
-
-    cv_folds = min(
-        3,
-        int(minimum_class_count)
-    )
-
-    if cv_folds >= 2:
-
-        cv_strategy = StratifiedKFold(
-            n_splits=cv_folds,
-            shuffle=True,
-            random_state=42
-        )
-
-        cv_model = RandomForestClassifier(
-
-            n_estimators=100,
-
-            criterion="gini",
-
-            max_depth=None,
-
-            min_samples_split=2,
-
-            min_samples_leaf=1,
-
-            max_features="sqrt",
-
-            bootstrap=True,
-
-            class_weight=None,
-
-            random_state=42,
-
-            n_jobs=-1
-        )
-
-        cv_scores = cross_val_score(
-            cv_model,
-            X_train,
-            y_train,
-            cv=cv_strategy,
-            scoring="accuracy",
-            n_jobs=-1
-        )
-
-        cv_accuracy = float(
-            np.mean(cv_scores)
-        )
-
-except Exception as error:
-
-    print(
-        "Cross-validation warning:",
-        error
-    )
-
-    cv_accuracy = 0.0
-
-
-# ============================================================
-# TEST EVALUATION
-# ============================================================
-
-test_predictions = model.predict(
-    X_test
-)
-
+test_predictions = model.predict(X_test)
 
 accuracy = accuracy_score(
     y_test,
@@ -506,11 +252,6 @@ f1 = f1_score(
     zero_division=0
 )
 
-
-# ============================================================
-# CONFUSION MATRIX
-# ============================================================
-
 labels = sorted(
     list(
         set(y_test) |
@@ -523,39 +264,6 @@ cm = confusion_matrix(
     test_predictions,
     labels=labels
 )
-
-
-# ============================================================
-# PRINT PERFORMANCE
-# ============================================================
-
-print()
-print("=" * 65)
-print("FINAL RANDOM FOREST PERFORMANCE")
-print("=" * 65)
-
-print(
-    f"Accuracy          : {accuracy * 100:.2f}%"
-)
-
-print(
-    f"Precision         : {precision * 100:.2f}%"
-)
-
-print(
-    f"Recall            : {recall * 100:.2f}%"
-)
-
-print(
-    f"F1 Score          : {f1 * 100:.2f}%"
-)
-
-print(
-    f"Cross-validation  : {cv_accuracy * 100:.2f}%"
-)
-
-print("=" * 65)
-print()
 
 
 # ============================================================
@@ -572,10 +280,6 @@ def normalize_symptom(value):
         .replace("-", " ")
     )
 
-
-# ============================================================
-# SYMPTOM MAP
-# ============================================================
 
 symptom_map = {
     normalize_symptom(column): column
@@ -635,15 +339,9 @@ SPECIALTY_KEYWORDS = {
 }
 
 
-# ============================================================
-# SPECIALTY RECOMMENDATION
-# ============================================================
-
 def recommend_specialty(disease):
 
-    disease_text = str(
-        disease
-    ).lower()
+    disease_text = str(disease).lower()
 
     for keyword, specialty in SPECIALTY_KEYWORDS.items():
 
@@ -655,7 +353,7 @@ def recommend_specialty(disease):
 
 
 # ============================================================
-# DOCTOR DATABASE
+# DOCTORS
 # ============================================================
 
 DOCTORS = [
@@ -759,128 +457,7 @@ DOCTORS = [
 
 
 # ============================================================
-# BUILD INPUT VECTOR
-# ============================================================
-
-def build_input_vector(selected_symptoms):
-
-    if not isinstance(
-        selected_symptoms,
-        list
-    ):
-
-        raise ValueError(
-            "Symptoms must be provided as a list."
-        )
-
-    if len(selected_symptoms) == 0:
-
-        raise ValueError(
-            "Please select at least one symptom."
-        )
-
-    input_data = {
-        symptom: 0
-        for symptom in symptom_columns
-    }
-
-    matched_symptoms = []
-
-    for symptom in selected_symptoms:
-
-        normalized = normalize_symptom(
-            symptom
-        )
-
-        if normalized in symptom_map:
-
-            actual_column = symptom_map[
-                normalized
-            ]
-
-            input_data[
-                actual_column
-            ] = 1
-
-            if actual_column not in matched_symptoms:
-
-                matched_symptoms.append(
-                    actual_column
-                )
-
-    if not matched_symptoms:
-
-        raise ValueError(
-            "Selected symptoms were not found in the dataset."
-        )
-
-    input_df = pd.DataFrame(
-        [input_data],
-        columns=symptom_columns
-    )
-
-    return (
-        input_data,
-        matched_symptoms,
-        input_df
-    )
-
-
-# ============================================================
-# RANDOM FOREST PREDICTION
-# ============================================================
-
-def random_forest_prediction(input_df):
-
-    prediction = model.predict(
-        input_df
-    )[0]
-
-    probabilities = model.predict_proba(
-        input_df
-    )[0]
-
-    classes = model.classes_
-
-    results = sorted(
-        zip(
-            classes,
-            probabilities
-        ),
-        key=lambda item: item[1],
-        reverse=True
-    )
-
-    top_predictions = [
-
-        {
-            "disease": str(disease),
-
-            "confidence": round(
-                float(probability) * 100,
-                2
-            )
-        }
-
-        for disease, probability
-        in results[:5]
-    ]
-
-    confidence = (
-        top_predictions[0]["confidence"]
-        if top_predictions
-        else 0
-    )
-
-    return (
-        str(prediction),
-        top_predictions,
-        confidence
-    )
-
-
-# ============================================================
-# QISKIT EXPERIMENTAL ANALYSIS
+# QUANTUM EXPERIMENT
 # ============================================================
 
 def quantum_experimental_score(
@@ -891,244 +468,176 @@ def quantum_experimental_score(
     if not QISKIT_AVAILABLE:
 
         return {
-
             "available": False,
-
             "score": round(
                 float(rf_confidence),
                 2
             ),
-
             "qubits": 0,
-
             "circuit_depth": 0,
-
-            "quantum_signal": 0,
-
             "message":
                 "Qiskit is not available on the server."
         }
 
 
-    try:
-
-        selected_indices = [
-
-            index
-
-            for index, value
-            in enumerate(input_vector)
-
-            if value == 1
-        ]
+    selected_indices = [
+        index
+        for index, value in enumerate(input_vector)
+        if value == 1
+    ]
 
 
-        number_of_qubits = min(
-            max(
-                len(selected_indices),
-                1
-            ),
-            4
-        )
+    number_of_qubits = min(
+        max(len(selected_indices), 1),
+        4
+    )
 
 
-        circuit = QuantumCircuit(
-            number_of_qubits
-        )
+    circuit = QuantumCircuit(
+        number_of_qubits
+    )
 
 
-        # ----------------------------------------------
-        # Encode selected symptoms
-        # ----------------------------------------------
+    # Encode symptom information
 
-        for qubit in range(
-            number_of_qubits
-        ):
+    for qubit in range(number_of_qubits):
 
-            circuit.h(
+        circuit.h(qubit)
+
+        if qubit < len(selected_indices):
+
+            position = selected_indices[qubit]
+
+            angle = (
+                np.pi *
+                (
+                    (position + 1)
+                    /
+                    max(len(input_vector), 1)
+                )
+            )
+
+            circuit.ry(
+                angle,
                 qubit
             )
 
-            if qubit < len(
-                selected_indices
-            ):
 
-                position = (
-                    selected_indices[
-                        qubit
-                    ]
-                )
+    # Entanglement
 
-                angle = (
+    for qubit in range(
+        number_of_qubits - 1
+    ):
 
-                    np.pi *
-
-                    (
-                        (position + 1)
-                        /
-                        max(
-                            len(input_vector),
-                            1
-                        )
-                    )
-                )
-
-                circuit.ry(
-                    angle,
-                    qubit
-                )
-
-
-        # ----------------------------------------------
-        # Entanglement
-        # ----------------------------------------------
-
-        for qubit in range(
-            number_of_qubits - 1
-        ):
-
-            circuit.cx(
-                qubit,
-                qubit + 1
-            )
-
-
-        # ----------------------------------------------
-        # Statevector simulation
-        # ----------------------------------------------
-
-        state = (
-            Statevector.from_instruction(
-                circuit
-            )
-        )
-
-        probabilities = (
-            state.probabilities()
-        )
-
-        quantum_signal = (
-            float(
-                np.max(
-                    probabilities
-                )
-            ) * 100
+        circuit.cx(
+            qubit,
+            qubit + 1
         )
 
 
-        # ----------------------------------------------
-        # Experimental comparison score
-        #
-        # This is NOT a medical probability.
-        # ----------------------------------------------
+    # Statevector
 
-        rf_confidence = float(
-            np.clip(
-                rf_confidence,
-                0,
-                100
-            )
+    state = Statevector.from_instruction(
+        circuit
+    )
+
+    probabilities = state.probabilities()
+
+    quantum_signal = (
+        float(
+            np.max(probabilities)
         )
+        * 100
+    )
 
-        quantum_signal = float(
-            np.clip(
-                quantum_signal,
-                0,
-                100
-            )
+
+    # Calibrated experimental score
+
+    rf_confidence = float(
+        np.clip(
+            rf_confidence,
+            0,
+            100
         )
+    )
+
+    quantum_signal = float(
+        np.clip(
+            quantum_signal,
+            0,
+            100
+        )
+    )
 
 
-        # Weighted comparison.
-        # RF remains dominant because it is the trained
-        # supervised ML model.
+    score = (
+        0.80 * rf_confidence
+        +
+        0.20 * quantum_signal
+    )
+
+
+    difference = (
+        score -
+        rf_confidence
+    )
+
+
+    if difference > 8:
+
         score = (
-
-            0.80 *
-            rf_confidence
-
-            +
-
-            0.20 *
-            quantum_signal
+            rf_confidence +
+            8
         )
 
 
-        # Keep the two displayed experimental values
-        # reasonably close for comparison.
-        score = float(
-            np.clip(
-                score,
-                rf_confidence - 8,
-                rf_confidence + 8
-            )
-        )
+    if difference < -8:
 
-        score = float(
-            np.clip(
-                score,
-                0,
-                100
-            )
+        score = (
+            rf_confidence -
+            8
         )
 
 
-        return {
+    score = float(
+        np.clip(
+            score,
+            0,
+            100
+        )
+    )
 
-            "available": True,
 
-            "score": round(
+    return {
+
+        "available": True,
+
+        "score":
+            round(
                 score,
                 2
             ),
 
-            "qubits":
-                number_of_qubits,
+        "qubits":
+            number_of_qubits,
 
-            "circuit_depth":
-                circuit.depth(),
+        "circuit_depth":
+            circuit.depth(),
 
-            "quantum_signal":
-                round(
-                    quantum_signal,
-                    2
-                ),
-
-            "message":
-                (
-                    "Experimental Qiskit score generated "
-                    "from the encoded symptom state. "
-                    "The score is provided for educational "
-                    "comparison with the Random Forest model."
-                )
-        }
-
-
-    except Exception as error:
-
-        print(
-            "Qiskit error:",
-            repr(error)
-        )
-
-        return {
-
-            "available": False,
-
-            "score": round(
-                float(rf_confidence),
+        "quantum_signal":
+            round(
+                quantum_signal,
                 2
             ),
 
-            "qubits": 0,
-
-            "circuit_depth": 0,
-
-            "quantum_signal": 0,
-
-            "message":
-                "Qiskit analysis could not be completed."
-        }
+        "message":
+            (
+                "Experimental Qiskit score generated "
+                "from the encoded symptom state and "
+                "calibrated for comparison with the "
+                "Random Forest result."
+            )
+    }
 
 
 # ============================================================
@@ -1157,40 +666,24 @@ def health():
 
         "random_forest": True,
 
-        "qiskit": QISKIT_AVAILABLE,
+        "qiskit":
+            QISKIT_AVAILABLE,
 
         "target_column":
             TARGET_COLUMN,
 
         "training_rows":
-            len(X_train),
+            len(training_df),
 
         "testing_rows":
-            len(X_test),
+            len(testing_df),
 
         "symptoms":
             len(symptom_columns),
 
         "diseases":
-            len(model.classes_),
+            len(model.classes_)
 
-        "cv_accuracy":
-            round(
-                cv_accuracy * 100,
-                2
-            ),
-
-        "test_accuracy":
-            round(
-                accuracy * 100,
-                2
-            ),
-
-        "model":
-            "Random Forest",
-
-        "estimators":
-            100
     })
 
 
@@ -1227,17 +720,11 @@ def performance():
                 2
             ),
 
-        "cv_accuracy":
-            round(
-                cv_accuracy * 100,
-                2
-            ),
-
         "training_samples":
-            len(X_train),
+            len(training_df),
 
         "testing_samples":
-            len(X_test),
+            len(testing_df),
 
         "number_of_symptoms":
             len(symptom_columns),
@@ -1252,6 +739,7 @@ def performance():
             "Qiskit"
             if QISKIT_AVAILABLE
             else "Unavailable"
+
     })
 
 
@@ -1266,6 +754,7 @@ def symptoms():
 
         "symptoms":
             symptom_columns
+
     })
 
 
@@ -1281,6 +770,7 @@ def doctors():
         ""
     )
 
+
     if specialty:
 
         filtered = [
@@ -1294,21 +784,24 @@ def doctors():
             ].lower()
             ==
             specialty.lower()
+
         ]
 
     else:
 
         filtered = DOCTORS
 
+
     return jsonify({
 
         "doctors":
             filtered
+
     })
 
 
 # ============================================================
-# RANDOM FOREST PREDICTION ENDPOINT
+# PREDICTION
 # ============================================================
 
 @app.route(
@@ -1319,9 +812,22 @@ def predict():
 
     try:
 
+        # ----------------------------------------------------
+        # PREDICTION TIMESTAMP
+        # ----------------------------------------------------
+
+        prediction_datetime = (
+            datetime.now(
+                timezone.utc
+            )
+            .isoformat()
+        )
+
+
         data = request.get_json(
             silent=True
         )
+
 
         if not data:
 
@@ -1331,6 +837,7 @@ def predict():
 
                 "error":
                     "Invalid JSON request."
+
             }), 400
 
 
@@ -1340,39 +847,177 @@ def predict():
         )
 
 
-        (
-            input_data,
-            matched_symptoms,
-            input_df
-        ) = build_input_vector(
-            selected_symptoms
+        if not isinstance(
+            selected_symptoms,
+            list
+        ):
+
+            return jsonify({
+
+                "success": False,
+
+                "error":
+                    "Symptoms must be provided as a list."
+
+            }), 400
+
+
+        if len(selected_symptoms) == 0:
+
+            return jsonify({
+
+                "success": False,
+
+                "error":
+                    "Please select at least one symptom."
+
+            }), 400
+
+
+        # ----------------------------------------------------
+        # BUILD INPUT VECTOR
+        # ----------------------------------------------------
+
+        input_data = {
+
+            symptom: 0
+
+            for symptom in symptom_columns
+
+        }
+
+
+        matched_symptoms = []
+
+
+        for symptom in selected_symptoms:
+
+            normalized = normalize_symptom(
+                symptom
+            )
+
+
+            if normalized in symptom_map:
+
+                actual_column = (
+                    symptom_map[
+                        normalized
+                    ]
+                )
+
+
+                input_data[
+                    actual_column
+                ] = 1
+
+
+                matched_symptoms.append(
+                    actual_column
+                )
+
+
+        if not matched_symptoms:
+
+            return jsonify({
+
+                "success": False,
+
+                "error":
+                    "Selected symptoms were not found in the dataset."
+
+            }), 400
+
+
+        input_df = pd.DataFrame(
+            [input_data],
+            columns=symptom_columns
         )
 
 
-        (
-            prediction,
-            top_predictions,
-            rf_confidence
-        ) = random_forest_prediction(
+        # ----------------------------------------------------
+        # RANDOM FOREST
+        # ----------------------------------------------------
+
+        prediction = model.predict(
             input_df
+        )[0]
+
+
+        probabilities = (
+            model.predict_proba(
+                input_df
+            )[0]
         )
 
 
-        # ----------------------------------------------
-        # Qiskit comparison
-        # ----------------------------------------------
+        classes = model.classes_
+
+
+        results = sorted(
+
+            zip(
+                classes,
+                probabilities
+            ),
+
+            key=lambda item:
+                item[1],
+
+            reverse=True
+
+        )
+
+
+        top_predictions = [
+
+            {
+
+                "disease":
+                    str(disease),
+
+                "confidence":
+                    round(
+                        float(probability)
+                        * 100,
+                        2
+                    )
+
+            }
+
+            for disease, probability
+            in results[:5]
+
+        ]
+
+
+        rf_confidence = (
+
+            top_predictions[0][
+                "confidence"
+            ]
+
+            if top_predictions
+
+            else 0
+
+        )
+
+
+        # ----------------------------------------------------
+        # QISKIT
+        # ----------------------------------------------------
 
         input_vector = [
 
             int(
-                input_data[
-                    column
-                ]
+                input_data[column]
             )
 
             for column
             in symptom_columns
+
         ]
+
 
         quantum_result = (
             quantum_experimental_score(
@@ -1382,22 +1027,25 @@ def predict():
         )
 
 
-        quantum_score = (
-            quantum_result[
-                "score"
-            ]
+        quantum_disease = str(
+            prediction
         )
 
 
-        # ----------------------------------------------
-        # Model agreement
-        # ----------------------------------------------
+        quantum_score = (
+            quantum_result["score"]
+        )
+
+
+        # ----------------------------------------------------
+        # MODEL AGREEMENT
+        # ----------------------------------------------------
 
         difference = abs(
 
-            rf_confidence
-            -
+            rf_confidence -
             quantum_score
+
         )
 
 
@@ -1414,20 +1062,14 @@ def predict():
             agreement = "Low"
 
 
-        # ----------------------------------------------
-        # Specialist
-        # ----------------------------------------------
+        # ----------------------------------------------------
+        # DOCTOR
+        # ----------------------------------------------------
 
-        specialty = (
-            recommend_specialty(
-                prediction
-            )
+        specialty = recommend_specialty(
+            prediction
         )
 
-
-        # ----------------------------------------------
-        # Doctors
-        # ----------------------------------------------
 
         recommended_doctors = [
 
@@ -1440,23 +1082,32 @@ def predict():
             ].lower()
             ==
             specialty.lower()
+
         ]
 
 
-        # ----------------------------------------------
-        # Response
-        # ----------------------------------------------
+        # ----------------------------------------------------
+        # RESPONSE
+        # ----------------------------------------------------
 
         return jsonify({
 
-            "success": True,
+            "success":
+                True,
+
+            # Timestamp
+            "prediction_datetime":
+                prediction_datetime,
+
+            "prediction_date":
+                prediction_datetime,
 
             # Random Forest
             "disease":
-                prediction,
+                str(prediction),
 
             "rf_disease":
-                prediction,
+                str(prediction),
 
             "rf_confidence":
                 rf_confidence,
@@ -1469,7 +1120,7 @@ def predict():
 
             # Qiskit
             "qiskit_disease":
-                prediction,
+                quantum_disease,
 
             "qiskit_score":
                 quantum_score,
@@ -1512,43 +1163,27 @@ def predict():
             "selected_symptoms":
                 matched_symptoms,
 
-            # Doctor
+            # Doctors
             "specialty":
                 specialty,
 
             "doctors":
                 recommended_doctors,
 
-            # Model information
-            "model":
-                "Random Forest",
-
-            "cv_accuracy":
-                round(
-                    cv_accuracy * 100,
-                    2
-                ),
-
-            "test_accuracy":
-                round(
-                    accuracy * 100,
-                    2
-                ),
-
             # Messages
             "message":
                 (
-                    "Educational symptom-analysis result. "
-                    "This system is not a medical diagnosis "
-                    "and should not replace professional "
-                    "medical advice."
+                    "Educational symptom-analysis "
+                    "result. This is not a medical diagnosis."
                 ),
 
             "quantum_message":
-                quantum_result.get(
-                    "message",
-                    "Experimental Qiskit analysis."
+                (
+                    "The Qiskit value is an experimental "
+                    "quantum-computing score for this project. "
+                    "It is not a clinically validated probability."
                 )
+
         })
 
 
@@ -1559,208 +1194,30 @@ def predict():
             repr(error)
         )
 
+
         return jsonify({
 
-            "success": False,
+            "success":
+                False,
 
             "error":
                 str(error)
+
         }), 500
 
 
 # ============================================================
-# QISKIT ENDPOINT
-#
-# Your existing JavaScript calls /quantum separately.
-# ============================================================
-
-@app.route(
-    "/quantum",
-    methods=["POST"]
-)
-def quantum():
-
-    try:
-
-        data = request.get_json(
-            silent=True
-        )
-
-        if not data:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "Invalid JSON request."
-            }), 400
-
-
-        selected_symptoms = data.get(
-            "symptoms",
-            []
-        )
-
-
-        (
-            input_data,
-            matched_symptoms,
-            input_df
-        ) = build_input_vector(
-            selected_symptoms
-        )
-
-
-        (
-            prediction,
-            top_predictions,
-            rf_confidence
-        ) = random_forest_prediction(
-            input_df
-        )
-
-
-        input_vector = [
-
-            int(
-                input_data[
-                    column
-                ]
-            )
-
-            for column
-            in symptom_columns
-        ]
-
-
-        quantum_result = (
-            quantum_experimental_score(
-                input_vector,
-                rf_confidence
-            )
-        )
-
-
-        return jsonify({
-
-            "success": True,
-
-            "prediction":
-                prediction,
-
-            "disease":
-                prediction,
-
-            "quantum_score":
-                quantum_result[
-                    "score"
-                ],
-
-            "confidence":
-                quantum_result[
-                    "score"
-                ],
-
-            "qubits":
-                quantum_result[
-                    "qubits"
-                ],
-
-            "circuit_depth":
-                quantum_result[
-                    "circuit_depth"
-                ],
-
-            "quantum_signal":
-                quantum_result.get(
-                    "quantum_signal",
-                    0
-                ),
-
-            "available":
-                quantum_result[
-                    "available"
-                ],
-
-            "qiskit_available":
-                quantum_result[
-                    "available"
-                ],
-
-            "rf_confidence":
-                rf_confidence,
-
-            "selected_symptoms":
-                matched_symptoms,
-
-            "interpretation":
-                (
-                    "Experimental Qiskit score for "
-                    "educational comparison with the "
-                    "Random Forest result. It is not a "
-                    "clinically validated probability."
-                )
-        })
-
-
-    except Exception as error:
-
-        print(
-            "Quantum endpoint error:",
-            repr(error)
-        )
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                str(error)
-        }), 500
-
-
-# ============================================================
-# APPLICATION ENTRY POINT
+# RUN
 # ============================================================
 
 if __name__ == "__main__":
 
-    print()
-    print("=" * 65)
-    print("QuantumDiagnose Server")
-    print("=" * 65)
-
-    print(
-        f"Random Forest accuracy : "
-        f"{accuracy * 100:.2f}%"
-    )
-
-    print(
-        f"Cross-validation       : "
-        f"{cv_accuracy * 100:.2f}%"
-    )
-
-    print(
-        f"Symptoms               : "
-        f"{len(symptom_columns)}"
-    )
-
-    print(
-        f"Diseases               : "
-        f"{len(model.classes_)}"
-    )
-
-    print(
-        f"Qiskit available       : "
-        f"{QISKIT_AVAILABLE}"
-    )
-
-    print("=" * 65)
-    print()
-
     app.run(
+
         host="0.0.0.0",
+
         port=5000,
-        debug=False
+
+        debug=True
+
     )
