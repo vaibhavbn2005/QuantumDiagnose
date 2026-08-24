@@ -7,7 +7,7 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
-from pathlib import Path
+from pathlib import Path 
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
