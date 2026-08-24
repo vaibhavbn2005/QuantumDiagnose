@@ -1,30 +1,18 @@
-/* =========================================================
-   QUANTUMDIAGNOSE - UPDATED SCRIPT.JS
-   =========================================================
-   Features:
-   - Firebase Email/Password Login
-   - Patient Profile mandatory before prediction
-   - Saved profile per user
-   - Welcome back, Name
-   - Random Forest prediction
-   - Qiskit experimental analysis
-   - Model comparison
-   - Doctor recommendation
-   - Prediction history
-   - Date & time for every prediction
-   - Download / Save PDF report
-   - Phone removed
-   - No toggle
-   ========================================================= */
+// ============================================================
+// QUANTUMDIAGNOSE - COMPLETE UPDATED SCRIPT.JS
+// Email/Password Authentication
+// Random Forest + Qiskit
+// Patient Profile + History + PDF Report
+// Phone authentication removed
+// ============================================================
 
 
-/* =========================================================
-   FIREBASE
-   ========================================================= */
+// ============================================================
+// FIREBASE IMPORTS
+// ============================================================
 
-import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
     getAuth,
@@ -32,293 +20,549 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    query,
+    where,
+    orderBy,
+    limit,
+    getDocs,
+    serverTimestamp
+} from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+// ============================================================
+// FIREBASE CONFIGURATION
+// ============================================================
 
 const firebaseConfig = {
-    apiKey:
-        "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
-
-    authDomain:
-        "quantumdiagnose.firebaseapp.com",
-
-    projectId:
-        "quantumdiagnose",
-
-    storageBucket:
-        "quantumdiagnose.firebasestorage.app",
-
-    messagingSenderId:
-        "727641186346",
-
-    appId:
-        "1:727641186346:web:958942c8d9f6906a69e353",
-
-    measurementId:
-        "G-YM0HMMVBFR"
+    apiKey: "AIzaSyAPrulUfMubKieGuU5QxQVwSu8sDtKvTZE",
+    authDomain: "quantumdiagnose.firebaseapp.com",
+    projectId: "quantumdiagnose",
+    storageBucket: "quantumdiagnose.firebasestorage.app",
+    messagingSenderId: "727641186346",
+    appId: "1:727641186346:web:958942c8d9f6906a69e353",
+    measurementId: "G-YM0HMMVBFR"
 };
 
 
-const firebaseApp =
-    initializeApp(firebaseConfig);
+// ============================================================
+// INITIALIZE FIREBASE
+// ============================================================
 
-const auth =
-    getAuth(firebaseApp);
+const firebaseApp = initializeApp(firebaseConfig);
+
+const auth = getAuth(firebaseApp);
+
+const db = getFirestore(firebaseApp);
+
+window.firebaseAuth = auth;
+window.firebaseDB = db;
+
+console.log("Firebase initialized successfully.");
 
 
-/* =========================================================
-   GLOBAL STATE
-   ========================================================= */
+// ============================================================
+// HTML ELEMENTS
+// ============================================================
+
+// Authentication
+const authScreen = document.getElementById("authScreen");
+const app = document.getElementById("app");
+
+const loginTab = document.getElementById("loginTab");
+const signupTab = document.getElementById("signupTab");
+
+const authEmail = document.getElementById("authEmail");
+const authPassword = document.getElementById("authPassword");
+
+const authSubmit = document.getElementById("authSubmit");
+const authMessage = document.getElementById("authMessage");
+
+const logoutBtn = document.getElementById("logoutBtn");
+
+const userEmail = document.getElementById("userEmail");
+
+const welcomeName = document.getElementById("welcomeName");
+
+
+// Navigation
+const navItems = document.querySelectorAll(".nav-item");
+
+const goButtons = document.querySelectorAll("[data-go]");
+
+const pageTitle = document.getElementById("pageTitle");
+
+
+// Dashboard
+const predictionCount =
+    document.getElementById("predictionCount");
+
+const latestDisease =
+    document.getElementById("latestDisease");
+
+const dashboardLatest =
+    document.getElementById("dashboardLatest");
+
+
+// Profile
+const saveProfileBtn =
+    document.getElementById("saveProfileBtn");
+
+const profileMessage =
+    document.getElementById("profileMessage");
+
+const profileName =
+    document.getElementById("profileName");
+
+const profileGender =
+    document.getElementById("profileGender");
+
+const profileAge =
+    document.getElementById("profileAge");
+
+const profileHeight =
+    document.getElementById("profileHeight");
+
+const profileWeight =
+    document.getElementById("profileWeight");
+
+
+// Symptoms
+const searchInput =
+    document.getElementById("search");
+
+const symptomGrid =
+    document.getElementById("symptomGrid");
+
+const count =
+    document.getElementById("count");
+
+const clearBtn =
+    document.getElementById("clearBtn");
+
+const predictBtn =
+    document.getElementById("predictBtn");
+
+
+// Prediction result
+const result =
+    document.getElementById("result");
+
+const disease =
+    document.getElementById("disease");
+
+const confidenceBar =
+    document.getElementById("confidenceBar");
+
+const confidenceText =
+    document.getElementById("confidenceText");
+
+const topPredictions =
+    document.getElementById("topPredictions");
+
+const message =
+    document.getElementById("message");
+
+
+// History
+const historyList =
+    document.getElementById("historyList");
+
+
+// Doctors
+const doctorList =
+    document.getElementById("doctorList");
+
+
+// Quantum
+const quantumBtn =
+    document.getElementById("quantumBtn");
+
+const quantumResult =
+    document.getElementById("quantumResult");
+
+
+// Performance
+const metricAccuracy =
+    document.getElementById("metricAccuracy");
+
+const metricPrecision =
+    document.getElementById("metricPrecision");
+
+const metricRecall =
+    document.getElementById("metricRecall");
+
+const metricF1 =
+    document.getElementById("metricF1");
+
+const trainingSamples =
+    document.getElementById("trainingSamples");
+
+const testingSamples =
+    document.getElementById("testingSamples");
+
+const symptomTotal =
+    document.getElementById("symptomTotal");
+
+const diseaseTotal =
+    document.getElementById("diseaseTotal");
+
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
 
 let authMode = "login";
 
-let currentUser = null;
+let lastPrediction = null;
 
-let latestPrediction = null;
+let lastPredictionTime = null;
 
-let predictionHistory = [];
+let lastSelectedSymptoms = [];
+
+let lastProfile = null;
 
 
-/* =========================================================
-   DOM HELPER
-   ========================================================= */
+// ============================================================
+// AUTH MESSAGE
+// ============================================================
 
-function $(id) {
-    return document.getElementById(id);
+function showAuthMessage(text, isError = false) {
+
+    if (!authMessage) return;
+
+    authMessage.textContent = text;
+
+    authMessage.style.color =
+        isError ? "#d32f2f" : "#2e7d32";
 }
 
 
-/* =========================================================
-   AUTH ELEMENTS
-   ========================================================= */
-
-const loginTab =
-    $("loginTab");
-
-const signupTab =
-    $("signupTab");
-
-const authEmail =
-    $("authEmail");
-
-const authPassword =
-    $("authPassword");
-
-const authSubmit =
-    $("authSubmit");
-
-const authMessage =
-    $("authMessage");
-
-const authScreen =
-    $("authScreen");
-
-const app =
-    $("app");
-
-
-/* =========================================================
-   AUTH MODE
-   ========================================================= */
+// ============================================================
+// AUTH MODE
+// ============================================================
 
 function setAuthMode(mode) {
 
     authMode = mode;
 
-    if (mode === "login") {
+    if (loginTab) {
 
-        loginTab?.classList.add("active");
-        signupTab?.classList.remove("active");
+        loginTab.classList.toggle(
+            "active",
+            mode === "login"
+        );
 
-        if (authSubmit) {
-            authSubmit.textContent = "Login";
-        }
+    }
 
-        if (authPassword) {
-            authPassword.autocomplete =
-                "current-password";
+    if (signupTab) {
+
+        signupTab.classList.toggle(
+            "active",
+            mode === "signup"
+        );
+
+    }
+
+    if (authSubmit) {
+
+        authSubmit.textContent =
+            mode === "login"
+                ? "Login"
+                : "Create Account";
+
+    }
+
+    showAuthMessage("");
+}
+
+
+// ============================================================
+// SHOW APP
+// ============================================================
+
+async function showApp(user) {
+
+    if (authScreen) {
+
+        authScreen.classList.add("hidden");
+
+    }
+
+    if (app) {
+
+        app.classList.remove("hidden");
+
+    }
+
+    if (userEmail) {
+
+        userEmail.textContent =
+            user.email || "";
+
+    }
+
+    const profile =
+        loadLocalProfile(user.uid);
+
+    if (profile) {
+
+        lastProfile = profile;
+
+        fillProfileForm(profile);
+
+        if (welcomeName) {
+
+            welcomeName.textContent =
+                profile.name;
+
         }
 
     } else {
 
-        signupTab?.classList.add("active");
-        loginTab?.classList.remove("active");
+        if (welcomeName) {
 
-        if (authSubmit) {
-            authSubmit.textContent =
-                "Create Account";
+            welcomeName.textContent =
+                user.email
+                    ? user.email.split("@")[0]
+                    : "Patient";
+
         }
 
-        if (authPassword) {
-            authPassword.autocomplete =
-                "new-password";
-        }
     }
 
-    if (authMessage) {
-        authMessage.textContent = "";
-    }
+    await loadHistory();
+
+    await loadDashboardStats();
+
 }
 
 
-loginTab?.addEventListener(
-    "click",
-    () => setAuthMode("login")
-);
+// ============================================================
+// SHOW AUTH SCREEN
+// ============================================================
+
+function showAuthScreen() {
+
+    if (app) {
+
+        app.classList.add("hidden");
+
+    }
+
+    if (authScreen) {
+
+        authScreen.classList.remove("hidden");
+
+    }
+
+    if (authEmail) {
+
+        authEmail.value = "";
+
+    }
+
+    if (authPassword) {
+
+        authPassword.value = "";
+
+    }
+
+    setAuthMode("login");
+
+}
 
 
-signupTab?.addEventListener(
-    "click",
-    () => setAuthMode("signup")
-);
+// ============================================================
+// AUTHENTICATION
+// ============================================================
 
+async function handleEmailAuthentication() {
 
-/* =========================================================
-   AUTH MESSAGE
-   ========================================================= */
+    if (!authEmail || !authPassword) {
 
-function showAuthMessage(
-    message,
-    success = false
-) {
+        console.error(
+            "Authentication fields not found."
+        );
 
-    if (!authMessage) {
         return;
+
     }
 
-    authMessage.textContent =
-        message;
+    const email =
+        authEmail.value.trim();
 
-    authMessage.style.color =
-        success
-            ? "#16a34a"
-            : "#dc2626";
-}
+    const password =
+        authPassword.value;
 
 
-/* =========================================================
-   AUTH SUBMIT
-   ========================================================= */
+    if (!email) {
 
-authSubmit?.addEventListener(
-    "click",
-    async () => {
+        showAuthMessage(
+            "Please enter your email address.",
+            true
+        );
 
-        const email =
-            authEmail?.value.trim();
+        return;
 
-        const password =
-            authPassword?.value || "";
+    }
 
-        if (!email || !password) {
 
-            showAuthMessage(
-                "Please enter email and password."
-            );
+    if (!password) {
 
-            return;
-        }
+        showAuthMessage(
+            "Please enter your password.",
+            true
+        );
 
-        if (password.length < 6) {
+        return;
 
-            showAuthMessage(
-                "Password must contain at least 6 characters."
-            );
+    }
 
-            return;
-        }
+
+    if (password.length < 6) {
+
+        showAuthMessage(
+            "Password must contain at least 6 characters.",
+            true
+        );
+
+        return;
+
+    }
+
+
+    if (authSubmit) {
 
         authSubmit.disabled = true;
 
         authSubmit.textContent =
-            authMode === "login"
-                ? "Logging in..."
-                : "Creating account...";
+            "Please wait...";
+
+    }
 
 
-        try {
+    try {
 
-            if (authMode === "login") {
+        if (authMode === "login") {
 
-                await signInWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-            } else {
-
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-            }
-
-            showAuthMessage(
-                "Success!",
-                true
+            await signInWithEmailAndPassword(
+                auth,
+                email,
+                password
             );
 
-        } catch (error) {
+        } else {
 
-            console.error(
-                "Firebase authentication error:",
-                error
+            await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
             );
 
-            let message =
-                "Authentication failed.";
+        }
 
-            if (
-                error.code ===
-                "auth/invalid-credential"
-            ) {
+    } catch (error) {
 
-                message =
+        console.error(
+            "Firebase authentication error:",
+            error
+        );
+
+        let errorMessage =
+            "Authentication failed.";
+
+
+        switch (error.code) {
+
+            case "auth/invalid-email":
+
+                errorMessage =
+                    "Please enter a valid email address.";
+
+                break;
+
+
+            case "auth/user-not-found":
+
+                errorMessage =
+                    "No account found with this email.";
+
+                break;
+
+
+            case "auth/wrong-password":
+
+                errorMessage =
+                    "Incorrect password.";
+
+                break;
+
+
+            case "auth/invalid-credential":
+
+                errorMessage =
                     "Invalid email or password.";
 
-            } else if (
-                error.code ===
-                "auth/email-already-in-use"
-            ) {
+                break;
 
-                message =
-                    "This email is already registered.";
 
-            } else if (
-                error.code ===
-                "auth/invalid-email"
-            ) {
+            case "auth/email-already-in-use":
 
-                message =
-                    "Please enter a valid email.";
+                errorMessage =
+                    "This email is already registered. Please login.";
 
-            } else if (
-                error.code ===
-                "auth/weak-password"
-            ) {
+                break;
 
-                message =
+
+            case "auth/weak-password":
+
+                errorMessage =
                     "Password is too weak.";
 
-            } else if (
-                error.code ===
-                "auth/network-request-failed"
-            ) {
+                break;
 
-                message =
-                    "Network error. Please try again.";
 
-            } else if (error.message) {
+            case "auth/too-many-requests":
 
-                message =
-                    error.message;
-            }
+                errorMessage =
+                    "Too many attempts. Please try again later.";
 
-            showAuthMessage(message);
+                break;
 
-        } finally {
+
+            case "auth/network-request-failed":
+
+                errorMessage =
+                    "Network error. Check your internet connection.";
+
+                break;
+
+
+            default:
+
+                errorMessage =
+                    error.message ||
+                    "Authentication failed.";
+
+        }
+
+
+        showAuthMessage(
+            errorMessage,
+            true
+        );
+
+    } finally {
+
+        if (authSubmit) {
 
             authSubmit.disabled = false;
 
@@ -326,947 +570,938 @@ authSubmit?.addEventListener(
                 authMode === "login"
                     ? "Login"
                     : "Create Account";
+
         }
+
     }
-);
+
+}
 
 
-/* =========================================================
-   AUTH STATE
-   ========================================================= */
+// ============================================================
+// AUTH STATE
+// ============================================================
 
 onAuthStateChanged(
     auth,
-    user => {
-
-        currentUser = user;
+    function (user) {
 
         if (user) {
 
-            authScreen?.classList.add(
-                "hidden"
+            console.log(
+                "Logged in:",
+                user.email
             );
 
-            app?.classList.remove(
-                "hidden"
-            );
-
-            if ($("userEmail")) {
-                $("userEmail").textContent =
-                    user.email || "User";
-            }
-
-            loadProfile();
-
-            loadHistory();
-
-            loadDoctors();
-
-            loadPerformance();
+            showApp(user);
 
         } else {
 
-            authScreen?.classList.remove(
-                "hidden"
-            );
+            showAuthScreen();
 
-            app?.classList.add(
-                "hidden"
-            );
-
-            if ($("userEmail")) {
-                $("userEmail").textContent =
-                    "—";
-            }
         }
+
     }
 );
 
 
-/* =========================================================
-   LOGOUT
-   ========================================================= */
+// ============================================================
+// LOGOUT
+// ============================================================
 
-$("logoutBtn")?.addEventListener(
-    "click",
-    async () => {
+async function logoutUser() {
 
-        try {
+    try {
 
-            await signOut(auth);
+        await signOut(auth);
 
-            latestPrediction = null;
-            predictionHistory = [];
+    } catch (error) {
 
-        } catch (error) {
+        console.error(
+            "Logout error:",
+            error
+        );
 
-            console.error(
-                "Logout error:",
-                error
-            );
-        }
+        alert(
+            "Logout failed: " +
+            error.message
+        );
+
     }
-);
+
+}
 
 
-/* =========================================================
-   PAGE NAVIGATION
-   ========================================================= */
+// ============================================================
+// NAVIGATION
+// ============================================================
 
-const pageTitles = {
-
-    dashboard:
-        "Dashboard",
-
-    profile:
-        "Patient Profile",
-
-    prediction:
-        "New Prediction",
-
-    history:
-        "Prediction History",
-
-    doctors:
-        "Recommended Doctors",
-
-    quantum:
-        "Quantum Analysis",
-
-    comparison:
-        "Random Forest vs Qiskit",
-
-    performance:
-        "Performance"
-};
-
-
-function showPage(pageId) {
+function goToPage(pageId) {
 
     document
         .querySelectorAll(".page")
-        .forEach(page => {
+        .forEach(function (page) {
 
             page.classList.remove(
                 "active-page"
             );
+
         });
 
 
     const target =
-        $(pageId);
+        document.getElementById(pageId);
 
-    if (!target) {
-        return;
+
+    if (target) {
+
+        target.classList.add(
+            "active-page"
+        );
+
     }
 
 
-    target.classList.add(
-        "active-page"
-    );
+    navItems.forEach(function (item) {
 
+        item.classList.toggle(
+            "active",
+            item.dataset.page === pageId
+        );
 
-    document
-        .querySelectorAll(".nav-item")
-        .forEach(button => {
-
-            button.classList.toggle(
-                "active",
-                button.dataset.page ===
-                pageId
-            );
-        });
-
-
-    if ($("pageTitle")) {
-
-        $("pageTitle").textContent =
-            pageTitles[pageId] ||
-            "QuantumDiagnose";
-    }
-
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
     });
 
 
-    /*
-     * Prediction cannot be used without
-     * a saved patient profile.
-     */
-    if (
-        pageId === "prediction" &&
-        !hasPatientProfile()
-    ) {
+    if (pageTitle) {
 
-        alert(
-            "Please complete and save your Patient Profile before making a prediction."
-        );
+        const titles = {
 
-        showPage("profile");
+            dashboard:
+                "Dashboard",
+
+            profile:
+                "Patient Profile",
+
+            prediction:
+                "New Prediction",
+
+            history:
+                "Prediction History",
+
+            doctors:
+                "Recommended Doctors",
+
+            quantum:
+                "Quantum Analysis",
+
+            comparison:
+                "Model Comparison",
+
+            performance:
+                "Performance"
+
+        };
+
+
+        pageTitle.textContent =
+            titles[pageId] || pageId;
+
     }
+
+
+    if (pageId === "history") {
+
+        loadHistory();
+
+    }
+
+
+    if (pageId === "doctors") {
+
+        loadDoctors();
+
+    }
+
+
+    if (pageId === "performance") {
+
+        loadPerformance();
+
+    }
+
 }
 
 
-/* Sidebar */
+navItems.forEach(function (item) {
 
-document
-    .querySelectorAll(".nav-item")
-    .forEach(button => {
+    item.addEventListener(
+        "click",
+        function () {
 
-        button.addEventListener(
-            "click",
-            () => {
+            goToPage(
+                item.dataset.page
+            );
 
-                showPage(
-                    button.dataset.page
-                );
-            }
-        );
-    });
+        }
+    );
+
+});
 
 
-/* Quick action buttons */
+goButtons.forEach(function (button) {
 
-document
-    .querySelectorAll("[data-go]")
-    .forEach(button => {
+    button.addEventListener(
+        "click",
+        function () {
 
-        button.addEventListener(
-            "click",
-            () => {
+            goToPage(
+                button.dataset.go
+            );
 
-                showPage(
-                    button.dataset.go
-                );
-            }
-        );
-    });
+        }
+    );
+
+});
 
 
-/* =========================================================
-   PATIENT PROFILE
-   ========================================================= */
+// ============================================================
+// PATIENT PROFILE - LOCAL STORAGE
+// ============================================================
 
-function profileKey() {
-
-    if (!currentUser) {
-        return null;
-    }
+function profileStorageKey(uid) {
 
     return (
         "quantumdiagnose_profile_" +
-        currentUser.uid
+        uid
     );
+
 }
 
 
-function getPatientProfile() {
-
-    const key =
-        profileKey();
-
-    if (!key) {
-        return null;
-    }
-
-    const saved =
-        localStorage.getItem(key);
-
-    if (!saved) {
-        return null;
-    }
+function loadLocalProfile(uid) {
 
     try {
 
+        const saved =
+            localStorage.getItem(
+                profileStorageKey(uid)
+            );
+
+        if (!saved) return null;
+
         return JSON.parse(saved);
 
-    } catch {
+    } catch (error) {
+
+        console.error(
+            "Profile read error:",
+            error
+        );
 
         return null;
+
     }
+
 }
 
 
-function hasPatientProfile() {
+function saveLocalProfile(profile) {
 
-    const data =
-        getPatientProfile();
+    try {
 
-    if (!data) {
-        return false;
+        localStorage.setItem(
+            profileStorageKey(profile.userId),
+            JSON.stringify(profile)
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Profile storage error:",
+            error
+        );
+
     }
+
+}
+
+
+function fillProfileForm(profile) {
+
+    if (!profile) return;
+
+
+    if (profileName) {
+
+        profileName.value =
+            profile.name || "";
+
+    }
+
+
+    if (profileGender) {
+
+        profileGender.value =
+            profile.gender || "";
+
+    }
+
+
+    if (profileAge) {
+
+        profileAge.value =
+            profile.age || "";
+
+    }
+
+
+    if (profileHeight) {
+
+        profileHeight.value =
+            profile.height || "";
+
+    }
+
+
+    if (profileWeight) {
+
+        profileWeight.value =
+            profile.weight || "";
+
+    }
+
+}
+
+
+// ============================================================
+// SAVE PROFILE
+// ============================================================
+
+if (saveProfileBtn) {
+
+    saveProfileBtn.addEventListener(
+        "click",
+        async function () {
+
+            const user =
+                auth.currentUser;
+
+
+            if (!user) {
+
+                showProfileMessage(
+                    "Please login first.",
+                    true
+                );
+
+                return;
+
+            }
+
+
+            const name =
+                profileName
+                    ? profileName.value.trim()
+                    : "";
+
+            const gender =
+                profileGender
+                    ? profileGender.value
+                    : "";
+
+            const age =
+                profileAge
+                    ? profileAge.value.trim()
+                    : "";
+
+            const height =
+                profileHeight
+                    ? profileHeight.value.trim()
+                    : "";
+
+            const weight =
+                profileWeight
+                    ? profileWeight.value.trim()
+                    : "";
+
+
+            if (
+                !name ||
+                !gender ||
+                !age ||
+                !height ||
+                !weight
+            ) {
+
+                showProfileMessage(
+                    "Please complete all required profile fields.",
+                    true
+                );
+
+                return;
+
+            }
+
+
+            const profile = {
+
+                userId:
+                    user.uid,
+
+                name:
+                    name,
+
+                gender:
+                    gender,
+
+                age:
+                    age,
+
+                height:
+                    height,
+
+                weight:
+                    weight,
+
+                updatedAt:
+                    new Date().toISOString()
+
+            };
+
+
+            lastProfile =
+                profile;
+
+
+            saveLocalProfile(
+                profile
+            );
+
+
+            if (welcomeName) {
+
+                welcomeName.textContent =
+                    name;
+
+            }
+
+
+            showProfileMessage(
+                "Patient profile saved successfully."
+            );
+
+
+            /*
+             * Also try Firestore.
+             * Local storage remains the primary
+             * profile source so the application
+             * continues working if Firestore
+             * rules do not allow profile writes.
+             */
+
+            try {
+
+                await addDoc(
+                    collection(
+                        db,
+                        "profiles"
+                    ),
+                    {
+                        ...profile,
+                        updatedAt:
+                            serverTimestamp()
+                    }
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    "Firestore profile save skipped:",
+                    error.message
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+function showProfileMessage(
+    text,
+    isError = false
+) {
+
+    if (!profileMessage) return;
+
+    profileMessage.textContent =
+        text;
+
+    profileMessage.style.color =
+        isError
+            ? "#d32f2f"
+            : "#2e7d32";
+
+}
+
+
+// ============================================================
+// PROFILE CHECK
+// ============================================================
+
+function hasCompleteProfile() {
+
+    const user =
+        auth.currentUser;
+
+
+    if (!user) return false;
+
+
+    const profile =
+        loadLocalProfile(user.uid);
+
+
+    if (!profile) return false;
+
 
     return Boolean(
-        data.name &&
-        data.gender &&
-        data.age &&
-        data.height &&
-        data.weight
+
+        profile.name &&
+        profile.gender &&
+        profile.age &&
+        profile.height &&
+        profile.weight
+
     );
+
 }
 
 
-/* Save profile */
+// ============================================================
+// SYMPTOMS
+// ============================================================
 
-function saveProfile() {
-
-    const data = {
-
-        name:
-            $("profileName")?.value.trim(),
-
-        gender:
-            $("profileGender")?.value,
-
-        age:
-            $("profileAge")?.value,
-
-        height:
-            $("profileHeight")?.value,
-
-        weight:
-            $("profileWeight")?.value
-    };
-
-
-    if (
-        !data.name ||
-        !data.gender ||
-        !data.age ||
-        !data.height ||
-        !data.weight
-    ) {
-
-        if ($("profileMessage")) {
-
-            $("profileMessage").textContent =
-                "Please complete all profile fields.";
-
-            $("profileMessage").style.color =
-                "#dc2626";
-        }
-
-        return;
-    }
-
-
-    const key =
-        profileKey();
-
-    if (!key) {
-        return;
-    }
-
-
-    localStorage.setItem(
-        key,
-        JSON.stringify(data)
-    );
-
-
-    if ($("profileMessage")) {
-
-        $("profileMessage").textContent =
-            "Profile saved successfully.";
-
-        $("profileMessage").style.color =
-            "#16a34a";
-    }
-
-
-    updateWelcomeName(
-        data.name
-    );
-}
-
-
-function loadProfile() {
-
-    const data =
-        getPatientProfile();
-
-    if (!data) {
-
-        updateWelcomeName(
-            "Patient"
-        );
-
-        return;
-    }
-
-
-    if ($("profileName")) {
-        $("profileName").value =
-            data.name || "";
-    }
-
-    if ($("profileGender")) {
-        $("profileGender").value =
-            data.gender || "";
-    }
-
-    if ($("profileAge")) {
-        $("profileAge").value =
-            data.age || "";
-    }
-
-    if ($("profileHeight")) {
-        $("profileHeight").value =
-            data.height || "";
-    }
-
-    if ($("profileWeight")) {
-        $("profileWeight").value =
-            data.weight || "";
-    }
-
-
-    updateWelcomeName(
-        data.name
-    );
-}
-
-
-function updateWelcomeName(name) {
-
-    if (!$("welcomeName")) {
-        return;
-    }
-
-    $("welcomeName").textContent =
-        name &&
-        name.trim()
-            ? name.trim()
-            : "Patient";
-}
-
-
-$("saveProfileBtn")?.addEventListener(
-    "click",
-    saveProfile
-);
-
-
-/* =========================================================
-   SYMPTOMS
-   ========================================================= */
-
-function symptomCheckboxes() {
+function getSymptomCheckboxes() {
 
     return document.querySelectorAll(
-        "#symptomGrid input[type='checkbox']"
+        '#symptomGrid input[type="checkbox"]'
     );
-}
 
-
-function getSelectedSymptoms() {
-
-    return Array
-        .from(
-            symptomCheckboxes()
-        )
-        .filter(
-            checkbox =>
-                checkbox.checked
-        )
-        .map(
-            checkbox =>
-                checkbox.value
-        );
 }
 
 
 function updateCount() {
 
-    const selected =
-        getSelectedSymptoms();
-
-    if ($("count")) {
-
-        $("count").textContent =
-            selected.length;
-    }
-}
+    const boxes =
+        getSymptomCheckboxes();
 
 
-document
-    .querySelectorAll(
-        "#symptomGrid input[type='checkbox']"
-    )
-    .forEach(
-        checkbox => {
+    let selectedCount = 0;
 
-            checkbox.addEventListener(
-                "change",
-                updateCount
-            );
+
+    boxes.forEach(
+        function (box) {
+
+            if (box.checked) {
+
+                selectedCount++;
+
+            }
+
         }
     );
 
 
-/* =========================================================
-   SEARCH SYMPTOMS
-   ========================================================= */
+    if (count) {
 
-$("search")?.addEventListener(
-    "input",
-    event => {
+        count.textContent =
+            selectedCount;
 
-        const search =
-            event.target.value
-                .trim()
-                .toLowerCase();
-
-
-        document
-            .querySelectorAll(
-                ".symptom"
-            )
-            .forEach(item => {
-
-                const name =
-                    (
-                        item.dataset.name ||
-                        ""
-                    ).toLowerCase();
-
-
-                item.style.display =
-                    name.includes(search)
-                        ? "flex"
-                        : "none";
-            });
     }
-);
+
+}
 
 
-/* =========================================================
-   CLEAR SYMPTOMS
-   ========================================================= */
+function setupSymptomEvents() {
 
-$("clearBtn")?.addEventListener(
-    "click",
-    () => {
+    const boxes =
+        getSymptomCheckboxes();
 
-        symptomCheckboxes()
-            .forEach(
-                checkbox => {
 
-                    checkbox.checked =
-                        false;
+    console.log(
+        "Found symptom checkboxes:",
+        boxes.length
+    );
+
+
+    boxes.forEach(
+        function (box) {
+
+            box.addEventListener(
+                "change",
+                updateCount
+            );
+
+        }
+    );
+
+
+    updateCount();
+
+}
+
+
+// ============================================================
+// SEARCH
+// ============================================================
+
+if (searchInput) {
+
+    searchInput.addEventListener(
+        "input",
+        function (event) {
+
+            const searchText =
+                event.target.value
+                    .toLowerCase()
+                    .trim();
+
+
+            const symptoms =
+                document.querySelectorAll(
+                    "#symptomGrid .symptom"
+                );
+
+
+            symptoms.forEach(
+                function (symptom) {
+
+                    const name =
+                        (
+                            symptom.dataset.name ||
+                            symptom.textContent ||
+                            ""
+                        )
+                            .toLowerCase();
+
+
+                    symptom.style.display =
+                        name.includes(searchText)
+                            ? ""
+                            : "none";
+
                 }
             );
 
-
-        if ($("search")) {
-            $("search").value = "";
         }
+    );
+
+}
 
 
-        document
-            .querySelectorAll(
-                ".symptom"
-            )
-            .forEach(item => {
+// ============================================================
+// CLEAR
+// ============================================================
 
-                item.style.display =
-                    "flex";
-            });
+if (clearBtn) {
+
+    clearBtn.addEventListener(
+        "click",
+        function () {
+
+            getSymptomCheckboxes()
+                .forEach(
+                    function (box) {
+
+                        box.checked = false;
+
+                    }
+                );
 
 
-        updateCount();
+            updateCount();
 
 
-        $("result")?.classList.add(
-            "hidden"
-        );
-    }
-);
+            if (result) {
+
+                result.classList.add(
+                    "hidden"
+                );
+
+            }
 
 
-/* =========================================================
-   API HELPER
-   ========================================================= */
+            if (searchInput) {
 
-async function apiFetch(
-    url,
-    options = {}
-) {
+                searchInput.value = "";
 
-    const response =
-        await fetch(
-            url,
-            {
-                ...options,
+            }
 
-                headers: {
 
-                    "Content-Type":
-                        "application/json",
+            document
+                .querySelectorAll(
+                    "#symptomGrid .symptom"
+                )
+                .forEach(
+                    function (symptom) {
 
-                    ...(options.headers || {})
+                        symptom.style.display =
+                            "";
+
+                    }
+                );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// GET SELECTED SYMPTOMS
+// ============================================================
+
+function getSelectedSymptoms() {
+
+    const selected = [];
+
+
+    getSymptomCheckboxes()
+        .forEach(
+            function (box) {
+
+                if (box.checked) {
+
+                    selected.push(
+                        box.value
+                    );
+
                 }
+
             }
         );
 
 
-    let data = null;
+    return selected;
 
-
-    try {
-
-        data =
-            await response.json();
-
-    } catch {
-
-        data = null;
-    }
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            data?.error ||
-            `Request failed: ${response.status}`
-        );
-    }
-
-
-    return data;
 }
 
 
-/* =========================================================
-   RESULT RESET
-   ========================================================= */
+// ============================================================
+// DATE / TIME
+// ============================================================
 
-function resetResult() {
+function formatDateTime(date) {
 
-    if ($("disease")) {
-        $("disease").textContent =
-            "Analyzing...";
+    if (!date) {
+
+        return "—";
+
     }
 
-    if ($("confidenceText")) {
-        $("confidenceText").textContent =
-            "0%";
-    }
 
-    if ($("confidenceBar")) {
-        $("confidenceBar").style.width =
-            "0%";
-    }
+    return new Intl.DateTimeFormat(
+        undefined,
+        {
+            dateStyle: "medium",
+            timeStyle: "short"
+        }
+    ).format(date);
 
-    if ($("topPredictions")) {
-        $("topPredictions").innerHTML =
-            "";
-    }
-
-    if ($("quantumScore")) {
-        $("quantumScore").textContent =
-            "Analyzing...";
-    }
-
-    if ($("quantumScoreText")) {
-        $("quantumScoreText").textContent =
-            "0%";
-    }
-
-    if ($("quantumScoreBar")) {
-        $("quantumScoreBar").style.width =
-            "0%";
-    }
-
-    if ($("quantumQubits")) {
-        $("quantumQubits").textContent =
-            "—";
-    }
-
-    if ($("quantumDepth")) {
-        $("quantumDepth").textContent =
-            "—";
-    }
-
-    if ($("quantumInterpretation")) {
-        $("quantumInterpretation").textContent =
-            "Running Qiskit quantum analysis...";
-    }
-
-    if ($("specialistBox")) {
-        $("specialistBox").innerHTML =
-            "";
-    }
-
-    if ($("recommendedDoctors")) {
-        $("recommendedDoctors").innerHTML =
-            "";
-    }
-
-    if ($("message")) {
-        $("message").textContent =
-            "";
-    }
-
-    if ($("predictionDateTime")) {
-        $("predictionDateTime").textContent =
-            "";
-    }
 }
 
 
-/* =========================================================
-   ANALYZE SYMPTOMS
-   ========================================================= */
+// ============================================================
+// ADD PREDICTION DATE/TIME TO RESULT
+// ============================================================
 
-$("predictBtn")?.addEventListener(
-    "click",
-    analyzeSymptoms
-);
+function showPredictionDateTime(date) {
 
-
-async function analyzeSymptoms() {
-
-    /* PROFILE CHECK */
-
-    if (!hasPatientProfile()) {
-
-        alert(
-            "Patient Profile is mandatory. Please complete and save your profile first."
+    let element =
+        document.getElementById(
+            "predictionDateTime"
         );
 
-        showPage("profile");
 
-        return;
+    if (!element && result) {
+
+        const header =
+            result.querySelector(
+                ".result-header"
+            );
+
+
+        if (header) {
+
+            element =
+                document.createElement(
+                    "div"
+                );
+
+            element.id =
+                "predictionDateTime";
+
+            element.className =
+                "prediction-date-time";
+
+            header.appendChild(
+                element
+            );
+
+        }
+
     }
 
 
-    const symptoms =
+    if (element) {
+
+        element.textContent =
+            "Prediction date & time: " +
+            formatDateTime(date);
+
+    }
+
+}
+
+
+// ============================================================
+// MAKE PREDICTION
+// ============================================================
+
+async function makePrediction() {
+
+    const selectedSymptoms =
         getSelectedSymptoms();
 
 
-    if (symptoms.length === 0) {
+    if (!auth.currentUser) {
+
+        alert(
+            "Please login before making a prediction."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * Patient profile is mandatory.
+     */
+
+    if (!hasCompleteProfile()) {
+
+        alert(
+            "Please complete and save your Patient Profile before making a prediction."
+        );
+
+        goToPage("profile");
+
+        return;
+
+    }
+
+
+    if (
+        selectedSymptoms.length === 0
+    ) {
 
         alert(
             "Please select at least one symptom."
         );
 
         return;
+
     }
 
 
-    const button =
-        $("predictBtn");
+    if (predictBtn) {
 
+        predictBtn.disabled = true;
 
-    if (button) {
+        predictBtn.textContent =
+            "Analyzing...";
 
-        button.disabled = true;
-
-        button.textContent =
-            "Analyzing Random Forest + Qiskit...";
     }
 
 
-    $("result")?.classList.remove(
-        "hidden"
-    );
-
-
-    resetResult();
+    const predictionDate =
+        new Date();
 
 
     try {
 
-        const [
-            rfResult,
-            quantumResult
-        ] =
-            await Promise.allSettled([
+        const response =
+            await fetch(
+                "/predict",
+                {
+                    method: "POST",
 
-                apiFetch(
-                    "/predict",
-                    {
-                        method:
-                            "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                        body:
-                            JSON.stringify({
-                                symptoms:
-                                    symptoms
-                            })
-                    }
-                ),
-
-                apiFetch(
-                    "/quantum",
-                    {
-                        method:
-                            "POST",
-
-                        body:
-                            JSON.stringify({
-                                symptoms:
-                                    symptoms
-                            })
-                    }
-                )
-            ]);
-
-
-        /* RANDOM FOREST */
-
-        if (
-            rfResult.status ===
-            "fulfilled"
-        ) {
-
-            renderRandomForest(
-                rfResult.value
+                    body: JSON.stringify({
+                        symptoms:
+                            selectedSymptoms
+                    })
+                }
             );
 
-        } else {
 
-            console.error(
-                "Random Forest error:",
-                rfResult.reason
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Prediction failed."
             );
 
-            showRFError(
-                rfResult.reason
-            );
         }
 
 
-        /* QISKIT */
+        lastPrediction =
+            data;
 
-        if (
-            quantumResult.status ===
-            "fulfilled"
-        ) {
+        lastPredictionTime =
+            predictionDate;
 
-            renderQuantum(
-                quantumResult.value
-            );
-
-        } else {
-
-            console.error(
-                "Qiskit error:",
-                quantumResult.reason
-            );
-
-            showQuantumError(
-                quantumResult.reason
-            );
-        }
+        lastSelectedSymptoms =
+            [...selectedSymptoms];
 
 
-        /* SAVE RESULT */
-
-        if (
-            rfResult.status ===
-            "fulfilled"
-        ) {
-
-            const rf =
-                rfResult.value;
-
-            const quantum =
-                quantumResult.status ===
-                "fulfilled"
-                    ? quantumResult.value
-                    : null;
+        displayPrediction(
+            data,
+            predictionDate
+        );
 
 
-            const now =
-                new Date();
+        await savePrediction(
+            selectedSymptoms,
+            data,
+            predictionDate
+        );
 
 
-            latestPrediction = {
-
-                disease:
-                    rf.disease,
-
-                confidence:
-                    rf.confidence,
-
-                topPredictions:
-                    rf.top_predictions ||
-                    [],
-
-                symptoms:
-                    symptoms,
-
-                quantumScore:
-                    quantum
-                        ? quantum.quantum_score
-                        : null,
-
-                quantumQubits:
-                    quantum
-                        ? quantum.qubits
-                        : null,
-
-                quantumDepth:
-                    quantum
-                        ? quantum.circuit_depth
-                        : null,
-
-                specialty:
-                    rf.specialty ||
-                    rf.recommended_specialty ||
-                    "",
-
-                doctors:
-                    rf.doctors ||
-                    rf.recommended_doctors ||
-                    [],
-
-                date:
-                    now.toLocaleString(
-                        "en-IN",
-                        {
-                            dateStyle:
-                                "medium",
-                            timeStyle:
-                                "medium"
-                        }
-                    ),
-
-                timestamp:
-                    now.toISOString()
-            };
+        updateDashboardAfterPrediction(
+            data,
+            predictionDate
+        );
 
 
-            saveHistoryItem(
-                latestPrediction
-            );
+        if (result) {
 
+            result.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
 
-            updateDashboard(
-                latestPrediction
-            );
-
-
-            updateComparison(
-                latestPrediction
-            );
-
-
-            addReportButton();
-
-
-            if ($("predictionDateTime")) {
-
-                $("predictionDateTime")
-                    .textContent =
-                    "Prediction Date & Time: " +
-                    latestPrediction.date;
-            }
         }
 
 
@@ -1278,1031 +1513,1548 @@ async function analyzeSymptoms() {
         );
 
         alert(
-            "Unable to complete prediction. Please try again."
+            "Prediction failed: " +
+            error.message
         );
 
     } finally {
 
-        if (button) {
+        if (predictBtn) {
 
-            button.disabled = false;
+            predictBtn.disabled = false;
 
-            button.textContent =
+            predictBtn.textContent =
                 "Analyze Symptoms";
+
         }
+
     }
+
 }
 
 
-/* =========================================================
-   RANDOM FOREST RESULT
-   ========================================================= */
+// ============================================================
+// DISPLAY PREDICTION
+// ============================================================
 
-function renderRandomForest(data) {
+function displayPrediction(
+    data,
+    predictionDate
+) {
 
-    if ($("disease")) {
+    if (result) {
 
-        $("disease").textContent =
-            formatDisease(
-                data.disease
-            );
+        result.classList.remove(
+            "hidden"
+        );
+
+    }
+
+
+    if (disease) {
+
+        disease.textContent =
+            data.disease ||
+            data.rf_disease ||
+            "Unknown";
+
     }
 
 
     const confidence =
         Number(
-            data.confidence || 0
+            data.confidence ??
+            data.rf_confidence ??
+            0
         );
 
 
-    if ($("confidenceText")) {
+    if (confidenceText) {
 
-        $("confidenceText").textContent =
-            confidence.toFixed(2) +
-            "%";
+        confidenceText.textContent =
+            confidence + "%";
+
     }
 
 
-    if ($("confidenceBar")) {
+    if (confidenceBar) {
 
-        $("confidenceBar").style.width =
-            Math.min(
-                Math.max(
-                    confidence,
-                    0
-                ),
-                100
-            ) +
-            "%";
-    }
-
-
-    const predictions =
-        Array.isArray(
-            data.top_predictions
-        )
-            ? data.top_predictions
-            : [];
-
-
-    if ($("topPredictions")) {
-
-        $("topPredictions").innerHTML =
-            predictions
-                .map(
-                    (item, index) => {
-
-                        const score =
-                            Number(
-                                item.confidence ||
-                                0
-                            );
-
-
-                        return `
-                            <div class="prediction-row">
-                                <span class="prediction-rank">
-                                    ${index + 1}
-                                </span>
-
-                                <span class="prediction-name">
-                                    ${escapeHTML(
-                                        formatDisease(
-                                            item.disease
-                                        )
-                                    )}
-                                </span>
-
-                                <span class="prediction-score">
-                                    ${score.toFixed(2)}%
-                                </span>
-                            </div>
-                        `;
-                    }
+        confidenceBar.style.width =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    confidence
                 )
-                .join("");
+            ) + "%";
+
     }
 
 
-    if ($("message")) {
-
-        $("message").textContent =
-            data.message ||
-            "Random Forest analysis completed.";
-    }
-
-
-    renderDoctors(
-        data.doctors ||
-        data.recommended_doctors ||
-        [],
-        data.specialty ||
-        data.recommended_specialty ||
-        ""
+    showPredictionDateTime(
+        predictionDate
     );
+
+
+    displayTopPredictions(
+        data.top_predictions
+    );
+
+
+    if (message) {
+
+        message.textContent =
+            data.message ||
+            "Educational symptom-analysis result. This is not a medical diagnosis.";
+
+    }
+
+
+    displayQuantumResult(
+        data
+    );
+
+
+    displayDoctorRecommendation(
+        data
+    );
+
+
+    addReportButton();
+
+
+    updateComparison(
+        data
+    );
+
 }
 
 
-/* =========================================================
-   QISKIT RESULT
-   ========================================================= */
+// ============================================================
+// TOP 5 PREDICTIONS
+// ============================================================
 
-function renderQuantum(data) {
+function displayTopPredictions(
+    predictions
+) {
+
+    if (!topPredictions) return;
+
+
+    topPredictions.innerHTML =
+        "";
+
+
+    if (
+        !Array.isArray(predictions) ||
+        predictions.length === 0
+    ) {
+
+        topPredictions.textContent =
+            "No additional predictions available.";
+
+        return;
+
+    }
+
+
+    predictions.forEach(
+        function (item, index) {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "prediction-item";
+
+
+            const name =
+                document.createElement(
+                    "span"
+                );
+
+
+            name.textContent =
+                `${index + 1}. ${
+                    item.disease ||
+                    "Unknown"
+                }`;
+
+
+            const score =
+                document.createElement(
+                    "strong"
+                );
+
+
+            score.textContent =
+                `${
+                    Number(
+                        item.confidence || 0
+                    )
+                }%`;
+
+
+            row.appendChild(name);
+
+            row.appendChild(score);
+
+
+            topPredictions.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// QISKIT RESULT
+// ============================================================
+
+function displayQuantumResult(
+    data
+) {
 
     const score =
         Number(
-            data.quantum_score || 0
+            data.quantum_score ??
+            data.qiskit_score ??
+            0
         );
 
 
-    if ($("quantumScore")) {
+    const quantumText =
+        document.getElementById(
+            "quantumScore"
+        );
 
-        $("quantumScore").textContent =
-            score.toFixed(2) +
-            "%";
+
+    const quantumScoreText =
+        document.getElementById(
+            "quantumScoreText"
+        );
+
+
+    const quantumScoreBar =
+        document.getElementById(
+            "quantumScoreBar"
+        );
+
+
+    const quantumQubits =
+        document.getElementById(
+            "quantumQubits"
+        );
+
+
+    const quantumDepth =
+        document.getElementById(
+            "quantumDepth"
+        );
+
+
+    const quantumInterpretation =
+        document.getElementById(
+            "quantumInterpretation"
+        );
+
+
+    if (quantumText) {
+
+        quantumText.textContent =
+            score + "%";
+
     }
 
 
-    if ($("quantumScoreText")) {
+    if (quantumScoreText) {
 
-        $("quantumScoreText").textContent =
-            score.toFixed(2) +
-            "%";
+        quantumScoreText.textContent =
+            score + "%";
+
     }
 
 
-    if ($("quantumScoreBar")) {
+    if (quantumScoreBar) {
 
-        $("quantumScoreBar").style.width =
-            Math.min(
-                Math.max(score, 0),
-                100
-            ) +
-            "%";
+        quantumScoreBar.style.width =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    score
+                )
+            ) + "%";
+
     }
 
 
-    if ($("quantumQubits")) {
+    if (quantumQubits) {
 
-        $("quantumQubits").textContent =
-            data.qubits ??
+        quantumQubits.textContent =
+            data.qiskit_qubits ??
             "—";
+
     }
 
 
-    if ($("quantumDepth")) {
+    if (quantumDepth) {
 
-        $("quantumDepth").textContent =
-            data.circuit_depth ??
+        quantumDepth.textContent =
+            data.qiskit_depth ??
             "—";
+
     }
 
 
-    if ($("quantumInterpretation")) {
+    if (quantumInterpretation) {
 
-        $("quantumInterpretation").textContent =
-            data.interpretation ||
-            "Experimental Qiskit analysis completed.";
+        quantumInterpretation.textContent =
+            data.quantum_message ||
+            data.message ||
+            "Experimental Qiskit result.";
+
     }
 
 
-    /*
-     * Fallback for your current HTML
-     * where quantumResult is used as
-     * the main Qiskit output container.
-     */
+    if (quantumResult) {
 
-    if (
-        $("quantumResult") &&
-        !$("quantumScore")
-    ) {
+        quantumResult.innerHTML = `
 
-        $("quantumResult").innerHTML = `
+            <p>
+                <strong>Qubits used:</strong>
+                ${data.qiskit_qubits ?? "—"}
+            </p>
 
-            <div class="quantum-summary">
+            <p>
+                <strong>Circuit depth:</strong>
+                ${data.qiskit_depth ?? "—"}
+            </p>
 
-                <strong>
-                    Qiskit Experimental Score:
-                </strong>
+            <p>
+                <strong>Quantum score:</strong>
+                ${score}%
+            </p>
 
-                ${score.toFixed(2)}%
+            <p>
+                ${
+                    data.quantum_message ||
+                    "Experimental Qiskit score."
+                }
+            </p>
 
-                <br><br>
-
-                <strong>
-                    Qubits:
-                </strong>
-
-                ${data.qubits ?? "—"}
-
-                <br>
-
-                <strong>
-                    Circuit Depth:
-                </strong>
-
-                ${data.circuit_depth ?? "—"}
-
-                <br><br>
-
-                <span>
-                    ${escapeHTML(
-                        data.interpretation ||
-                        "Experimental Qiskit analysis completed."
-                    )}
-                </span>
-
-            </div>
         `;
+
     }
+
 }
 
 
-/* =========================================================
-   ERROR STATES
-   ========================================================= */
+// ============================================================
+// DOCTOR RECOMMENDATION
+// ============================================================
 
-function showRFError(error) {
-
-    if ($("disease")) {
-
-        $("disease").textContent =
-            "Random Forest unavailable";
-    }
-
-    if ($("confidenceText")) {
-
-        $("confidenceText").textContent =
-            "—";
-    }
-
-    if ($("confidenceBar")) {
-
-        $("confidenceBar").style.width =
-            "0%";
-    }
-
-    if ($("topPredictions")) {
-
-        $("topPredictions").innerHTML = `
-
-            <div class="prediction-row">
-
-                <span>⚠</span>
-
-                <span class="prediction-name">
-
-                    ${escapeHTML(
-                        error?.message ||
-                        "Prediction failed."
-                    )}
-
-                </span>
-
-            </div>
-        `;
-    }
-}
-
-
-function showQuantumError(error) {
-
-    if ($("quantumScore")) {
-
-        $("quantumScore").textContent =
-            "Unavailable";
-    }
-
-    if ($("quantumScoreText")) {
-
-        $("quantumScoreText").textContent =
-            "—";
-    }
-
-    if ($("quantumScoreBar")) {
-
-        $("quantumScoreBar").style.width =
-            "0%";
-    }
-
-    if ($("quantumInterpretation")) {
-
-        $("quantumInterpretation").textContent =
-            "Qiskit could not run. " +
-            (
-                error?.message ||
-                "Unknown error."
-            );
-    }
-
-    if (
-        $("quantumResult") &&
-        !$("quantumScore")
-    ) {
-
-        $("quantumResult").textContent =
-            "Qiskit unavailable: " +
-            (
-                error?.message ||
-                "Unknown error."
-            );
-    }
-}
-
-
-/* =========================================================
-   DOCTOR RECOMMENDATION
-   ========================================================= */
-
-function renderDoctors(
-    doctors,
-    specialty
+function displayDoctorRecommendation(
+    data
 ) {
 
-    if ($("specialistBox")) {
-
-        if (specialty) {
-
-            $("specialistBox").innerHTML = `
-
-                <strong>
-                    Recommended specialty:
-                </strong>
-
-                ${escapeHTML(
-                    specialty
-                )}
-            `;
-
-        } else {
-
-            $("specialistBox").innerHTML =
-                "";
-        }
-    }
-
-
-    const list =
-        Array.isArray(doctors)
-            ? doctors
+    const doctors =
+        Array.isArray(data.doctors)
+            ? data.doctors
             : [];
 
 
-    if ($("recommendedDoctors")) {
+    let container =
+        document.getElementById(
+            "recommendedDoctors"
+        );
 
-        $("recommendedDoctors").innerHTML =
-            list
-                .slice(0, 3)
-                .map(
-                    doctor =>
-                        doctorCard(
-                            doctor
-                        )
-                )
-                .join("");
+
+    if (!container && result) {
+
+        container =
+            document.createElement(
+                "div"
+            );
+
+        container.id =
+            "recommendedDoctors";
+
+        container.className =
+            "doctor-list";
+
+
+        result.appendChild(
+            container
+        );
+
     }
+
+
+    if (!container) return;
+
+
+    container.innerHTML =
+        "";
+
+
+    const specialty =
+        data.specialty ||
+        "Specialist";
+
+
+    const heading =
+        document.createElement(
+            "h4"
+        );
+
+
+    heading.textContent =
+        "Recommended: " +
+        specialty;
+
+
+    container.appendChild(
+        heading
+    );
+
+
+    if (doctors.length === 0) {
+
+        const text =
+            document.createElement(
+                "p"
+            );
+
+        text.textContent =
+            "No specific doctor information available.";
+
+        container.appendChild(
+            text
+        );
+
+        return;
+
+    }
+
+
+    doctors.forEach(
+        function (doctor) {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "doctor-card";
+
+
+            const name =
+                document.createElement(
+                    "h4"
+                );
+
+
+            name.textContent =
+                doctor.name ||
+                "Doctor";
+
+
+            const specialization =
+                document.createElement(
+                    "p"
+                );
+
+
+            specialization.textContent =
+                doctor.specialization ||
+                specialty;
+
+
+            const hospital =
+                document.createElement(
+                    "p"
+                );
+
+
+            hospital.textContent =
+                doctor.hospital
+                    ? `${doctor.hospital}${
+                        doctor.location
+                            ? ", " +
+                              doctor.location
+                            : ""
+                    }`
+                    : "";
+
+
+            const experience =
+                document.createElement(
+                    "p"
+                );
+
+
+            if (doctor.experience) {
+
+                experience.textContent =
+                    "Experience: " +
+                    doctor.experience;
+
+            }
+
+
+            card.appendChild(name);
+
+            card.appendChild(
+                specialization
+            );
+
+            if (hospital.textContent) {
+
+                card.appendChild(
+                    hospital
+                );
+
+            }
+
+
+            if (experience.textContent) {
+
+                card.appendChild(
+                    experience
+                );
+
+            }
+
+
+            container.appendChild(
+                card
+            );
+
+        }
+    );
+
 }
 
 
-function doctorCard(doctor) {
+// ============================================================
+// SAVE PREDICTION TO FIRESTORE
+// ============================================================
 
-    return `
+async function savePrediction(
+    selectedSymptoms,
+    data,
+    predictionDate
+) {
 
-        <div class="doctor-card">
-
-            <h4>
-                ${escapeHTML(
-                    doctor.name ||
-                    "Doctor"
-                )}
-            </h4>
-
-            <p>
-                <strong>
-                    ${escapeHTML(
-                        doctor.specialization ||
-                        ""
-                    )}
-                </strong>
-            </p>
-
-            <p>
-                ${escapeHTML(
-                    doctor.hospital ||
-                    ""
-                )}
-            </p>
-
-            <p>
-                ${escapeHTML(
-                    doctor.location ||
-                    ""
-                )}
-            </p>
-
-            <p>
-                Experience:
-                ${escapeHTML(
-                    doctor.experience ||
-                    "—"
-                )}
-            </p>
-
-        </div>
-    `;
-}
+    const user =
+        auth.currentUser;
 
 
-/* =========================================================
-   LOAD DOCTORS
-   ========================================================= */
+    if (!user) return;
 
-async function loadDoctors() {
+
+    const predictionData = {
+
+        userId:
+            user.uid,
+
+        userEmail:
+            user.email || null,
+
+        symptoms:
+            selectedSymptoms,
+
+        disease:
+            data.disease ||
+            data.rf_disease ||
+            null,
+
+        confidence:
+            data.confidence ??
+            data.rf_confidence ??
+            0,
+
+        rfConfidence:
+            data.rf_confidence ??
+            data.confidence ??
+            0,
+
+        qiskitScore:
+            data.qiskit_score ??
+            data.quantum_score ??
+            0,
+
+        qiskitQubits:
+            data.qiskit_qubits ??
+            null,
+
+        qiskitDepth:
+            data.qiskit_depth ??
+            null,
+
+        modelAgreement:
+            data.model_agreement ||
+            null,
+
+        specialty:
+            data.specialty ||
+            null,
+
+        topPredictions:
+            data.top_predictions ||
+            [],
+
+        createdAt:
+            serverTimestamp(),
+
+        predictionDate:
+            predictionDate.toISOString()
+
+    };
+
 
     try {
 
-        const data =
-            await apiFetch(
-                "/doctors"
-            );
+        await addDoc(
+            collection(
+                db,
+                "predictions"
+            ),
+            predictionData
+        );
 
 
-        const doctors =
-            data.doctors ||
-            [];
+        console.log(
+            "Prediction saved to Firestore."
+        );
 
-
-        if ($("doctorList")) {
-
-            $("doctorList").innerHTML =
-                doctors
-                    .map(
-                        doctor =>
-                            doctorCard(
-                                doctor
-                            )
-                    )
-                    .join("");
-        }
 
     } catch (error) {
 
         console.error(
-            "Doctor loading error:",
+            "Firestore save error:",
             error
         );
 
-        if ($("doctorList")) {
-
-            $("doctorList").innerHTML =
-                "<p>Unable to load doctors.</p>";
-        }
     }
+
 }
 
 
-/* =========================================================
-   HISTORY
-   ========================================================= */
+// ============================================================
+// HISTORY
+// ============================================================
 
-function historyKey() {
+async function loadHistory() {
 
-    if (!currentUser) {
-        return null;
-    }
-
-    return (
-        "quantumdiagnose_history_" +
-        currentUser.uid
-    );
-}
+    const user =
+        auth.currentUser;
 
 
-function loadHistory() {
-
-    const key =
-        historyKey();
-
-    if (!key) {
-        return;
-    }
-
-
-    const saved =
-        localStorage.getItem(key);
-
-
-    if (!saved) {
-
-        predictionHistory = [];
-
-        renderHistory();
+    if (
+        !user ||
+        !historyList
+    ) {
 
         return;
+
     }
 
 
     try {
 
-        predictionHistory =
-            JSON.parse(saved);
+        const q =
+            query(
+                collection(
+                    db,
+                    "predictions"
+                ),
+
+                where(
+                    "userId",
+                    "==",
+                    user.uid
+                ),
+
+                orderBy(
+                    "createdAt",
+                    "desc"
+                ),
+
+                limit(20)
+            );
+
+
+        const snapshot =
+            await getDocs(q);
+
+
+        if (snapshot.empty) {
+
+            historyList.innerHTML =
+                '<p class="muted">No predictions yet.</p>';
+
+            if (predictionCount) {
+
+                predictionCount.textContent =
+                    "0";
+
+            }
+
+            return;
+
+        }
+
+
+        historyList.innerHTML =
+            "";
+
+
+        let items = 0;
+
+
+        snapshot.forEach(
+            function (docSnap) {
+
+                const entry =
+                    docSnap.data();
+
+
+                items++;
+
+
+                const item =
+                    createHistoryItem(
+                        entry
+                    );
+
+
+                historyList.appendChild(
+                    item
+                );
+
+            }
+        );
+
+
+        if (predictionCount) {
+
+            predictionCount.textContent =
+                String(items);
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "History load error:",
+            error
+        );
+
+
+        /*
+         * Firestore may require an index for
+         * where + orderBy.
+         *
+         * Fall back to a simpler query.
+         */
+
+        try {
+
+            const fallbackQuery =
+                query(
+                    collection(
+                        db,
+                        "predictions"
+                    ),
+
+                    where(
+                        "userId",
+                        "==",
+                        auth.currentUser.uid
+                    ),
+
+                    limit(20)
+                );
+
+
+            const fallbackSnapshot =
+                await getDocs(
+                    fallbackQuery
+                );
+
+
+            if (
+                fallbackSnapshot.empty
+            ) {
+
+                historyList.innerHTML =
+                    '<p class="muted">No predictions yet.</p>';
+
+                return;
+
+            }
+
+
+            const records = [];
+
+
+            fallbackSnapshot.forEach(
+                function (docSnap) {
+
+                    records.push(
+                        docSnap.data()
+                    );
+
+                }
+            );
+
+
+            records.sort(
+                function (a, b) {
+
+                    return (
+                        getEntryDate(b) -
+                        getEntryDate(a)
+                    );
+
+                }
+            );
+
+
+            historyList.innerHTML =
+                "";
+
+
+            records.forEach(
+                function (entry) {
+
+                    historyList.appendChild(
+                        createHistoryItem(
+                            entry
+                        )
+                    );
+
+                }
+            );
+
+
+            if (predictionCount) {
+
+                predictionCount.textContent =
+                    String(records.length);
+
+            }
+
+
+        } catch (fallbackError) {
+
+            console.error(
+                "History fallback error:",
+                fallbackError
+            );
+
+
+            historyList.innerHTML =
+                '<p class="muted">Could not load prediction history.</p>';
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// HISTORY DATE
+// ============================================================
+
+function getEntryDate(entry) {
+
+    if (
+        entry.predictionDate
+    ) {
+
+        const date =
+            new Date(
+                entry.predictionDate
+            );
+
 
         if (
-            !Array.isArray(
-                predictionHistory
+            !Number.isNaN(
+                date.getTime()
             )
         ) {
 
-            predictionHistory = [];
+            return date;
+
         }
 
-    } catch {
-
-        predictionHistory = [];
-    }
-
-
-    renderHistory();
-
-    updateDashboardStats();
-}
-
-
-function saveHistoryItem(item) {
-
-    predictionHistory.unshift(
-        item
-    );
-
-
-    predictionHistory =
-        predictionHistory.slice(
-            0,
-            20
-        );
-
-
-    const key =
-        historyKey();
-
-
-    if (key) {
-
-        localStorage.setItem(
-            key,
-            JSON.stringify(
-                predictionHistory
-            )
-        );
-    }
-
-
-    renderHistory();
-
-    updateDashboardStats();
-}
-
-
-function renderHistory() {
-
-    const container =
-        $("historyList");
-
-    if (!container) {
-        return;
     }
 
 
     if (
-        predictionHistory.length ===
-        0
+        entry.createdAt &&
+        typeof entry.createdAt.toDate ===
+            "function"
     ) {
 
-        container.innerHTML = `
+        return entry.createdAt.toDate();
 
-            <p class="muted">
-                No predictions yet.
-            </p>
-        `;
-
-        return;
     }
 
 
-    container.innerHTML =
-        predictionHistory
-            .map(
-                item => `
+    return new Date();
 
-                    <div class="history-item">
-
-                        <div class="history-item-top">
-
-                            <strong>
-                                ${escapeHTML(
-                                    formatDisease(
-                                        item.disease
-                                    )
-                                )}
-                            </strong>
-
-                            <span class="history-meta">
-
-                                ${escapeHTML(
-                                    item.date ||
-                                    formatDate(
-                                        item.timestamp
-                                    )
-                                )}
-
-                            </span>
-
-                        </div>
+}
 
 
-                        <div class="history-symptoms">
+// ============================================================
+// CREATE HISTORY ITEM
+// ============================================================
 
-                            Symptoms:
+function createHistoryItem(
+    entry
+) {
 
-                            ${escapeHTML(
-                                (
-                                    item.symptoms ||
-                                    []
-                                )
-                                    .map(
-                                        formatDisease
-                                    )
-                                    .join(", ")
-                            )}
-
-                        </div>
+    const div =
+        document.createElement(
+            "div"
+        );
 
 
-                        <div class="history-symptoms">
-
-                            Random Forest:
-
-                            <strong>
-                                ${Number(
-                                    item.confidence ||
-                                    0
-                                ).toFixed(2)}%
-                            </strong>
-
-                            &nbsp; | &nbsp;
-
-                            Qiskit:
-
-                            <strong>
-
-                                ${
-                                    item.quantumScore !==
-                                        null &&
-                                    item.quantumScore !==
-                                        undefined
-
-                                        ? Number(
-                                            item.quantumScore
-                                          ).toFixed(2) +
-                                          "%"
-
-                                        : "Unavailable"
-                                }
-
-                            </strong>
-
-                        </div>
+    div.className =
+        "history-item";
 
 
-                        <div class="history-actions">
+    const date =
+        getEntryDate(entry);
 
-                            <button
-                                class="secondary history-report-btn"
-                                data-history-index="${predictionHistory.indexOf(item)}"
-                            >
-                                Download Report
-                            </button>
 
-                        </div>
+    const diseaseName =
+        entry.disease ||
+        "Unknown";
+
+
+    const confidence =
+        Number(
+            entry.confidence || 0
+        );
+
+
+    const top =
+        Array.isArray(
+            entry.topPredictions
+        )
+            ? entry.topPredictions
+            : [];
+
+
+    div.innerHTML = `
+
+        <div class="history-item-top">
+
+            <div>
+
+                <h3>
+                    ${escapeHtml(
+                        diseaseName
+                    )}
+                </h3>
+
+                <div class="history-date-time">
+
+                    Prediction date & time:
+                    ${escapeHtml(
+                        formatDateTime(date)
+                    )}
+
+                </div>
+
+            </div>
+
+            <strong>
+                ${confidence}%
+            </strong>
+
+        </div>
+
+
+        <div class="history-symptoms">
+
+            <strong>
+                Symptoms:
+            </strong>
+
+            ${escapeHtml(
+                (
+                    entry.symptoms || []
+                ).join(", ")
+            )}
+
+        </div>
+
+
+        ${
+            top.length
+                ? `
+                    <div class="history-symptoms">
+
+                        <strong>
+                            Top prediction:
+                        </strong>
+
+                        ${escapeHtml(
+                            top[0].disease ||
+                            ""
+                        )}
+                        -
+                        ${Number(
+                            top[0].confidence || 0
+                        )}%
 
                     </div>
-
-                `
-            )
-            .join("");
-
-
-    document
-        .querySelectorAll(
-            ".history-report-btn"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const index =
-                        Number(
-                            button.dataset
-                                .historyIndex
-                        );
-
-                    const item =
-                        predictionHistory[
-                            index
-                        ];
-
-                    if (item) {
-                        downloadReport(
-                            item
-                        );
-                    }
-                }
-            );
-        });
-}
-
-
-/* =========================================================
-   DASHBOARD
-   ========================================================= */
-
-function updateDashboard(item) {
-
-    if ($("latestDisease")) {
-
-        $("latestDisease").textContent =
-            formatDisease(
-                item.disease
-            );
-    }
-
-
-    if ($("dashboardLatest")) {
-
-        $("dashboardLatest").innerHTML = `
-
-            <p>
-
-                <strong>
-                    ${escapeHTML(
-                        formatDisease(
-                            item.disease
-                        )
-                    )}
-                </strong>
-
-            </p>
-
-            <p>
-                Random Forest:
-                <strong>
-                    ${Number(
-                        item.confidence ||
-                        0
-                    ).toFixed(2)}%
-                </strong>
-            </p>
-
-            <p>
-                Qiskit:
-                <strong>
-
-                    ${
-                        item.quantumScore !==
-                            null &&
-                        item.quantumScore !==
-                            undefined
-
-                            ? Number(
-                                item.quantumScore
-                              ).toFixed(2) +
-                              "%"
-
-                            : "Unavailable"
-                    }
-
-                </strong>
-            </p>
-
-            <p>
-                Date & Time:
-                <strong>
-                    ${escapeHTML(
-                        item.date ||
-                        ""
-                    )}
-                </strong>
-            </p>
-        `;
-    }
-}
-
-
-function updateDashboardStats() {
-
-    if ($("predictionCount")) {
-
-        $("predictionCount").textContent =
-            predictionHistory.length;
-    }
-
-
-    if (
-        predictionHistory.length >
-        0
-    ) {
-
-        const latest =
-            predictionHistory[0];
-
-
-        if ($("latestDisease")) {
-
-            $("latestDisease").textContent =
-                formatDisease(
-                    latest.disease
-                );
+                  `
+                : ""
         }
-    }
+
+    `;
+
+
+    return div;
+
 }
 
 
-/* =========================================================
-   MODEL COMPARISON
-   ========================================================= */
+// ============================================================
+// DASHBOARD
+// ============================================================
 
-function updateComparison(item) {
+async function loadDashboardStats() {
 
-    const rf =
+    await loadHistory();
+
+}
+
+
+function updateDashboardAfterPrediction(
+    data,
+    date
+) {
+
+    const predictedDisease =
+        data.disease ||
+        data.rf_disease ||
+        "Unknown";
+
+
+    const confidence =
         Number(
-            item.confidence || 0
-        ).toFixed(2) +
-        "%";
+            data.confidence ??
+            data.rf_confidence ??
+            0
+        );
 
 
-    const quantum =
-        item.quantumScore !== null &&
-        item.quantumScore !== undefined
+    if (latestDisease) {
 
-            ? Number(
-                item.quantumScore
-              ).toFixed(2) +
-              "%"
+        latestDisease.textContent =
+            predictedDisease;
 
-            : "Unavailable";
-
-
-    if ($("comparisonRF")) {
-
-        $("comparisonRF").textContent =
-            rf;
     }
 
 
-    if ($("comparisonQuantum")) {
+    if (dashboardLatest) {
 
-        $("comparisonQuantum").textContent =
-            quantum;
+        dashboardLatest.innerHTML = `
+
+            <strong>
+                ${escapeHtml(
+                    predictedDisease
+                )}
+            </strong>
+
+            <br>
+
+            Confidence:
+            ${confidence}%
+
+            <br>
+
+            <small>
+                ${escapeHtml(
+                    formatDateTime(date)
+                )}
+            </small>
+
+        `;
+
     }
 
-
-    if ($("comparisonDisease")) {
-
-        $("comparisonDisease").textContent =
-            formatDisease(
-                item.disease
-            );
-    }
-
-
-    /*
-     * Support your current HTML IDs too.
-     */
-
-    if ($("rfAccuracy")) {
-
-        $("rfAccuracy").textContent =
-            rf;
-    }
 }
 
 
-/* =========================================================
-   PERFORMANCE
-   ========================================================= */
+// ============================================================
+// DOCTORS
+// ============================================================
+
+async function loadDoctors() {
+
+    if (!doctorList) return;
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/doctors"
+            );
+
+
+        const data =
+            await response.json();
+
+
+        doctorList.innerHTML =
+            "";
+
+
+        const doctors =
+            Array.isArray(
+                data.doctors
+            )
+                ? data.doctors
+                : [];
+
+
+        if (doctors.length === 0) {
+
+            doctorList.innerHTML =
+                "<p>No doctors available.</p>";
+
+            return;
+
+        }
+
+
+        doctors.forEach(
+            function (doctor) {
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "doctor-card";
+
+
+                const name =
+                    document.createElement(
+                        "h4"
+                    );
+
+
+                name.textContent =
+                    doctor.name ||
+                    "Doctor";
+
+
+                const specialization =
+                    document.createElement(
+                        "p"
+                    );
+
+
+                specialization.textContent =
+                    doctor.specialization ||
+                    "";
+
+
+                const hospital =
+                    document.createElement(
+                        "p"
+                    );
+
+
+                hospital.textContent =
+                    doctor.hospital
+                        ? `${doctor.hospital}${
+                            doctor.location
+                                ? ", " +
+                                  doctor.location
+                                : ""
+                        }`
+                        : "";
+
+
+                const experience =
+                    document.createElement(
+                        "p"
+                    );
+
+
+                experience.textContent =
+                    doctor.experience
+                        ? "Experience: " +
+                          doctor.experience
+                        : "";
+
+
+                card.appendChild(name);
+
+                card.appendChild(
+                    specialization
+                );
+
+                if (hospital.textContent) {
+
+                    card.appendChild(
+                        hospital
+                    );
+
+                }
+
+
+                if (experience.textContent) {
+
+                    card.appendChild(
+                        experience
+                    );
+
+                }
+
+
+                doctorList.appendChild(
+                    card
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Doctors load error:",
+            error
+        );
+
+
+        doctorList.innerHTML =
+            "<p>Could not load doctors.</p>";
+
+    }
+
+}
+
+
+// ============================================================
+// PERFORMANCE
+// ============================================================
 
 async function loadPerformance() {
 
     try {
 
-        const data =
-            await apiFetch(
+        const response =
+            await fetch(
                 "/performance"
             );
 
 
-        if ($("metricAccuracy")) {
+        const data =
+            await response.json();
 
-            $("metricAccuracy").textContent =
-                Number(
-                    data.accuracy || 0
-                ).toFixed(2) +
-                "%";
+
+        if (metricAccuracy) {
+
+            metricAccuracy.textContent =
+                `${data.accuracy ?? 0}%`;
+
         }
 
 
-        if ($("metricPrecision")) {
+        if (metricPrecision) {
 
-            $("metricPrecision").textContent =
-                Number(
-                    data.precision || 0
-                ).toFixed(2) +
-                "%";
+            metricPrecision.textContent =
+                `${data.precision ?? 0}%`;
+
         }
 
 
-        if ($("metricRecall")) {
+        if (metricRecall) {
 
-            $("metricRecall").textContent =
-                Number(
-                    data.recall || 0
-                ).toFixed(2) +
-                "%";
+            metricRecall.textContent =
+                `${data.recall ?? 0}%`;
+
         }
 
 
-        if ($("metricF1")) {
+        if (metricF1) {
 
-            $("metricF1").textContent =
-                Number(
-                    data.f1 || 0
-                ).toFixed(2) +
-                "%";
+            metricF1.textContent =
+                `${data.f1 ?? 0}%`;
+
         }
 
 
-        if ($("trainingSamples")) {
+        if (trainingSamples) {
 
-            $("trainingSamples").textContent =
+            trainingSamples.textContent =
                 data.training_samples ??
                 "—";
+
         }
 
 
-        if ($("testingSamples")) {
+        if (testingSamples) {
 
-            $("testingSamples").textContent =
+            testingSamples.textContent =
                 data.testing_samples ??
                 "—";
+
         }
 
 
-        if ($("symptomTotal")) {
+        if (symptomTotal) {
 
-            $("symptomTotal").textContent =
+            symptomTotal.textContent =
                 data.number_of_symptoms ??
                 "—";
+
         }
 
 
-        if ($("diseaseTotal")) {
+        if (diseaseTotal) {
 
-            $("diseaseTotal").textContent =
+            diseaseTotal.textContent =
                 data.number_of_diseases ??
                 "—";
+
         }
+
 
     } catch (error) {
 
         console.error(
-            "Performance loading error:",
+            "Performance load error:",
             error
         );
+
     }
+
 }
 
 
-/* =========================================================
-   PDF REPORT
-   ========================================================= */
+// ============================================================
+// QUANTUM PAGE BUTTON
+// ============================================================
+
+if (quantumBtn) {
+
+    quantumBtn.addEventListener(
+        "click",
+        async function () {
+
+            const selectedSymptoms =
+                getSelectedSymptoms();
+
+
+            if (
+                selectedSymptoms.length ===
+                0
+            ) {
+
+                alert(
+                    "Please select symptoms on the Prediction page first."
+                );
+
+                return;
+
+            }
+
+
+            quantumBtn.disabled =
+                true;
+
+
+            quantumBtn.textContent =
+                "Running...";
+
+
+            try {
+
+                /*
+                 * The current backend performs
+                 * Qiskit analysis as part of
+                 * /predict, so call /predict
+                 * here as well.
+                 */
+
+                const response =
+                    await fetch(
+                        "/predict",
+                        {
+                            method:
+                                "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    symptoms:
+                                        selectedSymptoms
+                                })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Quantum analysis failed."
+                    );
+
+                }
+
+
+                displayQuantumResult(
+                    data
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Quantum error:",
+                    error
+                );
+
+
+                if (quantumResult) {
+
+                    quantumResult.textContent =
+                        "Quantum analysis failed: " +
+                        error.message;
+
+                }
+
+            } finally {
+
+                quantumBtn.disabled =
+                    false;
+
+                quantumBtn.textContent =
+                    "Run Quantum Analysis";
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// MODEL COMPARISON
+// ============================================================
+
+function updateComparison(data) {
+
+    const comparisonRF =
+        document.getElementById(
+            "comparisonRF"
+        );
+
+
+    const comparisonQuantum =
+        document.getElementById(
+            "comparisonQuantum"
+        );
+
+
+    const comparisonDisease =
+        document.getElementById(
+            "comparisonDisease"
+        );
+
+
+    if (comparisonRF) {
+
+        comparisonRF.textContent =
+            `${Number(
+                data.rf_confidence ??
+                data.confidence ??
+                0
+            )}%`;
+
+    }
+
+
+    if (comparisonQuantum) {
+
+        comparisonQuantum.textContent =
+            `${Number(
+                data.qiskit_score ??
+                data.quantum_score ??
+                0
+            )}%`;
+
+    }
+
+
+    if (comparisonDisease) {
+
+        comparisonDisease.textContent =
+            data.disease ||
+            data.rf_disease ||
+            "—";
+
+    }
+
+}
+
+
+// ============================================================
+// DOWNLOAD REPORT PDF
+// ============================================================
 
 function addReportButton() {
 
-    if (!$("result")) {
-        return;
-    }
+    if (!result) return;
 
 
-    if (
-        $("downloadReportBtn")
-    ) {
-        return;
-    }
+    let button =
+        document.getElementById(
+            "downloadReportBtn"
+        );
 
 
-    const button =
+    if (button) return;
+
+
+    button =
         document.createElement(
             "button"
         );
@@ -2311,662 +3063,635 @@ function addReportButton() {
     button.id =
         "downloadReportBtn";
 
+
     button.className =
-        "primary";
+        "primary download-report";
+
+
+    button.type =
+        "button";
+
 
     button.textContent =
         "Download Report PDF";
 
 
-    button.style.marginTop =
-        "20px";
-
-
     button.addEventListener(
         "click",
-        () => {
-
-            if (latestPrediction) {
-
-                downloadReport(
-                    latestPrediction
-                );
-            }
-        }
+        downloadReportPDF
     );
 
 
-    $("result").appendChild(
+    result.appendChild(
         button
     );
+
 }
 
 
-function downloadReport(item) {
+// ============================================================
+// PDF REPORT
+// ============================================================
 
-    const patient =
-        getPatientProfile() ||
-        {};
+async function downloadReportPDF() {
 
-
-    const symptoms =
-        (item.symptoms || [])
-            .map(
-                formatDisease
-            )
-            .join(", ");
-
-
-    const disease =
-        formatDisease(
-            item.disease
-        );
-
-
-    const rfConfidence =
-        Number(
-            item.confidence || 0
-        ).toFixed(2);
-
-
-    const quantumScore =
-        item.quantumScore !==
-            null &&
-        item.quantumScore !==
-            undefined
-
-            ? Number(
-                item.quantumScore
-              ).toFixed(2) +
-              "%"
-
-            : "Unavailable";
-
-
-    const reportDate =
-        item.date ||
-        formatDate(
-            item.timestamp
-        );
-
-
-    /*
-     * Open a clean report page.
-     * Browser print dialog allows:
-     * Print → Save as PDF
-     */
-
-    const reportWindow =
-        window.open(
-            "",
-            "_blank"
-        );
-
-
-    if (!reportWindow) {
+    if (!lastPrediction) {
 
         alert(
-            "Please allow pop-ups to download the report."
+            "Please make a prediction first."
         );
 
         return;
+
     }
 
 
-    reportWindow.document.write(`
+    const button =
+        document.getElementById(
+            "downloadReportBtn"
+        );
 
-        <!DOCTYPE html>
 
-        <html>
+    if (button) {
 
-        <head>
+        button.disabled =
+            true;
 
-            <title>
-                QuantumDiagnose Report
-            </title>
+        button.textContent =
+            "Preparing PDF...";
 
-            <style>
-
-                body {
-
-                    font-family:
-                        Arial,
-                        Helvetica,
-                        sans-serif;
-
-                    padding:
-                        40px;
-
-                    color:
-                        #182238;
-
-                    line-height:
-                        1.6;
-                }
-
-                h1 {
-
-                    margin-bottom:
-                        5px;
-                }
-
-                h2 {
-
-                    margin-top:
-                        30px;
-                }
-
-                .header {
-
-                    border-bottom:
-                        2px solid #3560f5;
-
-                    padding-bottom:
-                        15px;
-                }
-
-                .box {
-
-                    border:
-                        1px solid #ddd;
-
-                    border-radius:
-                        10px;
-
-                    padding:
-                        18px;
-
-                    margin-top:
-                        15px;
-                }
-
-                .row {
-
-                    margin:
-                        8px 0;
-                }
-
-                .label {
-
-                    font-weight:
-                        bold;
-                }
-
-                .warning {
-
-                    margin-top:
-                        30px;
-
-                    padding:
-                        15px;
-
-                    background:
-                        #f5f7fb;
-
-                    border-radius:
-                        8px;
-
-                    font-size:
-                        13px;
-                }
-
-                .footer {
-
-                    margin-top:
-                        35px;
-
-                    font-size:
-                        12px;
-
-                    color:
-                        #70798a;
-                }
-
-            </style>
-
-        </head>
-
-
-        <body>
-
-            <div class="header">
-
-                <h1>
-                    QuantumDiagnose
-                </h1>
-
-                <div>
-                    AI Health Prediction Report
-                </div>
-
-            </div>
-
-
-            <h2>
-                Patient Information
-            </h2>
-
-            <div class="box">
-
-                <div class="row">
-                    <span class="label">
-                        Name:
-                    </span>
-
-                    ${escapeHTML(
-                        patient.name ||
-                        "Not available"
-                    )}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Gender:
-                    </span>
-
-                    ${escapeHTML(
-                        patient.gender ||
-                        "Not available"
-                    )}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Age:
-                    </span>
-
-                    ${escapeHTML(
-                        patient.age ||
-                        "Not available"
-                    )}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Height:
-                    </span>
-
-                    ${escapeHTML(
-                        patient.height ||
-                        "Not available"
-                    )}
-                    cm
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Weight:
-                    </span>
-
-                    ${escapeHTML(
-                        patient.weight ||
-                        "Not available"
-                    )}
-                    kg
-                </div>
-
-            </div>
-
-
-            <h2>
-                Prediction Details
-            </h2>
-
-            <div class="box">
-
-                <div class="row">
-                    <span class="label">
-                        Prediction Date & Time:
-                    </span>
-
-                    ${escapeHTML(
-                        reportDate
-                    )}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Selected Symptoms:
-                    </span>
-
-                    ${escapeHTML(
-                        symptoms ||
-                        "None"
-                    )}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Random Forest Prediction:
-                    </span>
-
-                    ${escapeHTML(
-                        disease
-                    )}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Random Forest Confidence:
-                    </span>
-
-                    ${rfConfidence}%
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Qiskit Experimental Score:
-                    </span>
-
-                    ${quantumScore}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Qubits:
-                    </span>
-
-                    ${escapeHTML(
-                        item.quantumQubits ??
-                        "—"
-                    )}
-                </div>
-
-
-                <div class="row">
-                    <span class="label">
-                        Circuit Depth:
-                    </span>
-
-                    ${escapeHTML(
-                        item.quantumDepth ??
-                        "—"
-                    )}
-                </div>
-
-            </div>
-
-
-            <h2>
-                Doctor Recommendation
-            </h2>
-
-            <div class="box">
-
-                <div class="row">
-
-                    <span class="label">
-                        Recommended Specialty:
-                    </span>
-
-                    ${escapeHTML(
-                        item.specialty ||
-                        "Based on predicted condition"
-                    )}
-
-                </div>
-
-            </div>
-
-
-            <div class="warning">
-
-                <strong>
-                    Disclaimer:
-                </strong>
-
-                This report is generated by an
-                educational and experimental
-                symptom-analysis system.
-                It is not a medical diagnosis
-                and should not replace evaluation
-                by a qualified healthcare professional.
-
-            </div>
-
-
-            <div class="footer">
-
-                QuantumDiagnose • Educational Project
-
-            </div>
-
-
-            <script>
-
-                window.onload = function() {
-
-                    setTimeout(
-                        function() {
-
-                            window.print();
-
-                        },
-                        500
-                    );
-
-                };
-
-            <\/script>
-
-        </body>
-
-        </html>
-    `);
-
-
-    reportWindow.document.close();
-}
-
-
-/* =========================================================
-   QUANTUM ANALYSIS BUTTON
-   ========================================================= */
-
-$("quantumBtn")?.addEventListener(
-    "click",
-    async () => {
-
-        const symptoms =
-            getSelectedSymptoms();
-
-
-        if (
-            symptoms.length ===
-            0
-        ) {
-
-            alert(
-                "Please select symptoms first."
-            );
-
-            showPage(
-                "prediction"
-            );
-
-            return;
-        }
-
-
-        const button =
-            $("quantumBtn");
-
-
-        if (button) {
-
-            button.disabled =
-                true;
-
-            button.textContent =
-                "Running Quantum Analysis...";
-        }
-
-
-        try {
-
-            const data =
-                await apiFetch(
-                    "/quantum",
-                    {
-                        method:
-                            "POST",
-
-                        body:
-                            JSON.stringify({
-                                symptoms:
-                                    symptoms
-                            })
-                    }
-                );
-
-
-            renderQuantum(data);
-
-        } catch (error) {
-
-            console.error(
-                "Quantum analysis error:",
-                error
-            );
-
-            showQuantumError(
-                error
-            );
-
-        } finally {
-
-            if (button) {
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    "Run Quantum Analysis";
-            }
-        }
-    }
-);
-
-
-/* =========================================================
-   DATE FORMATTER
-   ========================================================= */
-
-function formatDate(value) {
-
-    if (!value) {
-        return "Unknown";
     }
 
 
     try {
 
-        return new Date(
-            value
-        ).toLocaleString(
-            "en-IN",
-            {
-                dateStyle:
-                    "medium",
+        /*
+         * Load jsPDF only when needed.
+         * This keeps the normal application
+         * lightweight.
+         */
 
-                timeStyle:
-                    "medium"
+        if (!window.jspdf) {
+
+            await loadScript(
+                "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+            );
+
+        }
+
+
+        const jsPDF =
+            window.jspdf.jsPDF;
+
+
+        const doc =
+            new jsPDF();
+
+
+        const profile =
+            lastProfile ||
+            loadLocalProfile(
+                auth.currentUser?.uid
+            );
+
+
+        const prediction =
+            lastPrediction;
+
+
+        const date =
+            lastPredictionTime ||
+            new Date();
+
+
+        let y =
+            20;
+
+
+        function line(
+            text,
+            size = 11,
+            bold = false
+        ) {
+
+            doc.setFontSize(
+                size
+            );
+
+            doc.setFont(
+                "helvetica",
+                bold
+                    ? "bold"
+                    : "normal"
+            );
+
+
+            const lines =
+                doc.splitTextToSize(
+                    String(text),
+                    170
+                );
+
+
+            doc.text(
+                lines,
+                20,
+                y
+            );
+
+
+            y +=
+                (lines.length * 6) +
+                4;
+
+
+            if (y > 275) {
+
+                doc.addPage();
+
+                y = 20;
+
             }
+
+        }
+
+
+        line(
+            "QuantumDiagnose",
+            20,
+            true
         );
 
-    } catch {
 
-        return String(
-            value
+        line(
+            "Health Prediction Report",
+            14,
+            true
         );
+
+
+        y += 4;
+
+
+        line(
+            "Patient Information",
+            14,
+            true
+        );
+
+
+        line(
+            `Name: ${
+                profile?.name ||
+                "—"
+            }`
+        );
+
+
+        line(
+            `Gender: ${
+                profile?.gender ||
+                "—"
+            }`
+        );
+
+
+        line(
+            `Age: ${
+                profile?.age ||
+                "—"
+            }`
+        );
+
+
+        line(
+            `Height: ${
+                profile?.height ||
+                "—"
+            } cm`
+        );
+
+
+        line(
+            `Weight: ${
+                profile?.weight ||
+                "—"
+            } kg`
+        );
+
+
+        y += 4;
+
+
+        line(
+            "Prediction Details",
+            14,
+            true
+        );
+
+
+        line(
+            `Prediction Date & Time: ${
+                formatDateTime(date)
+            }`
+        );
+
+
+        line(
+            `Random Forest Prediction: ${
+                prediction.disease ||
+                prediction.rf_disease ||
+                "Unknown"
+            }`
+        );
+
+
+        line(
+            `Random Forest Confidence: ${
+                prediction.confidence ??
+                prediction.rf_confidence ??
+                0
+            }%`
+        );
+
+
+        line(
+            `Qiskit Score: ${
+                prediction.qiskit_score ??
+                prediction.quantum_score ??
+                0
+            }%`
+        );
+
+
+        line(
+            `Qiskit Qubits: ${
+                prediction.qiskit_qubits ??
+                "—"
+            }`
+        );
+
+
+        line(
+            `Circuit Depth: ${
+                prediction.qiskit_depth ??
+                "—"
+            }`
+        );
+
+
+        line(
+            `Model Agreement: ${
+                prediction.model_agreement ||
+                "—"
+            }`
+        );
+
+
+        y += 4;
+
+
+        line(
+            "Selected Symptoms",
+            14,
+            true
+        );
+
+
+        line(
+            (
+                lastSelectedSymptoms || []
+            ).join(", ") ||
+            "—"
+        );
+
+
+        y += 4;
+
+
+        line(
+            "Top Predictions",
+            14,
+            true
+        );
+
+
+        if (
+            Array.isArray(
+                prediction.top_predictions
+            )
+        ) {
+
+            prediction.top_predictions
+                .slice(0, 5)
+                .forEach(
+                    function (item, index) {
+
+                        line(
+                            `${index + 1}. ${
+                                item.disease
+                            } - ${
+                                item.confidence
+                            }%`
+                        );
+
+                    }
+                );
+
+        }
+
+
+        y += 4;
+
+
+        line(
+            "Doctor Recommendation",
+            14,
+            true
+        );
+
+
+        line(
+            `Specialty: ${
+                prediction.specialty ||
+                "—"
+            }`
+        );
+
+
+        if (
+            Array.isArray(
+                prediction.doctors
+            )
+        ) {
+
+            prediction.doctors
+                .slice(0, 5)
+                .forEach(
+                    function (doctor) {
+
+                        line(
+                            `${doctor.name || "Doctor"} - ${
+                                doctor.specialization || ""
+                            }`
+                        );
+
+                    }
+                );
+
+        }
+
+
+        y += 5;
+
+
+        line(
+            "Educational project only. This report does not constitute a medical diagnosis.",
+            9,
+            false
+        );
+
+
+        doc.save(
+            "QuantumDiagnose_Report.pdf"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "PDF generation error:",
+            error
+        );
+
+
+        alert(
+            "Could not generate PDF. " +
+            error.message
+        );
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "Download Report PDF";
+
+        }
+
     }
+
 }
 
 
-/* =========================================================
-   FORMAT DISEASE
-   ========================================================= */
+// ============================================================
+// LOAD EXTERNAL SCRIPT
+// ============================================================
 
-function formatDisease(value) {
+function loadScript(src) {
 
-    if (!value) {
+    return new Promise(
+        function (resolve, reject) {
 
-        return "Unknown";
-    }
+            const existing =
+                document.querySelector(
+                    `script[src="${src}"]`
+                );
 
 
-    return String(value)
+            if (existing) {
 
-        .replaceAll(
-            "_",
-            " "
-        )
+                if (window.jspdf) {
 
-        .replaceAll(
-            "-",
-            " "
-        )
+                    resolve();
 
-        .replace(
-            /\b\w/g,
-            character =>
-                character.toUpperCase()
-        );
+                } else {
+
+                    existing.addEventListener(
+                        "load",
+                        resolve
+                    );
+
+                    existing.addEventListener(
+                        "error",
+                        reject
+                    );
+
+                }
+
+                return;
+
+            }
+
+
+            const script =
+                document.createElement(
+                    "script"
+                );
+
+
+            script.src =
+                src;
+
+
+            script.onload =
+                resolve;
+
+
+            script.onerror =
+                function () {
+
+                    reject(
+                        new Error(
+                            "Could not load PDF library."
+                        )
+                    );
+
+                };
+
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
+
 }
 
 
-/* =========================================================
-   HTML ESCAPE
-   ========================================================= */
+// ============================================================
+// HTML ESCAPE
+// ============================================================
 
-function escapeHTML(value) {
+function escapeHtml(value) {
 
     return String(
         value ?? ""
     )
-
-        .replaceAll(
-            "&",
+        .replace(
+            /&/g,
             "&amp;"
         )
-
-        .replaceAll(
-            "<",
+        .replace(
+            /</g,
             "&lt;"
         )
-
-        .replaceAll(
-            ">",
+        .replace(
+            />/g,
             "&gt;"
         )
-
-        .replaceAll(
-            '"',
+        .replace(
+            /"/g,
             "&quot;"
         )
-
-        .replaceAll(
-            "'",
+        .replace(
+            /'/g,
             "&#039;"
         );
+
 }
 
 
-/* =========================================================
-   INITIAL
-   ========================================================= */
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
 
-setAuthMode(
-    "login"
+if (loginTab) {
+
+    loginTab.addEventListener(
+        "click",
+        function () {
+
+            setAuthMode(
+                "login"
+            );
+
+        }
+    );
+
+}
+
+
+if (signupTab) {
+
+    signupTab.addEventListener(
+        "click",
+        function () {
+
+            setAuthMode(
+                "signup"
+            );
+
+        }
+    );
+
+}
+
+
+if (authSubmit) {
+
+    authSubmit.addEventListener(
+        "click",
+        handleEmailAuthentication
+    );
+
+}
+
+
+if (authPassword) {
+
+    authPassword.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key ===
+                "Enter"
+            ) {
+
+                handleEmailAuthentication();
+
+            }
+
+        }
+    );
+
+}
+
+
+if (logoutBtn) {
+
+    logoutBtn.addEventListener(
+        "click",
+        logoutUser
+    );
+
+}
+
+
+if (predictBtn) {
+
+    predictBtn.addEventListener(
+        "click",
+        makePrediction
+    );
+
+}
+
+
+// ============================================================
+// INITIALIZE
+// ============================================================
+
+setupSymptomEvents();
+
+setAuthMode("login");
+
+console.log(
+    "QuantumDiagnose updated script.js loaded successfully."
 );
-
-updateCount();
