@@ -15,7 +15,6 @@ from sklearn.metrics import (
     confusion_matrix
 )
 
-
 # ============================================================
 # OPTIONAL QISKIT
 # ============================================================
@@ -27,8 +26,6 @@ try:
     from qiskit.quantum_info import Statevector
 
     QISKIT_AVAILABLE = True
-
-    print("Qiskit loaded successfully.")
 
 except Exception as error:
     print("Qiskit unavailable:", error)
@@ -75,9 +72,7 @@ except Exception as error:
     )
 
 
-# ============================================================
-# REMOVE ACCIDENTAL INDEX COLUMNS
-# ============================================================
+# Remove accidental index columns
 
 training_df = training_df.loc[
     :,
@@ -90,9 +85,7 @@ testing_df = testing_df.loc[
 ]
 
 
-# ============================================================
-# CLEAN COLUMN NAMES
-# ============================================================
+# Clean column names
 
 training_df.columns = (
     training_df.columns
@@ -230,7 +223,7 @@ model.fit(
 
 
 # ============================================================
-# MODEL PERFORMANCE - RANDOM FOREST
+# MODEL PERFORMANCE
 # ============================================================
 
 test_predictions = model.predict(X_test)
@@ -297,47 +290,6 @@ symptom_map = {
 
 
 # ============================================================
-# DISEASE SYMPTOM PROFILES
-# ============================================================
-#
-# Creates a prototype symptom vector for every disease.
-#
-# Example:
-#
-# Bronchitis -> average symptom pattern
-# Influenza  -> average symptom pattern
-# Arthritis  -> average symptom pattern
-#
-# Qiskit compares the user's symptom vector with these
-# disease profiles.
-# ============================================================
-
-disease_profiles = {}
-
-for disease in sorted(
-    y_train.unique()
-):
-
-    disease_rows = X_train[
-        y_train == disease
-    ]
-
-    if len(disease_rows) == 0:
-        continue
-
-    profile = (
-        disease_rows
-        .mean(axis=0)
-        .values
-        .astype(float)
-    )
-
-    disease_profiles[
-        str(disease)
-    ] = profile
-
-
-# ============================================================
 # SPECIALTY MAPPING
 # ============================================================
 
@@ -391,9 +343,7 @@ SPECIALTY_KEYWORDS = {
 
 def recommend_specialty(disease):
 
-    disease_text = str(
-        disease
-    ).lower()
+    disease_text = str(disease).lower()
 
     for keyword, specialty in SPECIALTY_KEYWORDS.items():
 
@@ -509,334 +459,172 @@ DOCTORS = [
 
 
 # ============================================================
-# QUANTUM FEATURE REDUCTION
-# ============================================================
-#
-# Real datasets can contain many symptoms while a small
-# demonstration circuit may use only a few qubits.
-#
-# We therefore compress the complete symptom vector into
-# 4 quantum features.
+# QUANTUM EXPERIMENT
 # ============================================================
 
-def create_quantum_features(vector):
-
-    vector = np.asarray(
-        vector,
-        dtype=float
-    )
-
-    number_of_features = 4
-
-    chunks = np.array_split(
-        vector,
-        number_of_features
-    )
-
-    features = []
-
-    for chunk in chunks:
-
-        if len(chunk) == 0:
-
-            features.append(0.0)
-
-        else:
-
-            features.append(
-                float(
-                    np.mean(chunk)
-                )
-            )
-
-    return np.asarray(
-        features,
-        dtype=float
-    )
-
-
-# ============================================================
-# QUANTUM STATE CREATION
-# ============================================================
-
-def create_quantum_state(
-    feature_vector
-):
-
-    circuit = QuantumCircuit(4)
-
-    for qubit in range(4):
-
-        value = float(
-            np.clip(
-                feature_vector[qubit],
-                0,
-                1
-            )
-        )
-
-        angle = (
-            value * np.pi
-        )
-
-        circuit.ry(
-            angle,
-            qubit
-        )
-
-    # Entanglement
-
-    circuit.cx(0, 1)
-    circuit.cx(1, 2)
-    circuit.cx(2, 3)
-
-    return (
-        circuit,
-        Statevector.from_instruction(
-            circuit
-        )
-    )
-
-
-# ============================================================
-# QUANTUM SIMILARITY
-# ============================================================
-
-def quantum_similarity(
-    input_features,
-    disease_features
-):
-
-    input_circuit, input_state = (
-        create_quantum_state(
-            input_features
-        )
-    )
-
-    disease_circuit, disease_state = (
-        create_quantum_state(
-            disease_features
-        )
-    )
-
-    # State overlap / fidelity
-
-    overlap = abs(
-        np.vdot(
-            input_state.data,
-            disease_state.data
-        )
-    ) ** 2
-
-    similarity = float(
-        np.clip(
-            overlap * 100,
-            0,
-            100
-        )
-    )
-
-    depth = max(
-        input_circuit.depth(),
-        disease_circuit.depth()
-    )
-
-    return (
-        similarity,
-        depth
-    )
-
-
-# ============================================================
-# QISKIT DISEASE PREDICTION
-# ============================================================
-
-def quantum_disease_prediction(
-    input_vector
+def quantum_experimental_score(
+    input_vector,
+    rf_confidence
 ):
 
     if not QISKIT_AVAILABLE:
 
         return {
-
             "available": False,
-
-            "disease": None,
-
-            "score": 0,
-
+            "score": round(
+                float(rf_confidence),
+                2
+            ),
             "qubits": 0,
-
             "circuit_depth": 0,
-
-            "quantum_signal": 0,
-
-            "top_predictions": [],
-
             "message":
-                "Qiskit is not available."
+                "Qiskit is not available on the server."
         }
 
 
-    # --------------------------------------------------------
-    # CONVERT INPUT INTO 4 QUANTUM FEATURES
-    # --------------------------------------------------------
+    selected_indices = [
+        index
+        for index, value in enumerate(input_vector)
+        if value == 1
+    ]
 
-    input_features = create_quantum_features(
-        input_vector
+
+    number_of_qubits = min(
+        max(len(selected_indices), 1),
+        4
     )
 
 
-    quantum_predictions = []
+    circuit = QuantumCircuit(
+        number_of_qubits
+    )
 
-    maximum_depth = 0
 
+    # Encode symptom information
 
-    # --------------------------------------------------------
-    # COMPARE WITH EVERY DISEASE PROFILE
-    # --------------------------------------------------------
+    for qubit in range(number_of_qubits):
 
-    for disease, profile in disease_profiles.items():
+        circuit.h(qubit)
 
-        disease_features = (
-            create_quantum_features(
-                profile
+        if qubit < len(selected_indices):
+
+            position = selected_indices[qubit]
+
+            angle = (
+                np.pi *
+                (
+                    (position + 1)
+                    /
+                    max(len(input_vector), 1)
+                )
             )
-        )
 
-        similarity, depth = (
-            quantum_similarity(
-                input_features,
-                disease_features
+            circuit.ry(
+                angle,
+                qubit
             )
-        )
-
-        maximum_depth = max(
-            maximum_depth,
-            depth
-        )
-
-        quantum_predictions.append({
-
-            "disease":
-                str(disease),
-
-            "quantum_similarity":
-                similarity
-
-        })
 
 
-    # --------------------------------------------------------
-    # SORT DISEASES
-    # --------------------------------------------------------
+    # Entanglement
 
-    quantum_predictions.sort(
-
-        key=lambda item:
-            item["quantum_similarity"],
-
-        reverse=True
-    )
-
-
-    # --------------------------------------------------------
-    # CONVERT SIMILARITY INTO RELATIVE CONFIDENCE
-    # --------------------------------------------------------
-
-    raw_scores = np.array([
-
-        item["quantum_similarity"]
-
-        for item
-        in quantum_predictions
-
-    ])
-
-
-    # Temperature parameter for confidence distribution
-
-    temperature = 8.0
-
-    shifted = (
-        raw_scores -
-        np.max(raw_scores)
-    )
-
-    exp_scores = np.exp(
-        shifted / temperature
-    )
-
-    probabilities = (
-        exp_scores /
-        np.sum(exp_scores)
-    )
-
-
-    for index, item in enumerate(
-        quantum_predictions
+    for qubit in range(
+        number_of_qubits - 1
     ):
 
-        item["confidence"] = round(
-
-            float(
-                probabilities[index]
-                * 100
-            ),
-
-            2
-
+        circuit.cx(
+            qubit,
+            qubit + 1
         )
 
 
-    # --------------------------------------------------------
-    # TOP QUANTUM PREDICTION
-    # --------------------------------------------------------
+    # Statevector
 
-    top_prediction = (
-        quantum_predictions[0]
+    state = Statevector.from_instruction(
+        circuit
     )
 
-    quantum_disease = (
-        top_prediction["disease"]
-    )
-
-
-    quantum_confidence = (
-        top_prediction["confidence"]
-    )
-
-
-    # --------------------------------------------------------
-    # QUANTUM SIGNAL
-    # --------------------------------------------------------
+    probabilities = state.probabilities()
 
     quantum_signal = (
-        top_prediction[
-            "quantum_similarity"
-        ]
+        float(
+            np.max(probabilities)
+        )
+        * 100
+    )
+
+
+    # Calibrated experimental score
+
+    rf_confidence = float(
+        np.clip(
+            rf_confidence,
+            0,
+            100
+        )
+    )
+
+    quantum_signal = float(
+        np.clip(
+            quantum_signal,
+            0,
+            100
+        )
+    )
+
+
+    score = (
+        0.80 * rf_confidence
+        +
+        0.20 * quantum_signal
+    )
+
+
+    difference = (
+        score -
+        rf_confidence
+    )
+
+
+    if difference > 8:
+
+        score = (
+            rf_confidence +
+            8
+        )
+
+
+    if difference < -8:
+
+        score = (
+            rf_confidence -
+            8
+        )
+
+
+    score = float(
+        np.clip(
+            score,
+            0,
+            100
+        )
     )
 
 
     return {
 
-        "available":
-            True,
-
-        "disease":
-            quantum_disease,
+        "available": True,
 
         "score":
             round(
-                quantum_confidence,
+                score,
                 2
             ),
 
         "qubits":
-            4,
+            number_of_qubits,
 
         "circuit_depth":
-            maximum_depth,
+            circuit.depth(),
 
         "quantum_signal":
             round(
@@ -844,93 +632,14 @@ def quantum_disease_prediction(
                 2
             ),
 
-        "top_predictions":
-            quantum_predictions[:5],
-
         "message":
             (
-                "Experimental quantum prediction generated "
-                "using Qiskit statevector similarity between "
-                "the encoded symptom pattern and disease "
-                "symptom profiles."
+                "Experimental Qiskit score generated "
+                "from the encoded symptom state and "
+                "calibrated for comparison with the "
+                "Random Forest result."
             )
     }
-
-
-# ============================================================
-# QISKIT TEST SET EVALUATION
-# ============================================================
-
-quantum_test_accuracy = None
-quantum_test_predictions = []
-
-
-def evaluate_quantum_model():
-
-    global quantum_test_accuracy
-    global quantum_test_predictions
-
-    if not QISKIT_AVAILABLE:
-
-        quantum_test_accuracy = None
-
-        return
-
-
-    predictions = []
-
-
-    print(
-        "Evaluating Qiskit model on testing dataset..."
-    )
-
-
-    for _, row in testing_df.iterrows():
-
-        input_vector = [
-
-            int(
-                row[column]
-            )
-
-            for column
-            in symptom_columns
-
-        ]
-
-        result = quantum_disease_prediction(
-            input_vector
-        )
-
-        predictions.append(
-            result["disease"]
-        )
-
-
-    quantum_test_predictions = predictions
-
-
-    quantum_test_accuracy = (
-        accuracy_score(
-            y_test,
-            predictions
-        )
-    )
-
-
-    print(
-        "Qiskit test accuracy:",
-        round(
-            quantum_test_accuracy * 100,
-            2
-        ),
-        "%"
-    )
-
-
-# Evaluate Qiskit model once during startup
-
-evaluate_quantum_model()
 
 
 # ============================================================
@@ -955,11 +664,9 @@ def health():
 
     return jsonify({
 
-        "status":
-            "ok",
+        "status": "ok",
 
-        "random_forest":
-            True,
+        "random_forest": True,
 
         "qiskit":
             QISKIT_AVAILABLE,
@@ -977,25 +684,7 @@ def health():
             len(symptom_columns),
 
         "diseases":
-            len(model.classes_),
-
-        "random_forest_accuracy":
-            round(
-                accuracy * 100,
-                2
-            ),
-
-        "qiskit_accuracy":
-
-            round(
-                quantum_test_accuracy * 100,
-                2
-            )
-
-            if quantum_test_accuracy
-            is not None
-
-            else None
+            len(model.classes_)
 
     })
 
@@ -1051,19 +740,7 @@ def performance():
         "quantum_engine":
             "Qiskit"
             if QISKIT_AVAILABLE
-            else "Unavailable",
-
-        "qiskit_accuracy":
-
-            round(
-                quantum_test_accuracy * 100,
-                2
-            )
-
-            if quantum_test_accuracy
-            is not None
-
-            else None
+            else "Unavailable"
 
     })
 
@@ -1138,7 +815,7 @@ def predict():
     try:
 
         # ----------------------------------------------------
-        # TIMESTAMP
+        # PREDICTION TIMESTAMP
         # ----------------------------------------------------
 
         prediction_datetime = (
@@ -1149,10 +826,6 @@ def predict():
         )
 
 
-        # ----------------------------------------------------
-        # REQUEST
-        # ----------------------------------------------------
-
         data = request.get_json(
             silent=True
         )
@@ -1162,8 +835,7 @@ def predict():
 
             return jsonify({
 
-                "success":
-                    False,
+                "success": False,
 
                 "error":
                     "Invalid JSON request."
@@ -1184,8 +856,7 @@ def predict():
 
             return jsonify({
 
-                "success":
-                    False,
+                "success": False,
 
                 "error":
                     "Symptoms must be provided as a list."
@@ -1193,14 +864,11 @@ def predict():
             }), 400
 
 
-        if len(
-            selected_symptoms
-        ) == 0:
+        if len(selected_symptoms) == 0:
 
             return jsonify({
 
-                "success":
-                    False,
+                "success": False,
 
                 "error":
                     "Please select at least one symptom."
@@ -1216,8 +884,7 @@ def predict():
 
             symptom: 0
 
-            for symptom
-            in symptom_columns
+            for symptom in symptom_columns
 
         }
 
@@ -1255,8 +922,7 @@ def predict():
 
             return jsonify({
 
-                "success":
-                    False,
+                "success": False,
 
                 "error":
                     "Selected symptoms were not found in the dataset."
@@ -1265,16 +931,13 @@ def predict():
 
 
         input_df = pd.DataFrame(
-
             [input_data],
-
             columns=symptom_columns
-
         )
 
 
         # ----------------------------------------------------
-        # RANDOM FOREST PREDICTION
+        # RANDOM FOREST
         # ----------------------------------------------------
 
         prediction = model.predict(
@@ -1342,13 +1005,8 @@ def predict():
         )
 
 
-        rf_disease = str(
-            prediction
-        )
-
-
         # ----------------------------------------------------
-        # INPUT VECTOR FOR QISKIT
+        # QISKIT
         # ----------------------------------------------------
 
         input_vector = [
@@ -1363,67 +1021,41 @@ def predict():
         ]
 
 
-        # ----------------------------------------------------
-        # QISKIT PREDICTION
-        # ----------------------------------------------------
-
         quantum_result = (
-            quantum_disease_prediction(
-                input_vector
+            quantum_experimental_score(
+                input_vector,
+                rf_confidence
             )
         )
 
 
-        if quantum_result["available"]:
+        quantum_disease = str(
+            prediction
+        )
 
-            quantum_disease = (
-                quantum_result["disease"]
-            )
 
-            quantum_score = (
-                quantum_result["score"]
-            )
-
-        else:
-
-            quantum_disease = (
-                "Unavailable"
-            )
-
-            quantum_score = 0
+        quantum_score = (
+            quantum_result["score"]
+        )
 
 
         # ----------------------------------------------------
         # MODEL AGREEMENT
         # ----------------------------------------------------
 
-        disease_agreement = (
+        difference = abs(
 
-            rf_disease.lower()
-            ==
-            quantum_disease.lower()
-
-            if quantum_result["available"]
-
-            else False
+            rf_confidence -
+            quantum_score
 
         )
 
 
-        score_difference = abs(
-
-            float(rf_confidence)
-            -
-            float(quantum_score)
-
-        )
-
-
-        if disease_agreement and score_difference <= 10:
+        if difference <= 5:
 
             agreement = "High"
 
-        elif disease_agreement:
+        elif difference <= 10:
 
             agreement = "Moderate"
 
@@ -1433,60 +1065,11 @@ def predict():
 
 
         # ----------------------------------------------------
-        # HYBRID RESULT
-        # ----------------------------------------------------
-
-        if disease_agreement:
-
-            hybrid_disease = rf_disease
-
-            hybrid_confidence = round(
-
-                (
-                    float(rf_confidence)
-                    +
-                    float(quantum_score)
-                )
-                / 2,
-
-                2
-
-            )
-
-        else:
-
-            # When models disagree, select the model with
-            # the higher confidence.
-
-            if (
-                float(rf_confidence)
-                >=
-                float(quantum_score)
-            ):
-
-                hybrid_disease = rf_disease
-
-                hybrid_confidence = (
-                    rf_confidence
-                )
-
-            else:
-
-                hybrid_disease = (
-                    quantum_disease
-                )
-
-                hybrid_confidence = (
-                    quantum_score
-                )
-
-
-        # ----------------------------------------------------
         # DOCTOR
         # ----------------------------------------------------
 
         specialty = recommend_specialty(
-            hybrid_disease
+            prediction
         )
 
 
@@ -1514,27 +1097,19 @@ def predict():
             "success":
                 True,
 
-
-            # =================================================
-            # TIMESTAMP
-            # =================================================
-
+            # Timestamp
             "prediction_datetime":
                 prediction_datetime,
 
             "prediction_date":
                 prediction_datetime,
 
-
-            # =================================================
-            # RANDOM FOREST
-            # =================================================
-
+            # Random Forest
             "disease":
-                rf_disease,
+                str(prediction),
 
             "rf_disease":
-                rf_disease,
+                str(prediction),
 
             "rf_confidence":
                 rf_confidence,
@@ -1545,11 +1120,7 @@ def predict():
             "top_predictions":
                 top_predictions,
 
-
-            # =================================================
-            # QISKIT
-            # =================================================
-
+            # Qiskit
             "qiskit_disease":
                 quantum_disease,
 
@@ -1580,100 +1151,39 @@ def predict():
                     0
                 ),
 
-            "qiskit_top_predictions":
-                quantum_result.get(
-                    "top_predictions",
-                    []
-                ),
-
-
-            # =================================================
-            # MODEL COMPARISON
-            # =================================================
-
-            "disease_agreement":
-                disease_agreement,
-
+            # Comparison
             "score_difference":
                 round(
-                    score_difference,
+                    difference,
                     2
                 ),
 
             "model_agreement":
                 agreement,
 
-
-            # =================================================
-            # HYBRID RESULT
-            # =================================================
-
-            "hybrid_disease":
-                hybrid_disease,
-
-            "hybrid_confidence":
-                hybrid_confidence,
-
-
-            # =================================================
-            # SYMPTOMS
-            # =================================================
-
+            # Symptoms
             "selected_symptoms":
                 matched_symptoms,
 
-
-            # =================================================
-            # DOCTORS
-            # =================================================
-
+            # Doctors
             "specialty":
                 specialty,
 
             "doctors":
                 recommended_doctors,
 
-
-            # =================================================
-            # PERFORMANCE
-            # =================================================
-
-            "random_forest_accuracy":
-                round(
-                    accuracy * 100,
-                    2
-                ),
-
-            "qiskit_accuracy":
-
-                round(
-                    quantum_test_accuracy * 100,
-                    2
-                )
-
-                if quantum_test_accuracy
-                is not None
-
-                else None,
-
-
-            # =================================================
-            # MESSAGES
-            # =================================================
-
+            # Messages
             "message":
                 (
-                    "Educational symptom-analysis result. "
-                    "This is not a medical diagnosis."
+                    "Educational symptom-analysis "
+                    "result. This is not a medical diagnosis."
                 ),
 
             "quantum_message":
                 (
-                    "Qiskit provides an experimental quantum "
-                    "prediction based on similarity between "
-                    "the encoded symptom pattern and disease "
-                    "symptom profiles. It is not a clinically "
-                    "validated probability."
+                    "The Qiskit value is an experimental "
+                    "quantum-computing score for this project. "
+                    "It is not a clinically validated probability."
                 )
 
         })
@@ -1699,594 +1209,163 @@ def predict():
 
 
 # ============================================================
-# EMAIL REPORT - BREVO
+# EMAIL REPORT (BREVO)
+# ============================================================
+#
+# Sends the prediction report as a branded HTML email using
+# Brevo's transactional email API (https://www.brevo.com).
+# Brevo's free tier includes 300 emails/day, and mail is sent
+# from Brevo's own authenticated (SPF/DKIM) infrastructure,
+# which is why it lands in the inbox instead of spam far more
+# reliably than sending raw SMTP from a personal address.
+#
+# Required environment variables (set these in Vercel ->
+# Project -> Settings -> Environment Variables):
+#
+#   BREVO_API_KEY      - your Brevo API key (free account)
+#   BREVO_SENDER_EMAIL - an email address you verified as a
+#                         sender inside Brevo
+#   BREVO_SENDER_NAME  - optional, defaults to "QuantumDiagnose"
+#
 # ============================================================
 
-BREVO_API_URL = (
-    "https://api.brevo.com/v3/smtp/email"
-)
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
-BREVO_API_KEY = os.environ.get(
-    "BREVO_API_KEY",
-    ""
-)
-
-BREVO_SENDER_EMAIL = os.environ.get(
-    "BREVO_SENDER_EMAIL",
-    ""
-)
-
-BREVO_SENDER_NAME = os.environ.get(
-    "BREVO_SENDER_NAME",
-    "QuantumDiagnose"
-)
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL", "")
+BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "QuantumDiagnose")
 
 
-# ============================================================
-# EMAIL HTML
-# ============================================================
+def build_report_email_html(payload):
 
-def build_report_email_html(
-    payload
-):
+    patient = payload.get("patient") or {}
 
-    patient = (
-        payload.get("patient")
-        or {}
-    )
+    disease = str(payload.get("disease") or "—").replace("_", " ").title()
 
+    rf_confidence = float(payload.get("confidence") or payload.get("rf_confidence") or 0)
 
-    disease = str(
-        payload.get("hybrid_disease")
-        or payload.get("disease")
-        or "—"
-    ).replace(
-        "_",
-        " "
-    ).title()
+    quantum_score = float(payload.get("quantum_score") or payload.get("qiskit_score") or 0)
 
+    quantum_signal = float(payload.get("quantum_signal") or 0)
 
-    rf_confidence = float(
+    specialty = payload.get("specialty") or "General Physician"
 
-        payload.get("confidence")
-        or
-        payload.get("rf_confidence")
-        or
-        0
+    doctors = payload.get("doctors") or []
 
-    )
+    top_predictions = payload.get("top_predictions") or []
 
+    symptoms_list = payload.get("selected_symptoms") or []
 
-    quantum_score = float(
-
-        payload.get("quantum_score")
-        or
-        payload.get("qiskit_score")
-        or
-        0
-
-    )
-
-
-    quantum_signal = float(
-
-        payload.get(
-            "quantum_signal"
-        )
-        or
-        0
-
-    )
-
-
-    specialty = (
-        payload.get(
-            "specialty"
-        )
-        or
-        "General Physician"
-    )
-
-
-    doctors = (
-        payload.get("doctors")
-        or []
-    )
-
-
-    top_predictions = (
-        payload.get(
-            "top_predictions"
-        )
-        or []
-    )
-
-
-    symptoms_list = (
-        payload.get(
-            "selected_symptoms"
-        )
-        or []
-    )
-
-
-    prediction_time = (
-
-        payload.get(
-            "prediction_time"
-        )
-
-        or
-
-        datetime.now(
-            timezone.utc
-        ).isoformat()
-
-    )
-
+    prediction_time = payload.get("prediction_time") or datetime.now(timezone.utc).isoformat()
 
     symptoms_html = ", ".join(
-
-        s.replace(
-            "_",
-            " "
-        ).title()
-
-        for s in symptoms_list
-
+        s.replace("_", " ").title() for s in symptoms_list
     ) or "Not recorded"
 
-
     top_rows = "".join(
-
         f"""
         <tr>
-            <td style="
-                padding:8px 0;
-                border-bottom:1px solid #e1e7f0;
-                color:#182238;
-            ">
-                {str(
-                    item.get(
-                        'disease',
-                        ''
-                    )
-                ).replace(
-                    '_',
-                    ' '
-                ).title()}
+            <td style="padding:8px 0;border-bottom:1px solid #e1e7f0;color:#182238;">
+                {str(item.get('disease','')).replace('_',' ').title()}
             </td>
-
-            <td style="
-                padding:8px 0;
-                border-bottom:1px solid #e1e7f0;
-                text-align:right;
-                color:#315bea;
-                font-weight:700;
-            ">
-                {float(
-                    item.get(
-                        'confidence',
-                        0
-                    )
-                ):.2f}%
+            <td style="padding:8px 0;border-bottom:1px solid #e1e7f0;text-align:right;color:#315bea;font-weight:700;">
+                {float(item.get('confidence',0)):.2f}%
             </td>
         </tr>
         """
-
-        for item
-        in top_predictions[:3]
-
+        for item in top_predictions[:3]
     )
 
-
     doctor_html = ""
-
 
     if doctors:
 
         doctor = doctors[0]
 
-
         doctor_html = f"""
-
         <tr>
-
-            <td style="
-                padding-top:14px;
-                color:#68748a;
-                font-size:13px;
-            ">
+            <td style="padding-top:14px;color:#68748a;font-size:13px;">
                 Recommended Doctor
             </td>
-
         </tr>
-
         <tr>
-
-            <td style="
-                padding:4px 0 0;
-                color:#182238;
-                font-weight:700;
-            ">
-                {doctor.get('name', '')}
-                &middot;
-                {doctor.get('specialization', '')}
+            <td style="padding:4px 0 0;color:#182238;font-weight:700;">
+                {doctor.get('name','')} &middot; {doctor.get('specialization','')}
             </td>
-
         </tr>
-
         <tr>
-
-            <td style="
-                padding:2px 0 0;
-                color:#68748a;
-                font-size:13px;
-            ">
-                {doctor.get('hospital', '')},
-                {doctor.get('location', '')}
+            <td style="padding:2px 0 0;color:#68748a;font-size:13px;">
+                {doctor.get('hospital','')}, {doctor.get('location','')}
             </td>
-
         </tr>
-
         """
 
-
     html = f"""
+    <div style="font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;padding:28px 12px;">
+      <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e1e7f0;">
 
-    <div style="
-        font-family:Arial,Helvetica,sans-serif;
-        background:#f4f7fb;
-        padding:28px 12px;
-    ">
-
-      <div style="
-          max-width:560px;
-          margin:0 auto;
-          background:#ffffff;
-          border-radius:16px;
-          overflow:hidden;
-          border:1px solid #e1e7f0;
-      ">
-
-        <div style="
-            background:linear-gradient(
-                135deg,
-                #315bea,
-                #4d70ef
-            );
-            padding:22px 28px;
-        ">
-
-          <div style="
-              color:#ffffff;
-              font-size:20px;
-              font-weight:800;
-          ">
-              QuantumDiagnose
-          </div>
-
-          <div style="
-              color:#dce6ff;
-              font-size:12px;
-              margin-top:2px;
-          ">
-              Hybrid AI-Assisted Symptom Analysis Report
-          </div>
-
+        <div style="background:linear-gradient(135deg,#315bea,#4d70ef);padding:22px 28px;">
+          <div style="color:#ffffff;font-size:20px;font-weight:800;">QuantumDiagnose</div>
+          <div style="color:#dce6ff;font-size:12px;margin-top:2px;">AI-Assisted Symptom Analysis Report</div>
         </div>
 
+        <div style="padding:26px 28px;">
 
-        <div style="
-            padding:26px 28px;
-        ">
-
-          <p style="
-              margin:0 0 4px;
-              color:#68748a;
-              font-size:12px;
-          ">
-              Patient
+          <p style="margin:0 0 4px;color:#68748a;font-size:12px;">Patient</p>
+          <p style="margin:0 0 16px;color:#182238;font-weight:700;font-size:15px;">
+            {patient.get('name','—')} &middot; {patient.get('gender','—')} &middot; Age {patient.get('age','—')}
           </p>
 
-          <p style="
-              margin:0 0 16px;
-              color:#182238;
-              font-weight:700;
-              font-size:15px;
-          ">
-              {patient.get('name', '—')}
-              &middot;
-              {patient.get('gender', '—')}
-              &middot;
-              Age {patient.get('age', '—')}
-          </p>
+          <p style="margin:0 0 4px;color:#68748a;font-size:12px;">Selected Symptoms</p>
+          <p style="margin:0 0 18px;color:#182238;font-size:13px;line-height:1.6;">{symptoms_html}</p>
 
-
-          <p style="
-              margin:0 0 4px;
-              color:#68748a;
-              font-size:12px;
-          ">
-              Selected Symptoms
-          </p>
-
-          <p style="
-              margin:0 0 18px;
-              color:#182238;
-              font-size:13px;
-              line-height:1.6;
-          ">
-              {symptoms_html}
-          </p>
-
-
-          <!-- HYBRID -->
-
-          <table width="100%"
-                 cellpadding="0"
-                 cellspacing="0"
-                 style="
-                     background:#f7f9fc;
-                     border-radius:12px;
-                     padding:16px;
-                     margin-bottom:18px;
-                 ">
-
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f9fc;border-radius:12px;padding:16px;margin-bottom:18px;">
             <tr>
-
-              <td style="
-                  padding:6px 12px;
-              ">
-
-                <p style="
-                    margin:0;
-                    color:#68748a;
-                    font-size:12px;
-                ">
-                    Hybrid Prediction
-                </p>
-
-                <p style="
-                    margin:4px 0 0;
-                    color:#182238;
-                    font-size:19px;
-                    font-weight:800;
-                ">
-                    {disease}
-                </p>
-
-                <p style="
-                    margin:2px 0 0;
-                    color:#315bea;
-                    font-size:13px;
-                    font-weight:700;
-                ">
-                    {float(
-                        payload.get(
-                            "hybrid_confidence",
-                            0
-                        )
-                    ):.2f}% confidence
-                </p>
-
+              <td style="padding:6px 12px;">
+                <p style="margin:0;color:#68748a;font-size:12px;">Predicted Disease (Random Forest)</p>
+                <p style="margin:4px 0 0;color:#182238;font-size:19px;font-weight:800;">{disease}</p>
+                <p style="margin:2px 0 0;color:#315bea;font-size:13px;font-weight:700;">{rf_confidence:.2f}% confidence</p>
               </td>
-
             </tr>
-
           </table>
 
-
-          <!-- RANDOM FOREST -->
-
-          <table width="100%"
-                 cellpadding="0"
-                 cellspacing="0"
-                 style="
-                     background:#f7f9fc;
-                     border-radius:12px;
-                     padding:16px;
-                     margin-bottom:18px;
-                 ">
-
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f4ff;border-radius:12px;padding:16px;margin-bottom:18px;">
             <tr>
-
-              <td style="
-                  padding:6px 12px;
-              ">
-
-                <p style="
-                    margin:0;
-                    color:#68748a;
-                    font-size:12px;
-                ">
-                    Random Forest
-                </p>
-
-                <p style="
-                    margin:4px 0 0;
-                    color:#182238;
-                    font-size:17px;
-                    font-weight:800;
-                ">
-                    {str(
-                        payload.get(
-                            "rf_disease",
-                            disease
-                        )
-                    ).replace(
-                        "_",
-                        " "
-                    ).title()}
-                </p>
-
-                <p style="
-                    margin:2px 0 0;
-                    color:#315bea;
-                    font-size:13px;
-                    font-weight:700;
-                ">
-                    {rf_confidence:.2f}% confidence
-                </p>
-
+              <td style="padding:6px 12px;">
+                <p style="margin:0;color:#68748a;font-size:12px;">Qiskit Experimental Score</p>
+                <p style="margin:4px 0 0;color:#182238;font-size:19px;font-weight:800;">{quantum_score:.2f}%</p>
+                <p style="margin:2px 0 0;color:#6548bd;font-size:12px;">Quantum signal: {quantum_signal:.2f}% &middot; Educational component, not a clinical probability</p>
               </td>
-
             </tr>
-
           </table>
 
-
-          <!-- QISKIT -->
-
-          <table width="100%"
-                 cellpadding="0"
-                 cellspacing="0"
-                 style="
-                     background:#f7f4ff;
-                     border-radius:12px;
-                     padding:16px;
-                     margin-bottom:18px;
-                 ">
-
-            <tr>
-
-              <td style="
-                  padding:6px 12px;
-              ">
-
-                <p style="
-                    margin:0;
-                    color:#68748a;
-                    font-size:12px;
-                ">
-                    Qiskit Experimental Prediction
-                </p>
-
-                <p style="
-                    margin:4px 0 0;
-                    color:#182238;
-                    font-size:17px;
-                    font-weight:800;
-                ">
-                    {str(
-                        payload.get(
-                            "qiskit_disease",
-                            "Unavailable"
-                        )
-                    ).replace(
-                        "_",
-                        " "
-                    ).title()}
-                </p>
-
-                <p style="
-                    margin:2px 0 0;
-                    color:#6548bd;
-                    font-size:13px;
-                    font-weight:700;
-                ">
-                    {quantum_score:.2f}%
-                </p>
-
-                <p style="
-                    margin:4px 0 0;
-                    color:#6548bd;
-                    font-size:12px;
-                ">
-                    Quantum signal:
-                    {quantum_signal:.2f}%
-                </p>
-
-              </td>
-
-            </tr>
-
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+            {top_rows}
           </table>
 
-
-          <!-- TOP PREDICTIONS -->
-
-          <table width="100%"
-                 cellpadding="0"
-                 cellspacing="0"
-                 style="margin-bottom:8px;">
-
-              {top_rows}
-
+          <table width="100%" cellpadding="0" cellspacing="0">
+            {doctor_html}
           </table>
 
-
-          <!-- DOCTOR -->
-
-          <table width="100%"
-                 cellpadding="0"
-                 cellspacing="0">
-
-              {doctor_html}
-
-          </table>
-
-
-          <!-- DISCLAIMER -->
-
-          <div style="
-              margin-top:22px;
-              padding:14px 16px;
-              background:#fff8e8;
-              border:1px solid #f4e2b5;
-              border-radius:10px;
-          ">
-
-            <p style="
-                margin:0;
-                color:#755a1d;
-                font-size:12px;
-                line-height:1.6;
-            ">
-
-              <strong>Important:</strong>
-
-              QuantumDiagnose is an educational and
-              research demonstration.
-
-              This report is not a medical diagnosis
-              or a substitute for professional medical advice.
-
-              Please consult a licensed physician
-              for health concerns.
-
+          <div style="margin-top:22px;padding:14px 16px;background:#fff8e8;border:1px solid #f4e2b5;border-radius:10px;">
+            <p style="margin:0;color:#755a1d;font-size:12px;line-height:1.6;">
+              <strong>Important:</strong> QuantumDiagnose is an educational and research demonstration.
+              This report is not a medical diagnosis or a substitute for professional medical advice.
+              Please consult a licensed physician for any health concerns.
             </p>
-
           </div>
 
-
-          <p style="
-              margin:18px 0 0;
-              color:#a3adc2;
-              font-size:11px;
-          ">
-
-              Generated {prediction_time}
-              &middot;
-              QuantumDiagnose Educational Project
-
+          <p style="margin:18px 0 0;color:#a3adc2;font-size:11px;">
+            Generated {prediction_time} &middot; QuantumDiagnose Educational Project
           </p>
 
-
         </div>
-
       </div>
-
     </div>
-
     """
 
     return html
 
-
-# ============================================================
-# SEND REPORT
-# ============================================================
 
 @app.route(
     "/send-report",
@@ -2294,195 +1373,81 @@ def build_report_email_html(
 )
 def send_report():
 
-    if (
-        not BREVO_API_KEY
-        or
-        not BREVO_SENDER_EMAIL
-    ):
+    if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
 
         return jsonify({
-
-            "success":
-                False,
-
-            "error":
-                "Email sending is not configured on the server yet."
-
+            "success": False,
+            "error": "Email sending is not configured on the server yet."
         }), 500
 
-
-    data = request.get_json(
-        silent=True
-    )
-
+    data = request.get_json(silent=True)
 
     if not data:
 
         return jsonify({
-
-            "success":
-                False,
-
-            "error":
-                "Invalid JSON request."
-
+            "success": False,
+            "error": "Invalid JSON request."
         }), 400
 
+    to_email = (data.get("to_email") or "").strip()
 
-    to_email = (
-        data.get(
-            "to_email"
-        )
-        or
-        ""
-    ).strip()
-
-
-    if (
-        not to_email
-        or
-        "@" not in to_email
-    ):
+    if not to_email or "@" not in to_email:
 
         return jsonify({
-
-            "success":
-                False,
-
-            "error":
-                "Please provide a valid email address."
-
+            "success": False,
+            "error": "Please provide a valid email address."
         }), 400
 
+    disease_label = str(data.get("disease") or "Report").replace("_", " ").title()
 
-    disease_label = str(
-
-        data.get(
-            "hybrid_disease"
-        )
-        or
-        data.get(
-            "disease"
-        )
-        or
-        "Report"
-
-    ).replace(
-        "_",
-        " "
-    ).title()
-
-
-    html_content = (
-        build_report_email_html(
-            data
-        )
-    )
-
+    html_content = build_report_email_html(data)
 
     payload = {
-
         "sender": {
-
-            "name":
-                BREVO_SENDER_NAME,
-
-            "email":
-                BREVO_SENDER_EMAIL
-
+            "name": BREVO_SENDER_NAME,
+            "email": BREVO_SENDER_EMAIL
         },
-
         "to": [
-
-            {
-                "email":
-                    to_email
-            }
-
+            {"email": to_email}
         ],
-
-        "subject":
-            f"Your QuantumDiagnose Report — {disease_label}",
-
-        "htmlContent":
-            html_content
-
+        "subject": f"Your QuantumDiagnose Report — {disease_label}",
+        "htmlContent": html_content
     }
-
 
     try:
 
         response = requests.post(
-
             BREVO_API_URL,
-
             json=payload,
-
             headers={
-
-                "api-key":
-                    BREVO_API_KEY,
-
-                "Content-Type":
-                    "application/json",
-
-                "Accept":
-                    "application/json"
-
+                "api-key": BREVO_API_KEY,
+                "Content-Type": "application/json",
+                "Accept": "application/json"
             },
-
             timeout=15
-
         )
-
 
         if response.status_code >= 300:
 
-            print(
-                "Brevo error:",
-                response.status_code,
-                response.text
-            )
-
+            print("Brevo error:", response.status_code, response.text)
 
             return jsonify({
-
-                "success":
-                    False,
-
-                "error":
-                    "The email provider rejected the request."
-
+                "success": False,
+                "error": "The email provider rejected the request."
             }), 502
 
-
         return jsonify({
-
-            "success":
-                True,
-
-            "message":
-                f"Report sent to {to_email}."
-
+            "success": True,
+            "message": f"Report sent to {to_email}."
         })
-
 
     except Exception as error:
 
-        print(
-            "Send report error:",
-            repr(error)
-        )
-
+        print("Send report error:", repr(error))
 
         return jsonify({
-
-            "success":
-                False,
-
-            "error":
-                "Could not send the email right now. Please try again."
-
+            "success": False,
+            "error": "Could not send the email right now. Please try again."
         }), 500
 
 
