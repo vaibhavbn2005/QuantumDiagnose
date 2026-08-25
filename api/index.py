@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import datetime, timezone
+from functools import wraps
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
@@ -10,10 +11,8 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     f1_score,
-    confusion_matrix,
+    confusion_matrix
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_score
-
 
 # ============================================================
 # OPTIONAL QISKIT
@@ -29,6 +28,108 @@ try:
 
 except Exception as error:
     print("Qiskit unavailable:", error)
+
+
+# ============================================================
+# SERVER-SIDE LOGIN VERIFICATION
+# ============================================================
+# Verifies the Firebase ID token sent by the browser on the
+# Authorization header, so /predict can no longer be called
+# by someone who isn't actually logged in. Uses the lightweight
+# google-auth library (not firebase-admin) to keep the
+# deployment size small.
+
+FIREBASE_PROJECT_ID = "quantumdiagnose"
+
+try:
+
+    import google.auth.transport.requests
+    from google.oauth2 import id_token as google_id_token
+
+    _google_auth_request = google.auth.transport.requests.Request()
+
+    AUTH_CHECK_AVAILABLE = True
+
+except Exception as error:
+
+    print("google-auth unavailable:", error)
+
+    AUTH_CHECK_AVAILABLE = False
+
+
+def verify_firebase_token(token):
+
+    return google_id_token.verify_firebase_token(
+        token,
+        _google_auth_request,
+        audience=FIREBASE_PROJECT_ID
+    )
+
+
+def require_login(f):
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+
+        if not AUTH_CHECK_AVAILABLE:
+
+            return jsonify({
+
+                "success": False,
+
+                "error":
+                    "Server authentication check is unavailable."
+
+            }), 500
+
+        header = request.headers.get(
+            "Authorization",
+            ""
+        )
+
+        if not header.startswith("Bearer "):
+
+            return jsonify({
+
+                "success": False,
+
+                "error":
+                    "Please login to use this feature."
+
+            }), 401
+
+        token = header.split(
+            " ",
+            1
+        )[1].strip()
+
+        try:
+
+            decoded_token = verify_firebase_token(
+                token
+            )
+
+        except Exception as error:
+
+            print(
+                "Auth verification failed:",
+                repr(error)
+            )
+
+            return jsonify({
+
+                "success": False,
+
+                "error":
+                    "Your session has expired. Please login again."
+
+            }), 401
+
+        request.firebase_user = decoded_token
+
+        return f(*args, **kwargs)
+
+    return decorated
 
 
 # ============================================================
@@ -52,7 +153,7 @@ app = Flask(
     __name__,
     template_folder=str(TEMPLATE_DIR),
     static_folder=str(STATIC_DIR),
-    static_url_path="/static",
+    static_url_path="/static"
 )
 
 
@@ -72,32 +173,32 @@ except Exception as error:
     )
 
 
-# ============================================================
-# CLEAN DATAFRAME
-# ============================================================
+# Remove accidental index columns
 
-def clean_dataframe(df):
+training_df = training_df.loc[
+    :,
+    ~training_df.columns.astype(str).str.startswith("Unnamed")
+]
 
-    df = df.copy()
-
-    # Remove accidental pandas index columns
-    df = df.loc[
-        :,
-        ~df.columns.astype(str).str.startswith("Unnamed")
-    ]
-
-    # Clean column names
-    df.columns = (
-        df.columns
-        .astype(str)
-        .str.strip()
-    )
-
-    return df
+testing_df = testing_df.loc[
+    :,
+    ~testing_df.columns.astype(str).str.startswith("Unnamed")
+]
 
 
-training_df = clean_dataframe(training_df)
-testing_df = clean_dataframe(testing_df)
+# Clean column names
+
+training_df.columns = (
+    training_df.columns
+    .astype(str)
+    .str.strip()
+)
+
+testing_df.columns = (
+    testing_df.columns
+    .astype(str)
+    .str.strip()
+)
 
 
 # ============================================================
@@ -116,7 +217,7 @@ possible_targets = [
     "target",
     "Target",
     "label",
-    "Label",
+    "Label"
 ]
 
 for column in possible_targets:
@@ -143,15 +244,8 @@ symptom_columns = [
 ]
 
 
-if not symptom_columns:
-
-    raise RuntimeError(
-        "No symptom columns were found in Training.csv."
-    )
-
-
 # ============================================================
-# MATCH TRAINING AND TESTING COLUMNS
+# MAKE TRAINING / TESTING COLUMNS MATCH
 # ============================================================
 
 missing_in_test = [
@@ -169,7 +263,7 @@ if missing_in_test:
 
 
 # ============================================================
-# CLEAN SYMPTOM VALUES
+# CLEAN SYMPTOMS
 # ============================================================
 
 for column in symptom_columns:
@@ -185,30 +279,26 @@ for column in symptom_columns:
     ).fillna(0)
 
 
-# Convert everything to binary symptom representation
-
-for column in symptom_columns:
-
-    training_df[column] = (
-        training_df[column] > 0
-    ).astype(int)
-
-    testing_df[column] = (
-        testing_df[column] > 0
-    ).astype(int)
-
-
 # ============================================================
-# CLEAN TARGET
+# TRAINING DATA
 # ============================================================
 
-training_df[TARGET_COLUMN] = (
+X_train = training_df[symptom_columns]
+
+y_train = (
     training_df[TARGET_COLUMN]
     .astype(str)
     .str.strip()
 )
 
-testing_df[TARGET_COLUMN] = (
+
+# ============================================================
+# TESTING DATA
+# ============================================================
+
+X_test = testing_df[symptom_columns]
+
+y_test = (
     testing_df[TARGET_COLUMN]
     .astype(str)
     .str.strip()
@@ -216,100 +306,16 @@ testing_df[TARGET_COLUMN] = (
 
 
 # ============================================================
-# REMOVE INVALID TARGET ROWS
-# ============================================================
-
-training_df = training_df[
-    training_df[TARGET_COLUMN].notna()
-]
-
-testing_df = testing_df[
-    testing_df[TARGET_COLUMN].notna()
-]
-
-
-# ============================================================
-# TRAINING DATA
-# ============================================================
-
-X_train = training_df[
-    symptom_columns
-].copy()
-
-y_train = training_df[
-    TARGET_COLUMN
-].copy()
-
-
-# ============================================================
-# TEST DATA
-# ============================================================
-
-X_test = testing_df[
-    symptom_columns
-].copy()
-
-y_test = testing_df[
-    TARGET_COLUMN
-].copy()
-
-
-# ============================================================
-# REMOVE EXACT DUPLICATES
-# ============================================================
-
-training_combined = pd.concat(
-    [
-        X_train.reset_index(drop=True),
-        y_train.reset_index(drop=True).rename(
-            TARGET_COLUMN
-        )
-    ],
-    axis=1
-)
-
-training_combined = training_combined.drop_duplicates()
-
-X_train = training_combined[
-    symptom_columns
-].copy()
-
-y_train = training_combined[
-    TARGET_COLUMN
-].copy()
-
-
-# ============================================================
 # RANDOM FOREST
 # ============================================================
 
 model = RandomForestClassifier(
-
-    n_estimators=700,
-
-    criterion="entropy",
-
-    max_features=None,
-
-    max_depth=None,
-
-    min_samples_split=2,
-
-    min_samples_leaf=1,
-
-    bootstrap=True,
-
-    class_weight=None,
-
+    n_estimators=300,
     random_state=42,
-
-    n_jobs=-1
+    class_weight="balanced",
+    max_features="sqrt",
+    n_jobs=1
 )
-
-
-# ============================================================
-# TRAIN MODEL
-# ============================================================
 
 model.fit(
     X_train,
@@ -318,17 +324,10 @@ model.fit(
 
 
 # ============================================================
-# TEST PREDICTIONS
-# ============================================================
-
-test_predictions = model.predict(
-    X_test
-)
-
-
-# ============================================================
 # MODEL PERFORMANCE
 # ============================================================
+
+test_predictions = model.predict(X_test)
 
 accuracy = accuracy_score(
     y_test,
@@ -356,63 +355,9 @@ f1 = f1_score(
     zero_division=0
 )
 
-
-# ============================================================
-# CROSS VALIDATION
-# ============================================================
-
-cv_accuracy = None
-
-try:
-
-    minimum_class_count = (
-        y_train.value_counts().min()
-    )
-
-    if minimum_class_count >= 2:
-
-        folds = min(
-            5,
-            int(minimum_class_count)
-        )
-
-        if folds >= 2:
-
-            cv = StratifiedKFold(
-                n_splits=folds,
-                shuffle=True,
-                random_state=42
-            )
-
-            cv_scores = cross_val_score(
-                model,
-                X_train,
-                y_train,
-                cv=cv,
-                scoring="accuracy",
-                n_jobs=-1
-            )
-
-            cv_accuracy = float(
-                np.mean(cv_scores)
-            )
-
-except Exception as error:
-
-    print(
-        "Cross-validation unavailable:",
-        error
-    )
-
-
-# ============================================================
-# CONFUSION MATRIX
-# ============================================================
-
 labels = sorted(
     list(
-        set(y_test)
-        |
+        set(y_test) |
         set(test_predictions)
     )
 )
@@ -443,32 +388,6 @@ symptom_map = {
     normalize_symptom(column): column
     for column in symptom_columns
 }
-
-
-# ============================================================
-# DISEASE PROTOTYPES
-# ============================================================
-
-# Average symptom pattern for each disease.
-# This is used by the experimental quantum similarity layer.
-
-disease_prototypes = {}
-
-for disease in sorted(
-    y_train.unique()
-):
-
-    disease_rows = X_train[
-        y_train == disease
-    ]
-
-    if len(disease_rows) > 0:
-
-        disease_prototypes[
-            str(disease)
-        ] = disease_rows.mean(
-            axis=0
-        ).values.astype(float)
 
 
 # ============================================================
@@ -525,13 +444,9 @@ SPECIALTY_KEYWORDS = {
 
 def recommend_specialty(disease):
 
-    disease_text = str(
-        disease
-    ).lower()
+    disease_text = str(disease).lower()
 
-    for keyword, specialty in (
-        SPECIALTY_KEYWORDS.items()
-    ):
+    for keyword, specialty in SPECIALTY_KEYWORDS.items():
 
         if keyword in disease_text:
 
@@ -645,218 +560,63 @@ DOCTORS = [
 
 
 # ============================================================
-# QUANTUM SIMILARITY
-# ============================================================
-
-def calculate_quantum_similarity(
-    input_vector,
-    disease_vector
-):
-
-    if len(input_vector) == 0:
-        return 0.0
-
-    input_vector = np.asarray(
-        input_vector,
-        dtype=float
-    )
-
-    disease_vector = np.asarray(
-        disease_vector,
-        dtype=float
-    )
-
-    # Normalize vectors
-    input_norm = np.linalg.norm(
-        input_vector
-    )
-
-    disease_norm = np.linalg.norm(
-        disease_vector
-    )
-
-    if input_norm == 0 or disease_norm == 0:
-        return 0.0
-
-    cosine_similarity = (
-        np.dot(
-            input_vector,
-            disease_vector
-        )
-        /
-        (
-            input_norm
-            *
-            disease_norm
-        )
-    )
-
-    cosine_similarity = float(
-        np.clip(
-            cosine_similarity,
-            0,
-            1
-        )
-    )
-
-    # Symptom overlap
-    input_active = (
-        input_vector > 0
-    )
-
-    disease_active = (
-        disease_vector > 0.20
-    )
-
-    intersection = np.sum(
-        input_active &
-        disease_active
-    )
-
-    union = np.sum(
-        input_active |
-        disease_active
-    )
-
-    if union > 0:
-
-        jaccard = (
-            intersection / union
-        )
-
-    else:
-
-        jaccard = 0.0
-
-    similarity = (
-        0.60 * cosine_similarity
-        +
-        0.40 * jaccard
-    )
-
-    return float(
-        np.clip(
-            similarity,
-            0,
-            1
-        )
-    )
-
-
-# ============================================================
-# QISKIT EXPERIMENT
+# QUANTUM EXPERIMENT
 # ============================================================
 
 def quantum_experimental_score(
     input_vector,
-    predicted_disease,
     rf_confidence
 ):
-
-    rf_confidence = float(
-        np.clip(
-            rf_confidence,
-            0,
-            100
-        )
-    )
-
-    # --------------------------------------------------------
-    # If Qiskit isn't available
-    # --------------------------------------------------------
 
     if not QISKIT_AVAILABLE:
 
         return {
-
             "available": False,
-
             "score": round(
-                rf_confidence,
+                float(rf_confidence),
                 2
             ),
-
             "qubits": 0,
-
             "circuit_depth": 0,
-
-            "quantum_signal": 0,
-
             "message":
                 "Qiskit is not available on the server."
         }
 
 
-    # --------------------------------------------------------
-    # Convert vector
-    # --------------------------------------------------------
+    selected_indices = [
+        index
+        for index, value in enumerate(input_vector)
+        if value == 1
+    ]
 
-    vector = np.asarray(
-        input_vector,
-        dtype=float
-    )
-
-    active_indices = np.where(
-        vector > 0
-    )[0]
-
-
-    # --------------------------------------------------------
-    # Use maximum 4 qubits
-    # --------------------------------------------------------
 
     number_of_qubits = min(
-        max(
-            len(active_indices),
-            1
-        ),
+        max(len(selected_indices), 1),
         4
     )
 
-
-    # --------------------------------------------------------
-    # Quantum circuit
-    # --------------------------------------------------------
 
     circuit = QuantumCircuit(
         number_of_qubits
     )
 
 
-    # --------------------------------------------------------
-    # Encode selected symptoms
-    # --------------------------------------------------------
+    # Encode symptom information
 
-    total_features = max(
-        len(vector),
-        1
-    )
+    for qubit in range(number_of_qubits):
 
-    for qubit in range(
-        number_of_qubits
-    ):
+        circuit.h(qubit)
 
-        circuit.h(
-            qubit
-        )
+        if qubit < len(selected_indices):
 
-        if qubit < len(
-            active_indices
-        ):
-
-            index = int(
-                active_indices[
-                    qubit
-                ]
-            )
+            position = selected_indices[qubit]
 
             angle = (
-                np.pi
-                *
+                np.pi *
                 (
-                    (index + 1)
+                    (position + 1)
                     /
-                    total_features
+                    max(len(input_vector), 1)
                 )
             )
 
@@ -866,9 +626,7 @@ def quantum_experimental_score(
             )
 
 
-    # --------------------------------------------------------
     # Entanglement
-    # --------------------------------------------------------
 
     for qubit in range(
         number_of_qubits - 1
@@ -880,97 +638,75 @@ def quantum_experimental_score(
         )
 
 
-    # --------------------------------------------------------
     # Statevector
-    # --------------------------------------------------------
 
     state = Statevector.from_instruction(
         circuit
     )
 
-    probabilities = (
-        state.probabilities()
-    )
+    probabilities = state.probabilities()
 
-    quantum_signal = float(
-        np.max(
-            probabilities
+    quantum_signal = (
+        float(
+            np.max(probabilities)
         )
         * 100
     )
 
 
-    # --------------------------------------------------------
-    # Disease prototype similarity
-    # --------------------------------------------------------
+    # Calibrated experimental score
 
-    prototype = disease_prototypes.get(
-        str(predicted_disease)
+    rf_confidence = float(
+        np.clip(
+            rf_confidence,
+            0,
+            100
+        )
     )
 
-    if prototype is not None:
+    quantum_signal = float(
+        np.clip(
+            quantum_signal,
+            0,
+            100
+        )
+    )
 
-        similarity = (
-            calculate_quantum_similarity(
-                vector,
-                prototype
-            )
+
+    score = (
+        0.80 * rf_confidence
+        +
+        0.20 * quantum_signal
+    )
+
+
+    difference = (
+        score -
+        rf_confidence
+    )
+
+
+    if difference > 8:
+
+        score = (
+            rf_confidence +
+            8
         )
 
-    else:
 
-        similarity = 0.0
+    if difference < -8:
 
-
-    # --------------------------------------------------------
-    # Convert similarity to percentage
-    # --------------------------------------------------------
-
-    similarity_score = (
-        similarity * 100
-    )
+        score = (
+            rf_confidence -
+            8
+        )
 
 
-    # --------------------------------------------------------
-    # Experimental quantum score
-    #
-    # RF remains the primary ML result.
-    # Quantum layer acts as an experimental
-    # secondary analysis.
-    # --------------------------------------------------------
-
-    quantum_score = (
-        0.70 * rf_confidence
-        +
-        0.20 * similarity_score
-        +
-        0.10 * quantum_signal
-    )
-
-
-    # --------------------------------------------------------
-    # Keep comparison stable
-    #
-    # This prevents the experimental quantum
-    # score from becoming wildly different
-    # from the RF confidence.
-    # --------------------------------------------------------
-
-    lower_limit = max(
-        0,
-        rf_confidence - 10
-    )
-
-    upper_limit = min(
-        100,
-        rf_confidence + 10
-    )
-
-    quantum_score = float(
+    score = float(
         np.clip(
-            quantum_score,
-            lower_limit,
-            upper_limit
+            score,
+            0,
+            100
         )
     )
 
@@ -979,10 +715,11 @@ def quantum_experimental_score(
 
         "available": True,
 
-        "score": round(
-            quantum_score,
-            2
-        ),
+        "score":
+            round(
+                score,
+                2
+            ),
 
         "qubits":
             number_of_qubits,
@@ -996,17 +733,12 @@ def quantum_experimental_score(
                 2
             ),
 
-        "similarity":
-            round(
-                similarity_score,
-                2
-            ),
-
         "message":
             (
-                "Experimental Qiskit analysis "
-                "using symptom-state encoding "
-                "and disease-prototype similarity."
+                "Experimental Qiskit score generated "
+                "from the encoded symptom state and "
+                "calibrated for comparison with the "
+                "Random Forest result."
             )
     }
 
@@ -1054,6 +786,7 @@ def health():
 
         "diseases":
             len(model.classes_)
+
     })
 
 
@@ -1064,7 +797,7 @@ def health():
 @app.route("/performance")
 def performance():
 
-    response = {
+    return jsonify({
 
         "accuracy":
             round(
@@ -1109,22 +842,8 @@ def performance():
             "Qiskit"
             if QISKIT_AVAILABLE
             else "Unavailable"
-    }
 
-
-    if cv_accuracy is not None:
-
-        response[
-            "cross_validation_accuracy"
-        ] = round(
-            cv_accuracy * 100,
-            2
-        )
-
-
-    return jsonify(
-        response
-    )
+    })
 
 
 # ============================================================
@@ -1168,6 +887,7 @@ def doctors():
             ].lower()
             ==
             specialty.lower()
+
         ]
 
     else:
@@ -1191,24 +911,22 @@ def doctors():
     "/predict",
     methods=["POST"]
 )
+@require_login
 def predict():
 
     try:
 
         # ----------------------------------------------------
-        # TIMESTAMP
+        # PREDICTION TIMESTAMP
         # ----------------------------------------------------
 
         prediction_datetime = (
             datetime.now(
                 timezone.utc
-            ).isoformat()
+            )
+            .isoformat()
         )
 
-
-        # ----------------------------------------------------
-        # REQUEST
-        # ----------------------------------------------------
 
         data = request.get_json(
             silent=True
@@ -1248,9 +966,7 @@ def predict():
             }), 400
 
 
-        if len(
-            selected_symptoms
-        ) == 0:
+        if len(selected_symptoms) == 0:
 
             return jsonify({
 
@@ -1263,15 +979,14 @@ def predict():
 
 
         # ----------------------------------------------------
-        # INPUT VECTOR
+        # BUILD INPUT VECTOR
         # ----------------------------------------------------
 
         input_data = {
 
             symptom: 0
 
-            for symptom
-            in symptom_columns
+            for symptom in symptom_columns
 
         }
 
@@ -1300,14 +1015,9 @@ def predict():
                 ] = 1
 
 
-                if (
+                matched_symptoms.append(
                     actual_column
-                    not in matched_symptoms
-                ):
-
-                    matched_symptoms.append(
-                        actual_column
-                    )
+                )
 
 
         if not matched_symptoms:
@@ -1322,20 +1032,14 @@ def predict():
             }), 400
 
 
-        # ----------------------------------------------------
-        # DATAFRAME
-        # ----------------------------------------------------
-
         input_df = pd.DataFrame(
-
             [input_data],
-
             columns=symptom_columns
         )
 
 
         # ----------------------------------------------------
-        # RANDOM FOREST PREDICTION
+        # RANDOM FOREST
         # ----------------------------------------------------
 
         prediction = model.predict(
@@ -1364,12 +1068,9 @@ def predict():
                 item[1],
 
             reverse=True
+
         )
 
-
-        # ----------------------------------------------------
-        # TOP PREDICTIONS
-        # ----------------------------------------------------
 
         top_predictions = [
 
@@ -1380,9 +1081,7 @@ def predict():
 
                 "confidence":
                     round(
-                        float(
-                            probability
-                        )
+                        float(probability)
                         * 100,
                         2
                     )
@@ -1391,12 +1090,9 @@ def predict():
 
             for disease, probability
             in results[:5]
+
         ]
 
-
-        # ----------------------------------------------------
-        # RF CONFIDENCE
-        # ----------------------------------------------------
 
         rf_confidence = (
 
@@ -1407,11 +1103,12 @@ def predict():
             if top_predictions
 
             else 0
+
         )
 
 
         # ----------------------------------------------------
-        # INPUT VECTOR
+        # QISKIT
         # ----------------------------------------------------
 
         input_vector = [
@@ -1422,20 +1119,13 @@ def predict():
 
             for column
             in symptom_columns
+
         ]
 
 
-        # ----------------------------------------------------
-        # QISKIT
-        # ----------------------------------------------------
-
         quantum_result = (
             quantum_experimental_score(
-
                 input_vector,
-
-                prediction,
-
                 rf_confidence
             )
         )
@@ -1447,28 +1137,21 @@ def predict():
 
 
         quantum_score = (
-            quantum_result[
-                "score"
-            ]
-        )
-
-
-        # ----------------------------------------------------
-        # SCORE DIFFERENCE
-        # ----------------------------------------------------
-
-        difference = abs(
-
-            rf_confidence
-            -
-            quantum_score
-
+            quantum_result["score"]
         )
 
 
         # ----------------------------------------------------
         # MODEL AGREEMENT
         # ----------------------------------------------------
+
+        difference = abs(
+
+            rf_confidence -
+            quantum_score
+
+        )
+
 
         if difference <= 5:
 
@@ -1484,19 +1167,13 @@ def predict():
 
 
         # ----------------------------------------------------
-        # SPECIALTY
+        # DOCTOR
         # ----------------------------------------------------
 
-        specialty = (
-            recommend_specialty(
-                prediction
-            )
+        specialty = recommend_specialty(
+            prediction
         )
 
-
-        # ----------------------------------------------------
-        # DOCTORS
-        # ----------------------------------------------------
 
         recommended_doctors = [
 
@@ -1522,22 +1199,14 @@ def predict():
             "success":
                 True,
 
-
-            # =================================================
-            # TIMESTAMP
-            # =================================================
-
+            # Timestamp
             "prediction_datetime":
                 prediction_datetime,
 
             "prediction_date":
                 prediction_datetime,
 
-
-            # =================================================
-            # RANDOM FOREST
-            # =================================================
-
+            # Random Forest
             "disease":
                 str(prediction),
 
@@ -1553,11 +1222,7 @@ def predict():
             "top_predictions":
                 top_predictions,
 
-
-            # =================================================
-            # QISKIT
-            # =================================================
-
+            # Qiskit
             "qiskit_disease":
                 quantum_disease,
 
@@ -1588,17 +1253,7 @@ def predict():
                     0
                 ),
 
-            "quantum_similarity":
-                quantum_result.get(
-                    "similarity",
-                    0
-                ),
-
-
-            # =================================================
-            # COMPARISON
-            # =================================================
-
+            # Comparison
             "score_difference":
                 round(
                     difference,
@@ -1608,30 +1263,18 @@ def predict():
             "model_agreement":
                 agreement,
 
-
-            # =================================================
-            # SYMPTOMS
-            # =================================================
-
+            # Symptoms
             "selected_symptoms":
                 matched_symptoms,
 
-
-            # =================================================
-            # DOCTOR
-            # =================================================
-
+            # Doctors
             "specialty":
                 specialty,
 
             "doctors":
                 recommended_doctors,
 
-
-            # =================================================
-            # MESSAGES
-            # =================================================
-
+            # Messages
             "message":
                 (
                     "Educational symptom-analysis "
@@ -1639,9 +1282,11 @@ def predict():
                 ),
 
             "quantum_message":
-                quantum_result[
-                    "message"
-                ]
+                (
+                    "The Qiskit value is an experimental "
+                    "quantum-computing score for this project. "
+                    "It is not a clinically validated probability."
+                )
 
         })
 
@@ -1678,4 +1323,5 @@ if __name__ == "__main__":
         port=5000,
 
         debug=True
+
     )
