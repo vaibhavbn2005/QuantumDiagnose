@@ -14,7 +14,8 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    sendPasswordResetEmail
 } from
     "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -157,6 +158,9 @@ const authMessage =
 
 const logoutBtn =
     $("logoutBtn");
+
+const forgotPasswordBtn =
+    $("forgotPasswordBtn");
 
 
 // ============================================================
@@ -347,6 +351,97 @@ async function handleAuthentication() {
             authMode === "login"
                 ? "Login"
                 : "Create Account";
+    }
+}
+
+
+// ============================================================
+// FORGOT PASSWORD
+// ============================================================
+
+async function handleForgotPassword() {
+
+    const email =
+        authEmail?.value
+            .trim();
+
+    if (!email) {
+
+        showAuthMessage(
+            "Enter your email address above, then click 'Forgot password?'.",
+            true
+        );
+
+        return;
+    }
+
+    if (forgotPasswordBtn) {
+
+        forgotPasswordBtn.disabled =
+            true;
+    }
+
+    showAuthMessage(
+        "Sending reset email..."
+    );
+
+    try {
+
+        await sendPasswordResetEmail(
+            auth,
+            email
+        );
+
+        showAuthMessage(
+            "✓ Password reset email sent. Please check your inbox.",
+            false
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Password reset error:",
+            error
+        );
+
+        let message =
+            "Could not send reset email.";
+
+        switch (error.code) {
+
+            case "auth/invalid-email":
+                message =
+                    "Please enter a valid email address.";
+                break;
+
+            case "auth/user-not-found":
+                message =
+                    "No account found with this email.";
+                break;
+
+            case "auth/too-many-requests":
+                message =
+                    "Too many attempts. Please try again later.";
+                break;
+
+            default:
+                message =
+                    error.message ||
+                    message;
+        }
+
+        showAuthMessage(
+            message,
+            true
+        );
+
+    } finally {
+
+        if (forgotPasswordBtn) {
+
+            forgotPasswordBtn.disabled =
+                false;
+        }
     }
 }
 
@@ -1019,6 +1114,13 @@ async function makePrediction() {
 
     try {
 
+        // Get a fresh Firebase ID token so the server
+        // can verify this request is really from a
+        // logged-in user before running the prediction.
+
+        const idToken =
+            await currentUser.getIdToken();
+
         const response =
             await fetch(
                 "/predict",
@@ -1028,7 +1130,10 @@ async function makePrediction() {
 
                     headers: {
                         "Content-Type":
-                            "application/json"
+                            "application/json",
+
+                        "Authorization":
+                            "Bearer " + idToken
                     },
 
                     body:
@@ -2503,7 +2608,7 @@ function renderComparisonPage() {
 
 
 // ============================================================
-// PDF REPORT
+// PDF REPORT (SINGLE PAGE)
 // ============================================================
 
 function downloadPDF(
@@ -2575,11 +2680,11 @@ function downloadPDF(
             )
             .join(", ");
 
-    let y = 20;
+    let y = 14;
 
     // HEADER
 
-    doc.setFontSize(22);
+    doc.setFontSize(19);
 
     doc.setFont(
         "helvetica",
@@ -2592,9 +2697,9 @@ function downloadPDF(
         y
     );
 
-    y += 9;
+    y += 7;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
 
     doc.setFont(
         "helvetica",
@@ -2607,7 +2712,7 @@ function downloadPDF(
         y
     );
 
-    y += 12;
+    y += 6;
 
     doc.line(
         20,
@@ -2616,12 +2721,12 @@ function downloadPDF(
         y
     );
 
-    y += 12;
+    y += 8;
 
 
     // PATIENT
 
-    doc.setFontSize(15);
+    doc.setFontSize(12);
 
     doc.setFont(
         "helvetica",
@@ -2634,9 +2739,9 @@ function downloadPDF(
         y
     );
 
-    y += 8;
+    y += 6;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
 
     doc.setFont(
         "helvetica",
@@ -2685,16 +2790,16 @@ function downloadPDF(
                 y
             );
 
-            y += 6;
+            y += 4.6;
         }
     );
 
-    y += 5;
+    y += 3;
 
 
     // SYMPTOMS
 
-    doc.setFontSize(15);
+    doc.setFontSize(12);
 
     doc.setFont(
         "helvetica",
@@ -2707,9 +2812,9 @@ function downloadPDF(
         y
     );
 
-    y += 8;
+    y += 6;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
 
     doc.setFont(
         "helvetica",
@@ -2734,13 +2839,13 @@ function downloadPDF(
 
     y +=
         symptomLines.length *
-        5 +
-        7;
+        4.3 +
+        4;
 
 
     // RF RESULT
 
-    doc.setFontSize(15);
+    doc.setFontSize(12);
 
     doc.setFont(
         "helvetica",
@@ -2753,9 +2858,9 @@ function downloadPDF(
         y
     );
 
-    y += 8;
+    y += 6;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
 
     doc.setFont(
         "helvetica",
@@ -2768,7 +2873,7 @@ function downloadPDF(
         y
     );
 
-    y += 6;
+    y += 4.6;
 
     doc.text(
         `Confidence: ${rf.toFixed(2)}%`,
@@ -2776,7 +2881,7 @@ function downloadPDF(
         y
     );
 
-    y += 8;
+    y += 6;
 
 
     // TOP PREDICTIONS
@@ -2792,7 +2897,7 @@ function downloadPDF(
         y
     );
 
-    y += 6;
+    y += 4.6;
 
     doc.setFont(
         "helvetica",
@@ -2822,23 +2927,16 @@ function downloadPDF(
                     y
                 );
 
-                y += 5;
+                y += 4.3;
             }
         );
 
-    y += 7;
+    y += 4;
 
 
     // QISKIT
 
-    if (y > 245) {
-
-        doc.addPage();
-
-        y = 20;
-    }
-
-    doc.setFontSize(15);
+    doc.setFontSize(12);
 
     doc.setFont(
         "helvetica",
@@ -2851,9 +2949,9 @@ function downloadPDF(
         y
     );
 
-    y += 8;
+    y += 6;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
 
     doc.setFont(
         "helvetica",
@@ -2868,7 +2966,7 @@ function downloadPDF(
         y
     );
 
-    y += 6;
+    y += 4.6;
 
     doc.text(
         `Qubits Used: ${
@@ -2880,7 +2978,7 @@ function downloadPDF(
         y
     );
 
-    y += 6;
+    y += 4.6;
 
     doc.text(
         `Circuit Depth: ${
@@ -2892,7 +2990,7 @@ function downloadPDF(
         y
     );
 
-    y += 6;
+    y += 4.6;
 
     doc.text(
         `Quantum Signal: ${
@@ -2906,12 +3004,12 @@ function downloadPDF(
         y
     );
 
-    y += 10;
+    y += 7;
 
 
     // DOCTOR
 
-    doc.setFontSize(15);
+    doc.setFontSize(12);
 
     doc.setFont(
         "helvetica",
@@ -2924,9 +3022,9 @@ function downloadPDF(
         y
     );
 
-    y += 8;
+    y += 6;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
 
     doc.setFont(
         "helvetica",
@@ -2942,7 +3040,7 @@ function downloadPDF(
         y
     );
 
-    y += 7;
+    y += 5;
 
     const doctors =
         source.doctors ||
@@ -2962,7 +3060,7 @@ function downloadPDF(
             y
         );
 
-        y += 6;
+        y += 4.6;
 
         doc.text(
             `Hospital: ${
@@ -2973,7 +3071,7 @@ function downloadPDF(
             y
         );
 
-        y += 6;
+        y += 4.6;
 
         doc.text(
             `Location: ${
@@ -2984,7 +3082,7 @@ function downloadPDF(
             y
         );
 
-        y += 6;
+        y += 4.6;
 
         doc.text(
             `Experience: ${
@@ -2995,20 +3093,13 @@ function downloadPDF(
             y
         );
 
-        y += 8;
+        y += 6;
     }
 
 
     // DISCLAIMER
 
-    if (y > 250) {
-
-        doc.addPage();
-
-        y = 20;
-    }
-
-    doc.setFontSize(14);
+    doc.setFontSize(11);
 
     doc.setFont(
         "helvetica",
@@ -3021,9 +3112,9 @@ function downloadPDF(
         y
     );
 
-    y += 8;
+    y += 6;
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
 
     doc.setFont(
         "helvetica",
@@ -3048,13 +3139,10 @@ function downloadPDF(
         y
     );
 
-    y +=
-        disclaimerLines.length *
-        4.5 +
-        10;
-
 
     // FOOTER
+    // (fixed position at the bottom of the single page
+    //  — everything above must fit before this)
 
     doc.setFontSize(8);
 
@@ -3156,6 +3244,11 @@ authPassword?.addEventListener(
             handleAuthentication();
         }
     }
+);
+
+forgotPasswordBtn?.addEventListener(
+    "click",
+    handleForgotPassword
 );
 
 logoutBtn?.addEventListener(
