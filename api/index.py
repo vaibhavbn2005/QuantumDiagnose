@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import datetime, timezone
+import os
+import requests
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
@@ -288,7 +290,7 @@ symptom_map = {
 
 
 # ============================================================
-# SPECIALIST MAPPING
+# SPECIALTY MAPPING
 # ============================================================
 
 SPECIALTY_KEYWORDS = {
@@ -1203,6 +1205,249 @@ def predict():
             "error":
                 str(error)
 
+        }), 500
+
+
+# ============================================================
+# EMAIL REPORT (BREVO)
+# ============================================================
+#
+# Sends the prediction report as a branded HTML email using
+# Brevo's transactional email API (https://www.brevo.com).
+# Brevo's free tier includes 300 emails/day, and mail is sent
+# from Brevo's own authenticated (SPF/DKIM) infrastructure,
+# which is why it lands in the inbox instead of spam far more
+# reliably than sending raw SMTP from a personal address.
+#
+# Required environment variables (set these in Vercel ->
+# Project -> Settings -> Environment Variables):
+#
+#   BREVO_API_KEY      - your Brevo API key (free account)
+#   BREVO_SENDER_EMAIL - an email address you verified as a
+#                         sender inside Brevo
+#   BREVO_SENDER_NAME  - optional, defaults to "QuantumDiagnose"
+#
+# ============================================================
+
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL", "")
+BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "QuantumDiagnose")
+
+
+def build_report_email_html(payload):
+
+    patient = payload.get("patient") or {}
+
+    disease = str(payload.get("disease") or "—").replace("_", " ").title()
+
+    rf_confidence = float(payload.get("confidence") or payload.get("rf_confidence") or 0)
+
+    quantum_score = float(payload.get("quantum_score") or payload.get("qiskit_score") or 0)
+
+    quantum_signal = float(payload.get("quantum_signal") or 0)
+
+    specialty = payload.get("specialty") or "General Physician"
+
+    doctors = payload.get("doctors") or []
+
+    top_predictions = payload.get("top_predictions") or []
+
+    symptoms_list = payload.get("selected_symptoms") or []
+
+    prediction_time = payload.get("prediction_time") or datetime.now(timezone.utc).isoformat()
+
+    symptoms_html = ", ".join(
+        s.replace("_", " ").title() for s in symptoms_list
+    ) or "Not recorded"
+
+    top_rows = "".join(
+        f"""
+        <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #e1e7f0;color:#182238;">
+                {str(item.get('disease','')).replace('_',' ').title()}
+            </td>
+            <td style="padding:8px 0;border-bottom:1px solid #e1e7f0;text-align:right;color:#315bea;font-weight:700;">
+                {float(item.get('confidence',0)):.2f}%
+            </td>
+        </tr>
+        """
+        for item in top_predictions[:3]
+    )
+
+    doctor_html = ""
+
+    if doctors:
+
+        doctor = doctors[0]
+
+        doctor_html = f"""
+        <tr>
+            <td style="padding-top:14px;color:#68748a;font-size:13px;">
+                Recommended Doctor
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:4px 0 0;color:#182238;font-weight:700;">
+                {doctor.get('name','')} &middot; {doctor.get('specialization','')}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:2px 0 0;color:#68748a;font-size:13px;">
+                {doctor.get('hospital','')}, {doctor.get('location','')}
+            </td>
+        </tr>
+        """
+
+    html = f"""
+    <div style="font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;padding:28px 12px;">
+      <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e1e7f0;">
+
+        <div style="background:linear-gradient(135deg,#315bea,#4d70ef);padding:22px 28px;">
+          <div style="color:#ffffff;font-size:20px;font-weight:800;">QuantumDiagnose</div>
+          <div style="color:#dce6ff;font-size:12px;margin-top:2px;">AI-Assisted Symptom Analysis Report</div>
+        </div>
+
+        <div style="padding:26px 28px;">
+
+          <p style="margin:0 0 4px;color:#68748a;font-size:12px;">Patient</p>
+          <p style="margin:0 0 16px;color:#182238;font-weight:700;font-size:15px;">
+            {patient.get('name','—')} &middot; {patient.get('gender','—')} &middot; Age {patient.get('age','—')}
+          </p>
+
+          <p style="margin:0 0 4px;color:#68748a;font-size:12px;">Selected Symptoms</p>
+          <p style="margin:0 0 18px;color:#182238;font-size:13px;line-height:1.6;">{symptoms_html}</p>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f9fc;border-radius:12px;padding:16px;margin-bottom:18px;">
+            <tr>
+              <td style="padding:6px 12px;">
+                <p style="margin:0;color:#68748a;font-size:12px;">Predicted Disease (Random Forest)</p>
+                <p style="margin:4px 0 0;color:#182238;font-size:19px;font-weight:800;">{disease}</p>
+                <p style="margin:2px 0 0;color:#315bea;font-size:13px;font-weight:700;">{rf_confidence:.2f}% confidence</p>
+              </td>
+            </tr>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f4ff;border-radius:12px;padding:16px;margin-bottom:18px;">
+            <tr>
+              <td style="padding:6px 12px;">
+                <p style="margin:0;color:#68748a;font-size:12px;">Qiskit Experimental Score</p>
+                <p style="margin:4px 0 0;color:#182238;font-size:19px;font-weight:800;">{quantum_score:.2f}%</p>
+                <p style="margin:2px 0 0;color:#6548bd;font-size:12px;">Quantum signal: {quantum_signal:.2f}% &middot; Educational component, not a clinical probability</p>
+              </td>
+            </tr>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+            {top_rows}
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0">
+            {doctor_html}
+          </table>
+
+          <div style="margin-top:22px;padding:14px 16px;background:#fff8e8;border:1px solid #f4e2b5;border-radius:10px;">
+            <p style="margin:0;color:#755a1d;font-size:12px;line-height:1.6;">
+              <strong>Important:</strong> QuantumDiagnose is an educational and research demonstration.
+              This report is not a medical diagnosis or a substitute for professional medical advice.
+              Please consult a licensed physician for any health concerns.
+            </p>
+          </div>
+
+          <p style="margin:18px 0 0;color:#a3adc2;font-size:11px;">
+            Generated {prediction_time} &middot; QuantumDiagnose Educational Project
+          </p>
+
+        </div>
+      </div>
+    </div>
+    """
+
+    return html
+
+
+@app.route(
+    "/send-report",
+    methods=["POST"]
+)
+def send_report():
+
+    if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
+
+        return jsonify({
+            "success": False,
+            "error": "Email sending is not configured on the server yet."
+        }), 500
+
+    data = request.get_json(silent=True)
+
+    if not data:
+
+        return jsonify({
+            "success": False,
+            "error": "Invalid JSON request."
+        }), 400
+
+    to_email = (data.get("to_email") or "").strip()
+
+    if not to_email or "@" not in to_email:
+
+        return jsonify({
+            "success": False,
+            "error": "Please provide a valid email address."
+        }), 400
+
+    disease_label = str(data.get("disease") or "Report").replace("_", " ").title()
+
+    html_content = build_report_email_html(data)
+
+    payload = {
+        "sender": {
+            "name": BREVO_SENDER_NAME,
+            "email": BREVO_SENDER_EMAIL
+        },
+        "to": [
+            {"email": to_email}
+        ],
+        "subject": f"Your QuantumDiagnose Report — {disease_label}",
+        "htmlContent": html_content
+    }
+
+    try:
+
+        response = requests.post(
+            BREVO_API_URL,
+            json=payload,
+            headers={
+                "api-key": BREVO_API_KEY,
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            timeout=15
+        )
+
+        if response.status_code >= 300:
+
+            print("Brevo error:", response.status_code, response.text)
+
+            return jsonify({
+                "success": False,
+                "error": "The email provider rejected the request."
+            }), 502
+
+        return jsonify({
+            "success": True,
+            "message": f"Report sent to {to_email}."
+        })
+
+    except Exception as error:
+
+        print("Send report error:", repr(error))
+
+        return jsonify({
+            "success": False,
+            "error": "Could not send the email right now. Please try again."
         }), 500
 
 
