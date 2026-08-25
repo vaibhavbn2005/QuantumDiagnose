@@ -127,6 +127,8 @@ let currentPredictionTime = null;
 
 let historyItems = [];
 
+let emailReportSource = null;
+
 
 // ============================================================
 // AUTH ELEMENTS
@@ -2162,6 +2164,16 @@ function renderHistory() {
                             <div class="history-actions">
 
                                 <button
+                                    class="history-icon-btn"
+                                    type="button"
+                                    title="Email this report"
+                                    data-history-email-index="${index}">
+
+                                    📧
+
+                                </button>
+
+                                <button
                                     class="history-download"
                                     type="button"
                                     data-history-index="${index}">
@@ -2199,6 +2211,34 @@ function renderHistory() {
                     if (item) {
 
                         downloadPDF(
+                            item
+                        );
+                    }
+                }
+            );
+        });
+
+    container
+        .querySelectorAll(
+            "[data-history-email-index]"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const index =
+                        Number(
+                            button.dataset.historyEmailIndex
+                        );
+
+                    const item =
+                        historyItems[index];
+
+                    if (item) {
+
+                        openEmailModal(
                             item
                         );
                     }
@@ -2931,6 +2971,271 @@ function downloadCurrentReport() {
 
 
 // ============================================================
+// EMAIL REPORT MODAL
+// ============================================================
+
+const emailModalOverlay =
+    $("emailModalOverlay");
+
+const emailModalInput =
+    $("emailModalInput");
+
+const emailModalSend =
+    $("emailModalSend");
+
+const emailModalMessage =
+    $("emailModalMessage");
+
+const emailModalClose =
+    $("emailModalClose");
+
+function setEmailModalMessage(
+    text,
+    error = false
+) {
+
+    if (!emailModalMessage) {
+        return;
+    }
+
+    emailModalMessage.textContent =
+        text;
+
+    emailModalMessage.className =
+        "status-message " +
+        (error
+            ? "error"
+            : "success");
+}
+
+function openEmailModal(source) {
+
+    if (!source) {
+
+        alert(
+            "Please complete a prediction first."
+        );
+
+        return;
+    }
+
+    emailReportSource =
+        source;
+
+    setEmailModalMessage("");
+
+    if (emailModalInput) {
+
+        emailModalInput.value =
+            currentUser?.email ||
+            source.userEmail ||
+            "";
+    }
+
+    emailModalOverlay
+        ?.classList.remove(
+            "hidden"
+        );
+
+    emailModalInput
+        ?.focus();
+}
+
+function closeEmailModal() {
+
+    emailModalOverlay
+        ?.classList.add(
+            "hidden"
+        );
+
+    emailReportSource =
+        null;
+}
+
+async function sendEmailReport() {
+
+    if (!emailReportSource) {
+
+        setEmailModalMessage(
+            "No prediction report is available.",
+            true
+        );
+
+        return;
+    }
+
+    const toEmail =
+        emailModalInput?.value
+            .trim();
+
+    if (
+        !toEmail ||
+        !toEmail.includes("@")
+    ) {
+
+        setEmailModalMessage(
+            "Please enter a valid email address.",
+            true
+        );
+
+        return;
+    }
+
+    const source =
+        emailReportSource;
+
+    const payload = {
+
+        to_email:
+            toEmail,
+
+        patient:
+            source.patient ||
+            currentProfile ||
+            {},
+
+        disease:
+            source.disease,
+
+        confidence:
+            source.confidence ??
+            source.rf_confidence,
+
+        quantum_score:
+            source.quantum_score ??
+            source.qiskit_score ??
+            source.qiskitScore,
+
+        quantum_signal:
+            source.quantum_signal ??
+            source.quantumSignal,
+
+        qiskit_qubits:
+            source.qiskit_qubits ??
+            source.qiskitQubits,
+
+        qiskit_depth:
+            source.qiskit_depth ??
+            source.qiskitDepth,
+
+        specialty:
+            source.specialty,
+
+        doctors:
+            source.doctors || [],
+
+        top_predictions:
+            source.top_predictions ||
+            source.topPredictions ||
+            [],
+
+        selected_symptoms:
+            source.selected_symptoms ||
+            source.symptoms ||
+            [],
+
+        prediction_time:
+            source.prediction_time ||
+            source.predictionTime
+    };
+
+    if (emailModalSend) {
+
+        emailModalSend.disabled =
+            true;
+
+        emailModalSend.textContent =
+            "Sending...";
+    }
+
+    setEmailModalMessage(
+        "Sending report..."
+    );
+
+    try {
+
+        const idToken =
+            currentUser
+                ? await currentUser.getIdToken()
+                : null;
+
+        const headers = {
+            "Content-Type":
+                "application/json"
+        };
+
+        if (idToken) {
+
+            headers.Authorization =
+                "Bearer " + idToken;
+        }
+
+        const response =
+            await fetch(
+                "/send-report",
+                {
+                    method:
+                        "POST",
+                    headers,
+                    body:
+                        JSON.stringify(
+                            payload
+                        )
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (
+            !response.ok ||
+            data.success === false
+        ) {
+
+            throw new Error(
+                data.error ||
+                "Could not send the report."
+            );
+        }
+
+        setEmailModalMessage(
+            "✓ Report sent to " +
+            toEmail
+        );
+
+        setTimeout(
+            closeEmailModal,
+            1400
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Email report error:",
+            error
+        );
+
+        setEmailModalMessage(
+            error.message ||
+            "Could not send the report.",
+            true
+        );
+
+    } finally {
+
+        if (emailModalSend) {
+
+            emailModalSend.disabled =
+                false;
+
+            emailModalSend.textContent =
+                "Send Report";
+        }
+    }
+}
+
+
+// ============================================================
 // EVENT LISTENERS
 // ============================================================
 
@@ -3066,6 +3371,66 @@ $("downloadReportBtn2")
     ?.addEventListener(
         "click",
         downloadCurrentReport
+    );
+
+
+$("emailReportBtn")
+    ?.addEventListener(
+        "click",
+        () => openEmailModal(currentResult)
+    );
+
+
+$("emailReportBtn2")
+    ?.addEventListener(
+        "click",
+        () => openEmailModal(currentResult)
+    );
+
+
+emailModalClose
+    ?.addEventListener(
+        "click",
+        closeEmailModal
+    );
+
+
+emailModalSend
+    ?.addEventListener(
+        "click",
+        sendEmailReport
+    );
+
+
+emailModalOverlay
+    ?.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target ===
+                emailModalOverlay
+            ) {
+
+                closeEmailModal();
+            }
+        }
+    );
+
+
+emailModalInput
+    ?.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key ===
+                "Enter"
+            ) {
+
+                sendEmailReport();
+            }
+        }
     );
 
 
