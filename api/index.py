@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import datetime, timezone
-from functools import wraps
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
@@ -28,108 +27,6 @@ try:
 
 except Exception as error:
     print("Qiskit unavailable:", error)
-
-
-# ============================================================
-# SERVER-SIDE LOGIN VERIFICATION
-# ============================================================
-# Verifies the Firebase ID token sent by the browser on the
-# Authorization header, so /predict can no longer be called
-# by someone who isn't actually logged in. Uses the lightweight
-# google-auth library (not firebase-admin) to keep the
-# deployment size small.
-
-FIREBASE_PROJECT_ID = "quantumdiagnose"
-
-try:
-
-    import google.auth.transport.requests
-    from google.oauth2 import id_token as google_id_token
-
-    _google_auth_request = google.auth.transport.requests.Request()
-
-    AUTH_CHECK_AVAILABLE = True
-
-except Exception as error:
-
-    print("google-auth unavailable:", error)
-
-    AUTH_CHECK_AVAILABLE = False
-
-
-def verify_firebase_token(token):
-
-    return google_id_token.verify_firebase_token(
-        token,
-        _google_auth_request,
-        audience=FIREBASE_PROJECT_ID
-    )
-
-
-def require_login(f):
-
-    @wraps(f)
-    def decorated(*args, **kwargs):
-
-        if not AUTH_CHECK_AVAILABLE:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "Server authentication check is unavailable."
-
-            }), 500
-
-        header = request.headers.get(
-            "Authorization",
-            ""
-        )
-
-        if not header.startswith("Bearer "):
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "Please login to use this feature."
-
-            }), 401
-
-        token = header.split(
-            " ",
-            1
-        )[1].strip()
-
-        try:
-
-            decoded_token = verify_firebase_token(
-                token
-            )
-
-        except Exception as error:
-
-            print(
-                "Auth verification failed:",
-                repr(error)
-            )
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "Your session has expired. Please login again."
-
-            }), 401
-
-        request.firebase_user = decoded_token
-
-        return f(*args, **kwargs)
-
-    return decorated
 
 
 # ============================================================
@@ -911,7 +808,6 @@ def doctors():
     "/predict",
     methods=["POST"]
 )
-@require_login
 def predict():
 
     try:
