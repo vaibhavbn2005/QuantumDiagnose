@@ -1296,6 +1296,9 @@ button:disabled {
 
     margin-bottom:
         18px;
+
+    flex-wrap:
+        wrap;
 }
 
 .prediction-header h2 {
@@ -1314,6 +1317,20 @@ button:disabled {
         0;
 }
 
+.header-actions {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        10px;
+
+    flex-wrap:
+        wrap;
+}
+
 .download-btn {
     background:
         #182238;
@@ -1323,6 +1340,15 @@ button:disabled {
 
     white-space:
         nowrap;
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
 }
 
 .download-btn:hover {
@@ -1331,6 +1357,26 @@ button:disabled {
 
     transform:
         translateY(-1px);
+}
+
+.download-btn.email-btn {
+    background:
+        white;
+
+    color:
+        var(--primary);
+
+    border:
+        1px solid
+        var(--border);
+}
+
+.download-btn.email-btn:hover {
+    background:
+        var(--primary-soft);
+
+    border-color:
+        var(--primary);
 }
 
 .model-grid {
@@ -1388,6 +1434,35 @@ button:disabled {
 .model-icon {
     font-size:
         34px;
+
+    line-height:
+        1;
+
+    width:
+        44px;
+
+    height:
+        44px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    border-radius:
+        13px;
+
+    background:
+        var(--primary-soft);
+}
+
+.quantum-card .model-icon {
+    background:
+        #eee8ff;
 }
 
 .model-label {
@@ -1804,6 +1879,27 @@ button:disabled {
 .doctor-icon {
     font-size:
         31px;
+
+    width:
+        48px;
+
+    height:
+        48px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    border-radius:
+        13px;
+
+    background:
+        var(--primary-soft);
 }
 
 .doctor-card h3 {
@@ -1960,7 +2056,8 @@ button:disabled {
         8px;
 }
 
-.history-download {
+.history-download,
+.history-icon-btn {
     border:
         0;
 
@@ -1978,6 +2075,20 @@ button:disabled {
 
     font-weight:
         750;
+}
+
+.history-icon-btn {
+    padding:
+        9px 11px;
+
+    font-size:
+        14px;
+}
+
+.history-icon-btn:hover,
+.history-download:hover {
+    background:
+        #e1e9ff;
 }
 
 
@@ -2299,6 +2410,222 @@ footer a {
 
 
 /* =========================================================
+   EMAIL REPORT MODAL
+========================================================= */
+
+.modal-overlay {
+    position:
+        fixed;
+
+    inset:
+        0;
+
+    background:
+        rgba(16, 26, 51, 0.55);
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        20px;
+
+    z-index:
+        100;
+
+    backdrop-filter:
+        blur(2px);
+}
+
+.modal-card {
+    position:
+        relative;
+
+    width:
+        100%;
+
+    max-width:
+        420px;
+
+    background:
+        white;
+
+    border-radius:
+        20px;
+
+    padding:
+        32px;
+
+    box-shadow:
+        0 30px 80px
+        rgba(16, 26, 51, 0.25);
+
+    text-align:
+        center;
+}
+
+.modal-close {
+    position:
+        absolute;
+
+    top:
+        14px;
+
+    right:
+        14px;
+
+    width:
+        32px;
+
+    height:
+        32px;
+
+    border:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        #f1f4f9;
+
+    color:
+        var(--muted);
+
+    font-size:
+        13px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+}
+
+.modal-close:hover {
+    background:
+        #e7ecf5;
+
+    color:
+        var(--text);
+}
+
+.modal-icon {
+    width:
+        56px;
+
+    height:
+        56px;
+
+    margin:
+        0 auto 14px;
+
+    border-radius:
+        16px;
+
+    background:
+        var(--primary-soft);
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    font-size:
+        26px;
+}
+
+.modal-card h3 {
+    margin:
+        0 0 8px;
+
+    font-size:
+        21px;
+}
+
+.modal-card p {
+    margin:
+        0 0 20px;
+
+    font-size:
+        13px;
+
+    line-height:
+        1.6;
+}
+
+.modal-card label {
+    display:
+        block;
+
+    text-align:
+        left;
+
+    font-weight:
+        700;
+
+    font-size:
+        13px;
+
+    margin-bottom:
+        7px;
+}
+
+.modal-card input {
+    width:
+        100%;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius:
+        11px;
+
+    padding:
+        13px 14px;
+
+    outline:
+        none;
+
+    background:
+        #fafcff;
+
+    transition:
+        0.2s;
+}
+
+.modal-card input:focus {
+    border-color:
+        var(--primary);
+
+    box-shadow:
+        0 0 0 4px
+        rgba(49,91,234,0.10);
+
+    background:
+        white;
+}
+
+.modal-card .status-message {
+    text-align:
+        center;
+}
+
+
+/* =========================================================
    RESPONSIVE
 ========================================================= */
 
@@ -2432,6 +2759,19 @@ footer a {
             flex-start;
     }
 
+    .header-actions {
+        width:
+            100%;
+    }
+
+    .header-actions .download-btn {
+        flex:
+            1;
+
+        justify-content:
+            center;
+    }
+
     .history-card {
         flex-direction:
             column;
@@ -2445,6 +2785,11 @@ footer a {
     .auth-card {
         padding:
             28px 22px;
+    }
+
+    .modal-card {
+        padding:
+            26px 22px;
     }
 
 }
