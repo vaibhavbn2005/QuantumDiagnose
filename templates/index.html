@@ -768,14 +768,27 @@
 
                     </div>
 
-                    <button
-                        id="downloadReportBtn"
-                        class="download-btn"
-                        type="button">
+                    <div class="header-actions">
 
-                        📄 Download PDF Report
+                        <button
+                            id="emailReportBtn"
+                            class="download-btn email-btn"
+                            type="button">
 
-                    </button>
+                            📧 Email Report
+
+                        </button>
+
+                        <button
+                            id="downloadReportBtn"
+                            class="download-btn"
+                            type="button">
+
+                            📄 Download PDF Report
+
+                        </button>
+
+                    </div>
 
                 </div>
 
@@ -1091,6 +1104,15 @@
                         type="button">
 
                         📄 Download PDF
+
+                    </button>
+
+                    <button
+                        id="emailReportBtn2"
+                        class="secondary email-btn"
+                        type="button">
+
+                        📧 Email Report
 
                     </button>
 
@@ -1532,6 +1554,65 @@
         </footer>
 
     </main>
+
+</div>
+
+
+<!-- =========================================================
+     EMAIL REPORT MODAL
+========================================================= -->
+
+<div id="emailModalOverlay" class="modal-overlay hidden">
+
+    <div class="modal-card">
+
+        <button
+            id="emailModalClose"
+            class="modal-close"
+            type="button"
+            aria-label="Close">
+            ✕
+        </button>
+
+        <div class="modal-icon">
+            📧
+        </div>
+
+        <h3>
+            Email This Report
+        </h3>
+
+        <p class="muted">
+            We'll send a summary of this prediction — disease, confidence
+            scores, and doctor recommendation — to the email address below.
+        </p>
+
+        <label for="emailModalInput">
+            Recipient Email
+        </label>
+
+        <input
+            id="emailModalInput"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+        >
+
+        <button
+            id="emailModalSend"
+            class="primary full"
+            type="button">
+
+            Send Report
+
+        </button>
+
+        <div
+            id="emailModalMessage"
+            class="status-message">
+        </div>
+
+    </div>
 
 </div>
 
