@@ -2448,3 +2448,17 @@ footer a {
     }
 
 }
+.link-button {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 650;
+    margin-top: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.link-button:hover {
+    color: var(--primary-dark);
+}
