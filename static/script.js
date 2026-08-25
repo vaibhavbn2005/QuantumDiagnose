@@ -393,7 +393,7 @@ async function handleForgotPassword() {
         );
 
         showAuthMessage(
-            "✓ Password reset email sent. Please check your inbox.",
+            "✓ Password reset email sent. Please check your inbox (and Spam/Junk folder).",
             false
         );
 
@@ -2608,8 +2608,13 @@ function renderComparisonPage() {
 
 
 // ============================================================
-// PDF REPORT (SINGLE PAGE)
+// PDF REPORT (COMPACT SINGLE PAGE)
 // ============================================================
+// Note: jsPDF's built-in fonts can only render plain text
+// (no color emoji), so this report uses clean typography and
+// simple bullet points instead of emoji, and is deliberately
+// laid out to fit on a single A4 page regardless of how many
+// symptoms or predictions are included.
 
 function downloadPDF(
     source
@@ -2680,504 +2685,226 @@ function downloadPDF(
             )
             .join(", ");
 
-    let y = 14;
+    const MARGIN = 15;
+    const CONTENT_WIDTH = 180;
 
-    // HEADER
+    let y = 13;
 
-    doc.setFontSize(19);
+    function heading(text) {
 
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
+        doc.setFontSize(11.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 40, 70);
+        doc.text(text, MARGIN, y);
+        y += 5.2;
+        doc.setTextColor(20, 20, 20);
+    }
 
-    doc.text(
-        "QuantumDiagnose",
-        20,
-        y
-    );
+    function line(text) {
 
-    y += 7;
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(text, MARGIN, y);
+        y += 4;
+    }
 
-    doc.setFontSize(9);
+    function wrappedLine(text) {
 
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
 
-    doc.text(
-        "AI-Assisted Symptom Analysis Report",
-        20,
-        y
-    );
-
-    y += 6;
-
-    doc.line(
-        20,
-        y,
-        190,
-        y
-    );
-
-    y += 8;
-
-
-    // PATIENT
-
-    doc.setFontSize(12);
-
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
-
-    doc.text(
-        "Patient Information",
-        20,
-        y
-    );
-
-    y += 6;
-
-    doc.setFontSize(9);
-
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
-
-    const patientLines = [
-
-        `Name: ${patient.name || "—"}`,
-
-        `Email: ${
-            source.userEmail ||
-            currentUser?.email ||
-            "—"
-        }`,
-
-        `Gender: ${patient.gender || "—"}`,
-
-        `Age: ${patient.age || "—"}`,
-
-        `Height: ${
-            patient.height
-                ? patient.height + " cm"
-                : "—"
-        }`,
-
-        `Weight: ${
-            patient.weight
-                ? patient.weight + " kg"
-                : "—"
-        }`,
-
-        `Prediction Date & Time: ${
-            formatDateTime(
-                predictionTime
-            )
-        }`
-    ];
-
-    patientLines.forEach(
-        line => {
-
-            doc.text(
-                line,
-                20,
-                y
+        const wrapped =
+            doc.splitTextToSize(
+                text,
+                CONTENT_WIDTH
             );
 
-            y += 4.6;
-        }
+        doc.text(wrapped, MARGIN, y);
+
+        y += wrapped.length * 3.8;
+    }
+
+
+    // ------------------------------------------------------
+    // HEADER
+    // ------------------------------------------------------
+
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(49, 91, 234);
+    doc.text("QuantumDiagnose", MARGIN, y);
+
+    y += 6;
+
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+        "AI-Assisted Symptom Analysis Report",
+        MARGIN,
+        y
     );
+
+    y += 4;
+
+    doc.setDrawColor(49, 91, 234);
+    doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
+
+    y += 6;
+
+    doc.setTextColor(20, 20, 20);
+
+
+    // ------------------------------------------------------
+    // PATIENT INFORMATION
+    // ------------------------------------------------------
+
+    heading("Patient Information");
+
+    line(`Name: ${patient.name || "-"}`);
+    line(`Email: ${source.userEmail || currentUser?.email || "-"}`);
+    line(`Gender: ${patient.gender || "-"}    Age: ${patient.age || "-"}`);
+    line(`Height: ${patient.height ? patient.height + " cm" : "-"}    Weight: ${patient.weight ? patient.weight + " kg" : "-"}`);
+    line(`Date & Time: ${formatDateTime(predictionTime)}`);
+
+    y += 2;
+
+
+    // ------------------------------------------------------
+    // SYMPTOMS
+    // ------------------------------------------------------
+
+    heading("Selected Symptoms");
+
+    wrappedLine(symptoms || "No symptoms recorded.");
 
     y += 3;
 
 
-    // SYMPTOMS
+    // ------------------------------------------------------
+    // RANDOM FOREST RESULT
+    // ------------------------------------------------------
 
-    doc.setFontSize(12);
+    heading("Random Forest Result");
 
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
+    line(`Predicted Disease: ${disease}`);
+    line(`Confidence: ${rf.toFixed(2)}%`);
 
-    doc.text(
-        "Selected Symptoms",
-        20,
-        y
-    );
+    y += 1;
 
-    y += 6;
-
-    doc.setFontSize(9);
-
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
-
-    const symptomText =
-        symptoms ||
-        "No symptoms recorded.";
-
-    const symptomLines =
-        doc.splitTextToSize(
-            symptomText,
-            165
-        );
-
-    doc.text(
-        symptomLines,
-        20,
-        y
-    );
-
-    y +=
-        symptomLines.length *
-        4.3 +
-        4;
-
-
-    // RF RESULT
-
-    doc.setFontSize(12);
-
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
-
-    doc.text(
-        "Random Forest Result",
-        20,
-        y
-    );
-
-    y += 6;
-
-    doc.setFontSize(9);
-
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
-
-    doc.text(
-        `Predicted Disease: ${disease}`,
-        20,
-        y
-    );
-
-    y += 4.6;
-
-    doc.text(
-        `Confidence: ${rf.toFixed(2)}%`,
-        20,
-        y
-    );
-
-    y += 6;
-
-
-    // TOP PREDICTIONS
-
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
-
-    doc.text(
-        "Top Predictions:",
-        20,
-        y
-    );
-
-    y += 4.6;
-
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
-
-    (
-        source.top_predictions ||
-        []
-    )
-        .slice(0, 5)
-        .forEach(
-            item => {
-
-                doc.text(
-                    `• ${
-                        formatDisease(
-                            item.disease
-                        )
-                    }: ${
-                        Number(
-                            item.confidence ||
-                            0
-                        ).toFixed(2)
-                    }%`,
-                    25,
-                    y
-                );
-
-                y += 4.3;
-            }
-        );
-
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.text("Top Predictions:", MARGIN, y);
     y += 4;
+    doc.setFont("helvetica", "normal");
+
+    const topList =
+        (source.top_predictions || []).slice(0, 3);
+
+    if (topList.length === 0) {
+
+        line("- No additional predictions recorded.");
+
+    } else {
+
+        topList.forEach(item => {
+
+            line(
+                `- ${formatDisease(item.disease)}: ${Number(item.confidence || 0).toFixed(2)}%`
+            );
+        });
+    }
+
+    y += 2;
 
 
+    // ------------------------------------------------------
     // QISKIT
+    // ------------------------------------------------------
 
-    doc.setFontSize(12);
+    heading("Qiskit Experimental Analysis");
 
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
+    line(`Experimental Score: ${quantum.toFixed(2)}%    Signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%`);
+    line(`Qubits Used: ${source.qiskit_qubits ?? source.qiskitQubits ?? "-"}    Circuit Depth: ${source.qiskit_depth ?? source.qiskitDepth ?? "-"}`);
 
-    doc.text(
-        "Qiskit Experimental Analysis",
-        20,
-        y
-    );
-
-    y += 6;
-
-    doc.setFontSize(9);
-
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
-
-    doc.text(
-        `Experimental Score: ${
-            quantum.toFixed(2)
-        }%`,
-        20,
-        y
-    );
-
-    y += 4.6;
-
-    doc.text(
-        `Qubits Used: ${
-            source.qiskit_qubits ??
-            source.qiskitQubits ??
-            "—"
-        }`,
-        20,
-        y
-    );
-
-    y += 4.6;
-
-    doc.text(
-        `Circuit Depth: ${
-            source.qiskit_depth ??
-            source.qiskitDepth ??
-            "—"
-        }`,
-        20,
-        y
-    );
-
-    y += 4.6;
-
-    doc.text(
-        `Quantum Signal: ${
-            Number(
-                source.quantum_signal ||
-                source.quantumSignal ||
-                0
-            ).toFixed(2)
-        }%`,
-        20,
-        y
-    );
-
-    y += 7;
+    y += 2;
 
 
-    // DOCTOR
+    // ------------------------------------------------------
+    // DOCTOR RECOMMENDATION
+    // ------------------------------------------------------
 
-    doc.setFontSize(12);
+    heading("Doctor Recommendation");
 
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
+    line(`Recommended Specialty: ${source.specialty || "General Physician"}`);
 
-    doc.text(
-        "Doctor Recommendation",
-        20,
-        y
-    );
-
-    y += 6;
-
-    doc.setFontSize(9);
-
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
-
-    doc.text(
-        `Recommended Specialty: ${
-            source.specialty ||
-            "General Physician"
-        }`,
-        20,
-        y
-    );
-
-    y += 5;
-
-    const doctors =
-        source.doctors ||
-        [];
+    const doctors = source.doctors || [];
 
     if (doctors.length) {
 
-        const doctor =
-            doctors[0];
+        const doctor = doctors[0];
 
-        doc.text(
-            `Doctor: ${
-                doctor.name ||
-                "—"
-            }`,
-            20,
-            y
-        );
-
-        y += 4.6;
-
-        doc.text(
-            `Hospital: ${
-                doctor.hospital ||
-                "—"
-            }`,
-            20,
-            y
-        );
-
-        y += 4.6;
-
-        doc.text(
-            `Location: ${
-                doctor.location ||
-                "—"
-            }`,
-            20,
-            y
-        );
-
-        y += 4.6;
-
-        doc.text(
-            `Experience: ${
-                doctor.experience ||
-                "—"
-            }`,
-            20,
-            y
-        );
-
-        y += 6;
+        line(`Doctor: ${doctor.name || "-"}    Experience: ${doctor.experience || "-"}`);
+        line(`Hospital: ${doctor.hospital || "-"}, ${doctor.location || "-"}`);
     }
 
+    y += 3;
 
+
+    // ------------------------------------------------------
     // DISCLAIMER
+    // ------------------------------------------------------
 
-    doc.setFontSize(11);
+    doc.setFillColor(255, 248, 232);
+    doc.roundedRect(MARGIN, y - 4, CONTENT_WIDTH, 20, 2, 2, "F");
 
-    doc.setFont(
-        "helvetica",
-        "bold"
-    );
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(117, 90, 29);
+    doc.text("Important Notice", MARGIN + 3, y + 1);
 
-    doc.text(
-        "Important Notice",
-        20,
-        y
-    );
+    y += 5;
 
-    y += 6;
-
-    doc.setFontSize(8);
-
-    doc.setFont(
-        "helvetica",
-        "normal"
-    );
+    doc.setFontSize(7.3);
+    doc.setFont("helvetica", "normal");
 
     const disclaimer =
-        "QuantumDiagnose is an educational and research demonstration. " +
-        "The Random Forest prediction is generated from the project dataset. " +
-        "The Qiskit score is experimental and is not a clinically validated probability. " +
-        "This report should not be considered a medical diagnosis or a substitute for professional medical advice.";
+        "QuantumDiagnose is an educational and research demonstration. The Random Forest prediction is generated " +
+        "from the project dataset. The Qiskit score is experimental and is not a clinically validated probability. " +
+        "This report is not a medical diagnosis or a substitute for professional medical advice.";
 
     const disclaimerLines =
-        doc.splitTextToSize(
-            disclaimer,
-            165
-        );
+        doc.splitTextToSize(disclaimer, CONTENT_WIDTH - 6);
 
-    doc.text(
-        disclaimerLines,
-        20,
-        y
-    );
+    doc.text(disclaimerLines, MARGIN + 3, y);
+
+    doc.setTextColor(20, 20, 20);
 
 
+    // ------------------------------------------------------
     // FOOTER
-    // (fixed position at the bottom of the single page
-    //  — everything above must fit before this)
+    // ------------------------------------------------------
 
-    doc.setFontSize(8);
-
-    doc.setTextColor(
-        100,
-        100,
-        100
-    );
+    doc.setFontSize(7.5);
+    doc.setTextColor(120, 120, 120);
 
     doc.text(
-        "QuantumDiagnose • Educational Project",
-        20,
+        "QuantumDiagnose  |  Educational Project",
+        MARGIN,
         285
     );
 
     doc.text(
-        "Generated: " +
-        formatDateTime(
-            new Date()
-        ),
-        20,
+        "Generated: " + formatDateTime(new Date()),
+        MARGIN,
         290
     );
 
     const safeDisease =
-        disease
-            .replace(
-                /[^a-z0-9]/gi,
-                "_"
-            );
+        disease.replace(/[^a-z0-9]/gi, "_");
 
     doc.save(
-        "QuantumDiagnose_Report_" +
-        safeDisease +
-        ".pdf"
+        "QuantumDiagnose_Report_" + safeDisease + ".pdf"
     );
 }
 
