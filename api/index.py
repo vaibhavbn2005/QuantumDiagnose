@@ -2085,7 +2085,7 @@ def build_report_email_html(
                     color:#68748a;
                     font-size:12px;
                 ">
-                    Hybrid Prediction
+                    Final Prediction
                 </p>
 
                 <p style="
@@ -2141,7 +2141,7 @@ def build_report_email_html(
                     color:#68748a;
                     font-size:12px;
                 ">
-                    Random Forest
+                    Random Forest Prediction
                 </p>
 
                 <p style="
@@ -2200,32 +2200,16 @@ def build_report_email_html(
                     color:#68748a;
                     font-size:12px;
                 ">
-                    Qiskit Experimental Prediction
+                    Qiskit Experimental Analysis
                 </p>
 
                 <p style="
                     margin:4px 0 0;
-                    color:#182238;
-                    font-size:17px;
-                    font-weight:800;
-                ">
-                    {str(
-                        payload.get(
-                            "qiskit_disease",
-                            "Unavailable"
-                        )
-                    ).replace(
-                        "_",
-                        " "
-                    ).title()}
-                </p>
-
-                <p style="
-                    margin:2px 0 0;
                     color:#6548bd;
                     font-size:13px;
                     font-weight:700;
                 ">
+                    Experimental quantum score:
                     {quantum_score:.2f}%
                 </p>
 
@@ -2236,6 +2220,18 @@ def build_report_email_html(
                 ">
                     Quantum signal:
                     {quantum_signal:.2f}%
+                </p>
+
+                <p style="
+                    margin:4px 0 0;
+                    color:#6548bd;
+                    font-size:12px;
+                ">
+                    Qubits used:
+                    {payload.get("qiskit_qubits", payload.get("qiskitQubits", "-"))}
+                    &nbsp;&middot;&nbsp;
+                    Circuit depth:
+                    {payload.get("qiskit_depth", payload.get("qiskitDepth", "-"))}
                 </p>
 
               </td>
