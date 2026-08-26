@@ -1288,12 +1288,13 @@ function renderPrediction(data) {
     );
 
 
-    // QUANTUM
+    // QISKIT
 
-    $("quantumScore")
+    $("quantumDisease")
         .textContent =
-        quantum.toFixed(2) +
-        "%";
+        formatDisease(
+            data.qiskit_disease
+        );
 
     $("quantumScoreText")
         .textContent =
@@ -1325,10 +1326,44 @@ function renderPrediction(data) {
         ).toFixed(2) +
         "%";
 
-    $("quantumInterpretation")
-        .textContent =
-        data.quantum_message ||
-        "Experimental Qiskit analysis completed.";
+
+    // HYBRID
+
+    if ($("hybridDisease")) {
+
+        $("hybridDisease")
+            .textContent =
+            formatDisease(
+                data.hybrid_disease
+            );
+    }
+
+    if ($("hybridConfidenceText")) {
+
+        $("hybridConfidenceText")
+            .textContent =
+            Number(
+                data.hybrid_confidence || 0
+            ).toFixed(2) +
+            "%";
+    }
+
+    const agreementLabel =
+        data.model_agreement ||
+        getAgreement(difference);
+
+    if ($("hybridAgreementBadge")) {
+
+        $("hybridAgreementBadge")
+            .textContent =
+            agreementLabel +
+            " agreement";
+
+        $("hybridAgreementBadge")
+            .className =
+            "agreement-badge " +
+            agreementLabel.toLowerCase();
+    }
 
 
     // COMPARISON
@@ -1355,8 +1390,7 @@ function renderPrediction(data) {
         );
 
     renderAgreement(
-        data.model_agreement ||
-        getAgreement(difference)
+        agreementLabel
     );
 
 
@@ -1789,6 +1823,14 @@ async function saveCurrentHistory() {
 
         modelAgreement:
             currentResult.model_agreement || "",
+
+        hybridDisease:
+            currentResult.hybrid_disease || "",
+
+        hybridConfidence:
+            Number(
+                currentResult.hybrid_confidence || 0
+            ),
 
         specialty:
             currentResult.specialty || "",
@@ -2522,6 +2564,22 @@ function renderQuantumPage() {
             <div>
 
                 <span>
+                    Predicted Disease
+                </span>
+
+                <strong>
+                    ${escapeHTML(
+                        formatDisease(
+                            currentResult.qiskit_disease
+                        )
+                    )}
+                </strong>
+
+            </div>
+
+            <div>
+
+                <span>
                     Qubits Used
                 </span>
 
@@ -2543,10 +2601,14 @@ function renderQuantumPage() {
 
             </div>
 
+        </div>
+
+        <div class="comparison-values">
+
             <div>
 
                 <span>
-                    Experimental Score
+                    Qiskit Confidence
                 </span>
 
                 <strong>
@@ -2555,14 +2617,21 @@ function renderQuantumPage() {
 
             </div>
 
-        </div>
+            <div>
 
-        <p>
-            ${escapeHTML(
-                currentResult.quantum_message ||
-                "Experimental Qiskit analysis."
-            )}
-        </p>
+                <span>
+                    Quantum Signal
+                </span>
+
+                <strong>
+                    ${Number(
+                        currentResult.quantum_signal || 0
+                    ).toFixed(2)}%
+                </strong>
+
+            </div>
+
+        </div>
 
         <div class="result-warning">
 
@@ -2714,6 +2783,26 @@ function downloadPDF(
             source.disease
         );
 
+    const qiskitDisease =
+        formatDisease(
+            source.qiskit_disease ||
+            source.qiskitDisease
+        );
+
+    const hybridDisease =
+        formatDisease(
+            source.hybrid_disease ||
+            source.hybridDisease ||
+            source.disease
+        );
+
+    const hybridConfidence =
+        Number(
+            source.hybrid_confidence ||
+            source.hybridConfidence ||
+            0
+        );
+
     const symptoms =
         (
             source.selected_symptoms ||
@@ -2862,10 +2951,23 @@ function downloadPDF(
     // QISKIT
     // ------------------------------------------------------
 
-    heading("Qiskit Experimental Analysis");
+    heading("Qiskit Result");
 
-    line(`Experimental Score: ${quantum.toFixed(2)}%    Signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%`);
+    line(`Predicted Disease: ${qiskitDisease}`);
+    line(`Confidence: ${quantum.toFixed(2)}%    Signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%`);
     line(`Qubits Used: ${source.qiskit_qubits ?? source.qiskitQubits ?? "-"}    Circuit Depth: ${source.qiskit_depth ?? source.qiskitDepth ?? "-"}`);
+
+    y += 2;
+
+
+    // ------------------------------------------------------
+    // HYBRID RESULT
+    // ------------------------------------------------------
+
+    heading("Hybrid Prediction");
+
+    line(`Disease: ${hybridDisease}`);
+    line(`Confidence: ${hybridConfidence.toFixed(2)}%    Agreement: ${source.model_agreement || source.modelAgreement || "-"}`);
 
     y += 2;
 
@@ -3105,6 +3207,18 @@ async function sendEmailReport() {
             source.quantum_score ??
             source.qiskit_score ??
             source.qiskitScore,
+
+        qiskit_disease:
+            source.qiskit_disease ??
+            source.qiskitDisease,
+
+        hybrid_disease:
+            source.hybrid_disease ??
+            source.hybridDisease,
+
+        hybrid_confidence:
+            source.hybrid_confidence ??
+            source.hybridConfidence,
 
         quantum_signal:
             source.quantum_signal ??
