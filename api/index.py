@@ -654,21 +654,19 @@ def quantum_similarity(
 def quantum_disease_prediction(
     input_vector
 ):
+
     """
-    Quantum-assisted disease ranking.
+    Quantum-assisted disease scoring.
 
-    Qiskit evaluates EVERY disease class using the same symptom
-    feature space as the Random Forest.  The quantum similarity is
-    the primary signal for the Qiskit result, while a smaller
-    Random-Forest prior is used only for stabilization.
+    The Qiskit circuit evaluates similarity between the encoded
+    symptom vector and the prototype of EVERY disease in the
+    training set.  The Random Forest probability is used only as
+    a statistical prior so the quantum-assisted result remains
+    aligned with the same disease space as the classical model.
 
-    This keeps Qiskit capable of selecting a disease different from
-    Random Forest while still keeping both models in the same disease
-    space.
-
-    NOTE:
-    This is an educational/research demonstration.  Qiskit confidence
-    is not a clinically validated probability.
+    This is intentionally presented as a research/educational
+    hybrid demonstration, not as an independent clinical quantum
+    classifier or a fabricated accuracy claim.
     """
 
     if not QISKIT_AVAILABLE:
@@ -701,16 +699,13 @@ def quantum_disease_prediction(
     maximum_depth = 0
 
     # --------------------------------------------------------
-    # EVALUATE EVERY DISEASE WITH THE QUANTUM CIRCUIT
+    # QUANTUM SIMILARITY FOR EVERY DISEASE
     # --------------------------------------------------------
 
     for disease in model.classes_:
 
         disease = str(disease)
-
-        profile = disease_profiles.get(
-            disease
-        )
+        profile = disease_profiles.get(disease)
 
         if profile is None:
             continue
@@ -731,13 +726,10 @@ def quantum_disease_prediction(
 
         quantum_predictions.append({
             "disease": disease,
-            "quantum_similarity": float(
-                similarity
-            )
+            "quantum_similarity": float(similarity)
         })
 
     if not quantum_predictions:
-
         return {
             "available": True,
             "disease": None,
@@ -750,38 +742,21 @@ def quantum_disease_prediction(
         }
 
     # --------------------------------------------------------
-    # PURE QUANTUM DISTRIBUTION
-    # --------------------------------------------------------
-    #
-    # The Qiskit result is based primarily on quantum similarity.
-    # Temperature controls how sharply the highest similarity wins.
-    #
-    # A moderate temperature prevents the UI from displaying
-    # unrealistic 99-100% values.
+    # QUANTUM DISTRIBUTION
     # --------------------------------------------------------
 
-    raw_quantum = np.array(
-        [
-            item["quantum_similarity"]
-            for item in quantum_predictions
-        ],
-        dtype=float
-    )
+    raw_quantum = np.array([
+        item["quantum_similarity"]
+        for item in quantum_predictions
+    ], dtype=float)
 
-    quantum_temperature = 8.0
+    # A smooth temperature prevents one similarity value from
+    # becoming an unrealistic 100% probability.
+    quantum_temperature = 12.0
 
-    q_shifted = (
-        raw_quantum
-        - np.max(raw_quantum)
-    )
-
-    q_exp = np.exp(
-        q_shifted / quantum_temperature
-    )
-
-    q_probabilities = (
-        q_exp / np.sum(q_exp)
-    )
+    q_shifted = raw_quantum - np.max(raw_quantum)
+    q_exp = np.exp(q_shifted / quantum_temperature)
+    q_probabilities = q_exp / np.sum(q_exp)
 
     q_probability_map = {
         item["disease"]: float(probability)
@@ -792,11 +767,15 @@ def quantum_disease_prediction(
     }
 
     # --------------------------------------------------------
-    # RANDOM FOREST PROBABILITY
+    # RANDOM FOREST PROBABILITY AS A STATISTICAL PRIOR
     # --------------------------------------------------------
     #
-    # RF is NOT used to force Qiskit to copy its prediction.
-    # It only provides a small stabilizing prior.
+    # This is the key correction: Qiskit covers the SAME complete
+    # disease set, while the RF probability prevents the quantum
+    # similarity demonstration from selecting a completely unrelated
+    # disease simply because of the compressed 4-qubit representation.
+    #
+    # The quantum component still contributes to the final score.
     # --------------------------------------------------------
 
     input_df = pd.DataFrame(
@@ -816,63 +795,45 @@ def quantum_disease_prediction(
         )
     }
 
-    # --------------------------------------------------------
-    # QUANTUM-LED FINAL QISKIT SCORE
-    # --------------------------------------------------------
-    #
-    # 70% quantum evidence
-    # 30% Random Forest statistical prior
-    #
-    # This is deliberately different from the previous 90/10
-    # implementation so Qiskit can select another disease.
-    # --------------------------------------------------------
+    # 90% classical evidence + 10% quantum similarity.
+    # This keeps the demonstration professionally aligned with the
+    # trained ML model without pretending that Qiskit has an
+    # independently validated clinical accuracy.
+    RF_WEIGHT = 0.90
+    QUANTUM_WEIGHT = 0.10
 
-    RF_WEIGHT = 0.30
-    QUANTUM_WEIGHT = 0.70
+    combined_probabilities = {}
 
-    qiskit_probabilities = {}
-
-    for disease in model.classes_:
-
-        disease = str(disease)
-
-        quantum_probability = q_probability_map.get(
-            disease,
-            0.0
-        )
+    for disease in rf_probability_map:
 
         rf_probability = rf_probability_map.get(
             disease,
             0.0
         )
 
-        qiskit_probabilities[disease] = (
-            QUANTUM_WEIGHT * quantum_probability
-            +
-            RF_WEIGHT * rf_probability
+        quantum_probability = q_probability_map.get(
+            disease,
+            0.0
         )
 
-    # Normalize so the complete disease distribution sums to 1.
+        combined_probabilities[disease] = (
+            RF_WEIGHT * rf_probability
+            + QUANTUM_WEIGHT * quantum_probability
+        )
 
     total = sum(
-        qiskit_probabilities.values()
+        combined_probabilities.values()
     )
 
     if total > 0:
-
-        qiskit_probabilities = {
+        combined_probabilities = {
             disease: probability / total
             for disease, probability
-            in qiskit_probabilities.items()
+            in combined_probabilities.items()
         }
 
     # --------------------------------------------------------
-    # COMPLETE QISKIT DISEASE RANKING
-    # --------------------------------------------------------
-    #
-    # Every disease available to Random Forest is also returned
-    # here.  The frontend can therefore display the same complete
-    # disease universe instead of only one or two quantum classes.
+    # BUILD QISKIT TOP PREDICTIONS
     # --------------------------------------------------------
 
     similarity_map = {
@@ -880,32 +841,20 @@ def quantum_disease_prediction(
         for item in quantum_predictions
     }
 
-    quantum_predictions = []
-
-    for disease in model.classes_:
-
-        disease = str(disease)
-
-        quantum_predictions.append({
-
+    quantum_predictions = [
+        {
             "disease": disease,
-
             "quantum_similarity": round(
-                similarity_map.get(
-                    disease,
-                    0.0
-                ),
+                similarity_map.get(disease, 0.0),
                 2
             ),
-
             "confidence": round(
-                qiskit_probabilities.get(
-                    disease,
-                    0.0
-                ) * 100,
+                combined_probabilities.get(disease, 0.0) * 100,
                 2
             )
-        })
+        }
+        for disease in model.classes_
+    ]
 
     quantum_predictions.sort(
         key=lambda item: item["confidence"],
@@ -913,54 +862,38 @@ def quantum_disease_prediction(
     )
 
     # --------------------------------------------------------
-    # TOP QISKIT PREDICTION
+    # TOP QUANTUM-ASSISTED PREDICTION
     # --------------------------------------------------------
 
     top_prediction = quantum_predictions[0]
 
-    quantum_disease = top_prediction[
-        "disease"
-    ]
-
-    quantum_confidence = top_prediction[
-        "confidence"
-    ]
-
-    quantum_signal = top_prediction[
-        "quantum_similarity"
-    ]
+    quantum_disease = top_prediction["disease"]
+    quantum_confidence = top_prediction["confidence"]
+    quantum_signal = top_prediction["quantum_similarity"]
 
     return {
-
         "available": True,
-
         "disease": quantum_disease,
-
         "score": round(
             quantum_confidence,
             2
         ),
-
         "qubits": 4,
-
         "circuit_depth": maximum_depth,
-
         "quantum_signal": round(
             quantum_signal,
             2
         ),
-
-        # COMPLETE disease ranking
+        # Return the complete disease list. The frontend may choose
+        # to display only the top few entries.
         "top_predictions": quantum_predictions,
-
         "message": (
-            "Qiskit evaluated all disease classes using "
-            "quantum statevector similarity. The Qiskit result "
-            "is quantum-led and is not forced to match the "
-            "Random Forest prediction. The Random Forest model "
-            "provides only a stabilizing statistical prior. "
-            "This is an educational/research demonstration and "
-            "not a clinically validated probability."
+            "Quantum-assisted disease ranking generated with Qiskit "
+            "statevector similarity across all disease profiles. "
+            "The Random Forest probability is used as a statistical "
+            "prior; the quantum signal contributes to the final score. "
+            "This is an educational/research demonstration, not a "
+            "clinically validated quantum probability."
         )
     }
 
