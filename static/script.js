@@ -1,7 +1,7 @@
 // ============================================================
 // QUANTUMDIAGNOSE
 // PROFESSIONAL FRONTEND
-// EMAIL/PASSWORD AUTHENTICATION
+// EMAIL/PASSWORD AUTHENTICATION & REPORT GENERATOR
 // ============================================================
 
 import {
@@ -35,7 +35,7 @@ import {
 
 
 // ============================================================
-// FIREBASE
+// FIREBASE CONFIGURATION
 // ============================================================
 
 const firebaseConfig = {
@@ -48,14 +48,9 @@ const firebaseConfig = {
     measurementId: "G-YM0HMMVBFR"
 };
 
-const firebaseApp =
-    initializeApp(firebaseConfig);
-
-const auth =
-    getAuth(firebaseApp);
-
-const db =
-    getFirestore(firebaseApp);
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
 
 window.firebaseAuth = auth;
 window.firebaseDB = db;
@@ -85,26 +80,15 @@ function formatDisease(value) {
 }
 
 function formatDateTime(value) {
-    if (!value) {
-        return "—";
-    }
+    if (!value) return "—";
 
-    const date =
-        value instanceof Date
-            ? value
-            : new Date(value);
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
 
-    if (Number.isNaN(date.getTime())) {
-        return "—";
-    }
-
-    return date.toLocaleString(
-        undefined,
-        {
-            dateStyle: "medium",
-            timeStyle: "short"
-        }
-    );
+    return date.toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short"
+    });
 }
 
 
@@ -139,31 +123,23 @@ const predictBtn = $("predictBtn");
 
 
 // ============================================================
-// AUTH
+// AUTH HANDLERS
 // ============================================================
 
 function showAuthMessage(text, isError = false) {
     if (!authMessage) return;
-
     authMessage.textContent = text;
-    authMessage.className =
-        "auth-message " +
-        (isError ? "error" : "success");
+    authMessage.className = "auth-message " + (isError ? "error" : "success");
 }
 
 function setAuthMode(mode) {
     authMode = mode;
-
     loginTab?.classList.toggle("active", mode === "login");
     signupTab?.classList.toggle("active", mode === "signup");
 
     if (authSubmit) {
-        authSubmit.textContent =
-            mode === "login"
-                ? "Login"
-                : "Create Account";
+        authSubmit.textContent = mode === "login" ? "Login" : "Create Account";
     }
-
     showAuthMessage("");
 }
 
@@ -228,47 +204,30 @@ async function handleAuthentication() {
             default:
                 message = error.message || message;
         }
-
         showAuthMessage(message, true);
     } finally {
         authSubmit.disabled = false;
-        authSubmit.textContent =
-            authMode === "login" ? "Login" : "Create Account";
+        authSubmit.textContent = authMode === "login" ? "Login" : "Create Account";
     }
 }
-
-
-// ============================================================
-// FORGOT PASSWORD
-// ============================================================
 
 async function handleForgotPassword() {
     const email = authEmail?.value.trim();
 
     if (!email) {
-        showAuthMessage(
-            "Enter your email address above, then click 'Forgot password?'.",
-            true
-        );
+        showAuthMessage("Enter your email address above, then click 'Forgot password?'.", true);
         return;
     }
 
-    if (forgotPasswordBtn) {
-        forgotPasswordBtn.disabled = true;
-    }
-
+    if (forgotPasswordBtn) forgotPasswordBtn.disabled = true;
     showAuthMessage("Sending reset email...");
 
     try {
         await sendPasswordResetEmail(auth, email);
-        showAuthMessage(
-            "Password reset email sent. Please check your inbox (and Spam folder).",
-            false
-        );
+        showAuthMessage("Password reset email sent. Please check your inbox (and Spam folder).", false);
     } catch (error) {
         console.error("Password reset error:", error);
         let message = "Could not send reset email.";
-
         switch (error.code) {
             case "auth/invalid-email":
                 message = "Please enter a valid email address.";
@@ -282,18 +241,15 @@ async function handleForgotPassword() {
             default:
                 message = error.message || message;
         }
-
         showAuthMessage(message, true);
     } finally {
-        if (forgotPasswordBtn) {
-            forgotPasswordBtn.disabled = false;
-        }
+        if (forgotPasswordBtn) forgotPasswordBtn.disabled = false;
     }
 }
 
 
 // ============================================================
-// SHOW APP
+// APP VIEW INITIALIZATION
 // ============================================================
 
 async function showApp(user) {
@@ -322,14 +278,8 @@ function showAuthScreen() {
 
     if (authEmail) authEmail.value = "";
     if (authPassword) authPassword.value = "";
-
     setAuthMode("login");
 }
-
-
-// ============================================================
-// LOGOUT
-// ============================================================
 
 async function logoutUser() {
     try {
@@ -371,8 +321,7 @@ function goToPage(pageId) {
     });
 
     if ($("pageTitle")) {
-        $("pageTitle").textContent =
-            pageNames[pageId] || "QuantumDiagnose";
+        $("pageTitle").textContent = pageNames[pageId] || "QuantumDiagnose";
     }
 
     if (pageId === "history") renderHistory();
@@ -384,7 +333,7 @@ function goToPage(pageId) {
 
 
 // ============================================================
-// PROFILE
+// PROFILE MANAGEMENT
 // ============================================================
 
 async function saveProfile() {
@@ -413,15 +362,9 @@ async function saveProfile() {
     };
 
     try {
-        await setDoc(doc(db, "profiles", currentUser.uid), profile, {
-            merge: true
-        });
-
+        await setDoc(doc(db, "profiles", currentUser.uid), profile, { merge: true });
         currentProfile = profile;
-        localStorage.setItem(
-            "quantumdiagnose_profile_" + currentUser.uid,
-            JSON.stringify(profile)
-        );
+        localStorage.setItem("quantumdiagnose_profile_" + currentUser.uid, JSON.stringify(profile));
 
         setProfileMessage("Profile saved successfully.", false);
         updateProfileStatus();
@@ -440,24 +383,14 @@ async function loadProfile() {
         if (snapshot.exists()) {
             currentProfile = snapshot.data();
         } else {
-            const local = localStorage.getItem(
-                "quantumdiagnose_profile_" + currentUser.uid
-            );
-            if (local) {
-                currentProfile = JSON.parse(local);
-            }
+            const local = localStorage.getItem("quantumdiagnose_profile_" + currentUser.uid);
+            if (local) currentProfile = JSON.parse(local);
         }
     } catch (error) {
         console.error("Profile load error:", error);
-        const local = localStorage.getItem(
-            "quantumdiagnose_profile_" + currentUser.uid
-        );
+        const local = localStorage.getItem("quantumdiagnose_profile_" + currentUser.uid);
         if (local) {
-            try {
-                currentProfile = JSON.parse(local);
-            } catch {
-                currentProfile = null;
-            }
+            try { currentProfile = JSON.parse(local); } catch { currentProfile = null; }
         }
     }
 
@@ -468,7 +401,6 @@ async function loadProfile() {
 
 function populateProfile() {
     if (!currentProfile) return;
-
     if ($("profileName")) $("profileName").value = currentProfile.name || "";
     if ($("profileGender")) $("profileGender").value = currentProfile.gender || "";
     if ($("profileAge")) $("profileAge").value = currentProfile.age || "";
@@ -501,11 +433,7 @@ function updateProfileStatus() {
 }
 
 function updateWelcomeName() {
-    let name = currentProfile?.name;
-    if (!name) {
-        name = currentUser?.email?.split("@")[0] || "Patient";
-    }
-
+    let name = currentProfile?.name || currentUser?.email?.split("@")[0] || "Patient";
     if ($("welcomeName")) $("welcomeName").textContent = name;
     if ($("topUserName")) $("topUserName").textContent = name;
 }
@@ -513,15 +441,13 @@ function updateWelcomeName() {
 function setProfileMessage(text, error = false) {
     const element = $("profileMessage");
     if (!element) return;
-
     element.textContent = text;
-    element.className =
-        "status-message " + (error ? "error" : "success");
+    element.className = "status-message " + (error ? "error" : "success");
 }
 
 
 // ============================================================
-// SYMPTOMS
+// SYMPTOM SELECTION & SEARCH
 // ============================================================
 
 function getSymptomCheckboxes() {
@@ -550,46 +476,30 @@ function setupSymptoms() {
     updateCount();
 }
 
-
-// ============================================================
-// SEARCH
-// ============================================================
-
 function searchSymptoms() {
     const text = $("search")?.value.toLowerCase().trim() || "";
-
     document.querySelectorAll("#symptomGrid .symptom").forEach(item => {
         const name = item.dataset.name || "";
         item.style.display = name.includes(text) ? "" : "none";
     });
 }
 
-
-// ============================================================
-// CLEAR
-// ============================================================
-
 function clearSymptoms() {
     getSymptomCheckboxes().forEach(box => {
         box.checked = false;
     });
-
     updateCount();
 
-    if ($("search")) {
-        $("search").value = "";
-    }
-
+    if ($("search")) $("search").value = "";
     document.querySelectorAll("#symptomGrid .symptom").forEach(item => {
         item.style.display = "";
     });
-
     $("result")?.classList.add("hidden");
 }
 
 
 // ============================================================
-// PREDICTION
+// INFERENCE & PREDICTION EXECUTION
 // ============================================================
 
 async function makePrediction() {
@@ -618,16 +528,13 @@ async function makePrediction() {
 
     try {
         const idToken = await currentUser.getIdToken();
-
         const response = await fetch("/predict", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + idToken
             },
-            body: JSON.stringify({
-                symptoms: selected
-            })
+            body: JSON.stringify({ symptoms: selected })
         });
 
         const data = await response.json();
@@ -637,7 +544,6 @@ async function makePrediction() {
         }
 
         currentPredictionTime = new Date();
-
         currentResult = {
             ...data,
             selected_symptoms: selected,
@@ -649,10 +555,7 @@ async function makePrediction() {
         goToPage("prediction");
 
         setTimeout(() => {
-            $("result")?.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
+            $("result")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 100);
 
     } catch (error) {
@@ -669,7 +572,7 @@ async function makePrediction() {
 
 
 // ============================================================
-// RENDER PREDICTION
+// RENDER RESULT IN UI
 // ============================================================
 
 function renderPrediction(data) {
@@ -677,9 +580,7 @@ function renderPrediction(data) {
 
     const rf = Number(data.confidence ?? data.rf_confidence ?? 0);
     const quantum = Number(data.quantum_score ?? data.qiskit_score ?? 0);
-    const difference = Number(
-        data.score_difference ?? Math.abs(rf - quantum)
-    );
+    const difference = Number(data.score_difference ?? Math.abs(rf - quantum));
     const dateTime = formatDateTime(data.prediction_time);
 
     $("predictionDateTime").innerHTML = `
@@ -715,8 +616,7 @@ function renderPrediction(data) {
 
     if ($("hybridAgreementBadge")) {
         $("hybridAgreementBadge").textContent = agreementLabel + " agreement";
-        $("hybridAgreementBadge").className =
-            "agreement-badge " + agreementLabel.toLowerCase();
+        $("hybridAgreementBadge").className = "agreement-badge " + agreementLabel.toLowerCase();
     }
 
     $("comparisonRF").textContent = rf.toFixed(2) + "%";
@@ -728,17 +628,11 @@ function renderPrediction(data) {
     renderDoctors(data.doctors || [], data.specialty);
     renderPredictionSummary(data.top_predictions);
 
-    $("message").textContent =
-        data.message || "Educational symptom-analysis result.";
+    $("message").textContent = data.message || "Educational symptom-analysis result.";
     $("saveHistoryMessage").textContent = "";
 
     updateDashboard();
 }
-
-
-// ============================================================
-// TOP PREDICTIONS
-// ============================================================
 
 function renderTopPredictions(predictions, containerId = "topPredictions") {
     const container = $(containerId);
@@ -780,11 +674,6 @@ function renderPredictionSummary(predictions) {
         .join("");
 }
 
-
-// ============================================================
-// AGREEMENT
-// ============================================================
-
 function getAgreement(difference) {
     if (difference <= 5) return "High";
     if (difference <= 10) return "Moderate";
@@ -801,7 +690,7 @@ function renderAgreement(agreement) {
 
 
 // ============================================================
-// DOCTORS
+// DOCTOR DIRECTORY UI
 // ============================================================
 
 function doctorCard(doctor) {
@@ -811,9 +700,7 @@ function doctorCard(doctor) {
                 <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
             </div>
 
-            <h3>
-                ${escapeHTML(doctor.name || "Doctor")}
-            </h3>
+            <h3>${escapeHTML(doctor.name || "Doctor")}</h3>
 
             <span class="doctor-specialty">
                 ${escapeHTML(doctor.specialization || "General Physician")}
@@ -875,28 +762,20 @@ async function loadDoctors() {
         const doctors = data.doctors || [];
 
         if (doctors.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    No doctors available.
-                </div>
-            `;
+            container.innerHTML = `<div class="empty-state">No doctors available.</div>`;
             return;
         }
 
         container.innerHTML = doctors.map(doctorCard).join("");
     } catch (error) {
         console.error("Doctor load error:", error);
-        container.innerHTML = `
-            <div class="empty-state">
-                Unable to load doctor directory.
-            </div>
-        `;
+        container.innerHTML = `<div class="empty-state">Unable to load doctor directory.</div>`;
     }
 }
 
 
 // ============================================================
-// SAVE HISTORY
+// HISTORY SYSTEM
 // ============================================================
 
 async function saveCurrentHistory() {
@@ -919,15 +798,11 @@ async function saveCurrentHistory() {
         patient: currentResult.patient || null,
         symptoms: currentResult.selected_symptoms || [],
         disease: currentResult.disease || "",
-        confidence: Number(
-            currentResult.confidence || currentResult.rf_confidence || 0
-        ),
+        confidence: Number(currentResult.confidence || currentResult.rf_confidence || 0),
         topPredictions: currentResult.top_predictions || [],
         qiskitDisease: currentResult.qiskit_disease || "",
         qiskitTopPredictions: currentResult.qiskit_top_predictions || [],
-        qiskitScore: Number(
-            currentResult.qiskit_score || currentResult.quantum_score || 0
-        ),
+        qiskitScore: Number(currentResult.qiskit_score || currentResult.quantum_score || 0),
         qiskitQubits: currentResult.qiskit_qubits || 0,
         qiskitDepth: currentResult.qiskit_depth || 0,
         quantumSignal: currentResult.quantum_signal || 0,
@@ -937,8 +812,7 @@ async function saveCurrentHistory() {
         hybridConfidence: Number(currentResult.hybrid_confidence || 0),
         specialty: currentResult.specialty || "",
         doctors: currentResult.doctors || [],
-        predictionTime:
-            currentResult.prediction_time || new Date().toISOString()
+        predictionTime: currentResult.prediction_time || new Date().toISOString()
     };
 
     try {
@@ -967,11 +841,6 @@ async function saveCurrentHistory() {
     }
 }
 
-
-// ============================================================
-// HISTORY
-// ============================================================
-
 function historyStorageKey() {
     if (!currentUser) return null;
     return "quantumdiagnose_history_" + currentUser.uid;
@@ -982,10 +851,7 @@ function saveLocalHistory() {
     if (!key) return;
 
     try {
-        localStorage.setItem(
-            key,
-            JSON.stringify(historyItems.slice(0, 30))
-        );
+        localStorage.setItem(key, JSON.stringify(historyItems.slice(0, 30)));
     } catch (error) {
         console.error("Local history save error:", error);
     }
@@ -1022,10 +888,7 @@ async function loadHistory() {
         });
 
         firestoreItems.sort((a, b) => {
-            return (
-                new Date(b.predictionTime || 0).getTime() -
-                new Date(a.predictionTime || 0).getTime()
-            );
+            return new Date(b.predictionTime || 0).getTime() - new Date(a.predictionTime || 0).getTime();
         });
 
         const local = loadLocalHistory();
@@ -1047,12 +910,7 @@ async function loadHistory() {
         });
 
         historyItems = unique
-            .sort((a, b) => {
-                return (
-                    new Date(b.predictionTime || 0).getTime() -
-                    new Date(a.predictionTime || 0).getTime()
-                );
-            })
+            .sort((a, b) => new Date(b.predictionTime || 0).getTime() - new Date(a.predictionTime || 0).getTime())
             .slice(0, 30);
     } catch (error) {
         console.error("History load error:", error);
@@ -1083,9 +941,7 @@ function renderHistory() {
     container.innerHTML = historyItems
         .map((item, index) => {
             const date = formatDateTime(item.predictionTime);
-            const symptoms = (item.symptoms || [])
-                .map(formatDisease)
-                .join(", ");
+            const symptoms = (item.symptoms || []).map(formatDisease).join(", ");
 
             return `
                 <div class="history-card">
@@ -1095,13 +951,8 @@ function renderHistory() {
                             ${escapeHTML(date)}
                         </div>
 
-                        <h3>
-                            ${escapeHTML(formatDisease(item.disease))}
-                        </h3>
-
-                        <p>
-                            Symptoms: ${escapeHTML(symptoms || "Not recorded")}
-                        </p>
+                        <h3>${escapeHTML(formatDisease(item.disease))}</h3>
+                        <p>Symptoms: ${escapeHTML(symptoms || "Not recorded")}</p>
 
                         <div class="history-scores">
                             <span>RF: ${Number(item.confidence || 0).toFixed(2)}%</span>
@@ -1151,7 +1002,7 @@ function renderHistory() {
 
 
 // ============================================================
-// DASHBOARD
+// DASHBOARD VIEW
 // ============================================================
 
 function updateDashboard() {
@@ -1178,9 +1029,7 @@ function updateDashboard() {
         return;
     }
 
-    const confidence = Number(
-        latest.confidence || latest.rf_confidence || 0
-    );
+    const confidence = Number(latest.confidence || latest.rf_confidence || 0);
     const diseaseName = formatDisease(latest.disease);
 
     $("latestDisease").textContent = diseaseName;
@@ -1220,7 +1069,7 @@ function updateDashboard() {
 
 
 // ============================================================
-// PERFORMANCE
+// PERFORMANCE & QUANTUM PAGES
 // ============================================================
 
 async function loadPerformance() {
@@ -1228,25 +1077,10 @@ async function loadPerformance() {
         const response = await fetch("/performance");
         const data = await response.json();
 
-        if ($("metricAccuracy")) {
-            $("metricAccuracy").textContent =
-                Number(data.accuracy || 0).toFixed(2) + "%";
-        }
-
-        if ($("metricPrecision")) {
-            $("metricPrecision").textContent =
-                Number(data.precision || 0).toFixed(2) + "%";
-        }
-
-        if ($("metricRecall")) {
-            $("metricRecall").textContent =
-                Number(data.recall || 0).toFixed(2) + "%";
-        }
-
-        if ($("metricF1")) {
-            $("metricF1").textContent =
-                Number(data.f1 || 0).toFixed(2) + "%";
-        }
+        if ($("metricAccuracy")) $("metricAccuracy").textContent = Number(data.accuracy || 0).toFixed(2) + "%";
+        if ($("metricPrecision")) $("metricPrecision").textContent = Number(data.precision || 0).toFixed(2) + "%";
+        if ($("metricRecall")) $("metricRecall").textContent = Number(data.recall || 0).toFixed(2) + "%";
+        if ($("metricF1")) $("metricF1").textContent = Number(data.f1 || 0).toFixed(2) + "%";
 
         $("trainingSamples").textContent = data.training_samples ?? "—";
         $("testingSamples").textContent = data.testing_samples ?? "—";
@@ -1256,11 +1090,6 @@ async function loadPerformance() {
         console.error("Performance error:", error);
     }
 }
-
-
-// ============================================================
-// QUANTUM PAGE
-// ============================================================
 
 function renderQuantumPage() {
     const container = $("quantumResult");
@@ -1320,23 +1149,12 @@ function renderQuantumPage() {
     `;
 }
 
-
-// ============================================================
-// COMPARISON PAGE
-// ============================================================
-
 function renderComparisonPage() {
     if (!currentResult) return;
 
-    const rf = Number(
-        currentResult.confidence || currentResult.rf_confidence || 0
-    );
-    const quantum = Number(
-        currentResult.quantum_score || currentResult.qiskit_score || 0
-    );
-    const difference = Number(
-        currentResult.score_difference || Math.abs(rf - quantum)
-    );
+    const rf = Number(currentResult.confidence || currentResult.rf_confidence || 0);
+    const quantum = Number(currentResult.quantum_score || currentResult.qiskit_score || 0);
+    const difference = Number(currentResult.score_difference || Math.abs(rf - quantum));
 
     $("comparisonDiseasePage").textContent = formatDisease(currentResult.disease);
     $("comparisonRFPage").textContent = rf.toFixed(2) + "%";
@@ -1352,7 +1170,7 @@ function renderComparisonPage() {
 
 
 // ============================================================
-// PDF REPORT
+// PDF REPORT GENERATION (SINGLE PAGE CLINICAL LAYOUT)
 // ============================================================
 
 function downloadPDF(source) {
@@ -1363,222 +1181,250 @@ function downloadPDF(source) {
 
     const jsPDF = window.jspdf?.jsPDF;
     if (!jsPDF) {
-        alert("PDF generator could not be loaded. Please refresh the page and try again.");
+        alert("PDF generator could not be loaded. Please refresh the page.");
         return;
     }
 
     const doc = new jsPDF({
         unit: "mm",
-        format: "a4"
+        format: "a4",
+        orientation: "portrait"
     });
 
     const patient = source.patient || currentProfile || {};
     const predictionTime =
         source.prediction_time || source.predictionTime || new Date().toISOString();
 
-    const rf = Number(
-        source.confidence || source.rf_confidence || 0
-    );
+    const rf = Number(source.confidence || source.rf_confidence || 0);
     const quantum = Number(
         source.quantum_score || source.qiskit_score || source.qiskitScore || 0
     );
     const disease = formatDisease(source.disease);
-    const qiskitDisease = formatDisease(
-        source.qiskit_disease || source.qiskitDisease
-    );
     const hybridDisease = formatDisease(
         source.hybrid_disease || source.hybridDisease || source.disease
     );
     const hybridConfidence = Number(
         source.hybrid_confidence || source.hybridConfidence || 0
     );
-    const symptoms = (
-        source.selected_symptoms || source.symptoms || []
-    )
+    const symptoms = (source.selected_symptoms || source.symptoms || [])
         .map(formatDisease)
         .join(", ");
 
-    const MARGIN = 16;
+    const MARGIN = 14;
     const PAGE_WIDTH = 210;
-    const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+    const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 182 mm
 
-    const PRIMARY = [49, 91, 234];
-    const INK = [24, 34, 56];
-    const MUTED = [104, 116, 138];
-    const RULE = [222, 229, 240];
-    const NOTICE_BG = [255, 248, 232];
+    // Clinical Color Palette
+    const PRIMARY = [49, 91, 234];       // Medical Blue
+    const INK = [24, 34, 56];            // Deep Slate
+    const MUTED = [104, 116, 138];       // Muted Text
+    const BORDER = [225, 231, 240];      // Light Gray Border
+    const BG_LIGHT = [247, 249, 252];    // Card Fill
+    const PURPLE_BG = [247, 244, 255];   // Quantum Card Fill
+    const PURPLE_BORDER = [220, 209, 250];
+    const PURPLE_TXT = [101, 72, 189];
+    const NOTICE_BG = [255, 248, 232];   // Alert Fill
     const NOTICE_BORDER = [244, 226, 181];
     const NOTICE_TEXT = [117, 90, 29];
 
-    let y = 16;
+    let y = 14;
 
-    function sectionHeading(text) {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(...PRIMARY);
-        doc.text(text.toUpperCase(), MARGIN, y);
-
-        y += 2.2;
-        doc.setDrawColor(...RULE);
-        doc.setLineWidth(0.3);
-        doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
-        y += 5.4;
-        doc.setTextColor(...INK);
-    }
-
-    function bodyLine(text, options = {}) {
-        doc.setFont(
-            "helvetica",
-            options.bold ? "bold" : "normal"
-        );
-        doc.setFontSize(options.size || 8.6);
-        doc.setTextColor(...(options.color || INK));
-        doc.text(text, MARGIN, y);
-        y += options.gap || 4.6;
-    }
-
-    function wrappedBlock(text, options = {}) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(options.size || 8.6);
-        doc.setTextColor(...INK);
-
-        const wrapped = doc.splitTextToSize(text, CONTENT_WIDTH);
-        doc.text(wrapped, MARGIN, y);
-        y += wrapped.length * (options.lineHeight || 4.2);
-    }
-
-    function sectionGap(amount = 5.4) {
-        y += amount;
-    }
-
-    // Header
+    // --- 1. HEADER ---
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(19);
+    doc.setFontSize(18);
     doc.setTextColor(...PRIMARY);
     doc.text("QuantumDiagnose", MARGIN, y);
 
-    y += 6;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(...MUTED);
-    doc.text("AI-Assisted Symptom Analysis Report", MARGIN, y);
+    doc.text("CONFIDENTIAL PATIENT SUMMARY", MARGIN + CONTENT_WIDTH, y - 1, { align: "right" });
+    doc.text("Quantum-Assisted ML Disease Prediction Report", MARGIN + CONTENT_WIDTH, y + 3.5, { align: "right" });
 
-    y += 4;
+    y += 6;
     doc.setDrawColor(...PRIMARY);
-    doc.setLineWidth(0.6);
+    doc.setLineWidth(0.5);
     doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
-    y += 8;
-    doc.setTextColor(...INK);
+    y += 6;
 
-    // Patient info
-    sectionHeading("Patient Information");
-    bodyLine(
-        `Name: ${patient.name || "-"}     Email: ${source.userEmail || currentUser?.email || "-"}`
-    );
-    bodyLine(
-        `Gender: ${patient.gender || "-"}     Age: ${patient.age || "-"}     Height: ${patient.height ? patient.height + " cm" : "-"}     Weight: ${patient.weight ? patient.weight + " kg" : "-"}`
-    );
-    bodyLine(`Date & Time: ${formatDateTime(predictionTime)}`);
-    sectionGap();
-
-    // Symptoms
-    sectionHeading("Selected Symptoms");
-    wrappedBlock(symptoms || "No symptoms recorded.");
-    sectionGap();
-
-    // Random Forest
-    sectionHeading("Random Forest Result");
-    bodyLine(`Predicted Disease: ${disease}     Confidence: ${rf.toFixed(2)}%`);
-    bodyLine("Top Predictions:", { bold: true, gap: 4.4 });
-
-    const topList = (source.top_predictions || []).slice(0, 3);
-    if (topList.length === 0) {
-        bodyLine("-  No additional predictions recorded.");
-    } else {
-        topList.forEach(item => {
-            bodyLine(
-                `-  ${formatDisease(item.disease)}: ${Number(item.confidence || 0).toFixed(2)}%`
-            );
-        });
-    }
-    sectionGap();
-
-    // Qiskit
-    sectionHeading("Qiskit Result");
-    bodyLine(`Predicted Disease: ${qiskitDisease}     Confidence: ${quantum.toFixed(2)}%`);
-    bodyLine(
-        `Quantum Signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%     Qubits Used: ${source.qiskit_qubits ?? source.qiskitQubits ?? "-"}     Circuit Depth: ${source.qiskit_depth ?? source.qiskitDepth ?? "-"}`
-    );
-    sectionGap();
-
-    // Hybrid
-    sectionHeading("Hybrid Prediction");
-    bodyLine(
-        `Disease: ${hybridDisease}     Confidence: ${hybridConfidence.toFixed(2)}%     Agreement: ${source.model_agreement || source.modelAgreement || "-"}`
-    );
-    sectionGap();
-
-    // Doctor
-    sectionHeading("Doctor Recommendation");
-    bodyLine(`Recommended Specialty: ${source.specialty || "General Physician"}`);
-
-    const doctors = source.doctors || [];
-    if (doctors.length) {
-        const doctor = doctors[0];
-        bodyLine(`Doctor: ${doctor.name || "-"}     Experience: ${doctor.experience || "-"}`);
-        bodyLine(`Hospital: ${doctor.hospital || "-"}, ${doctor.location || "-"}`);
-    }
-    sectionGap(6);
-
-    // Disclaimer
-    const disclaimer =
-        "QuantumDiagnose is an educational and research demonstration. The Random Forest prediction is generated " +
-        "from the project dataset. The Qiskit score is experimental and is not a clinically validated probability. " +
-        "This report is not a medical diagnosis or a substitute for professional medical advice. Please consult a " +
-        "licensed physician for health concerns.";
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.6);
-
-    const disclaimerLines = doc.splitTextToSize(disclaimer, CONTENT_WIDTH - 8);
-    const noticeBoxHeight = disclaimerLines.length * 3.6 + 10;
-
-    doc.setFillColor(...NOTICE_BG);
-    doc.setDrawColor(...NOTICE_BORDER);
-    doc.setLineWidth(0.35);
-    doc.roundedRect(
-        MARGIN,
-        y,
-        CONTENT_WIDTH,
-        noticeBoxHeight,
-        2,
-        2,
-        "FD"
-    );
+    // --- 2. PATIENT & SYMPTOMS CARD ---
+    doc.setFillColor(...BG_LIGHT);
+    doc.setDrawColor(...BORDER);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 22, 1.5, 1.5, "FD");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.6);
-    doc.setTextColor(...NOTICE_TEXT);
-    doc.text("Important Notice", MARGIN + 4.5, y + 5.4);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.6);
-    doc.text(disclaimerLines, MARGIN + 4.5, y + 9.8);
-
-    y += noticeBoxHeight;
-    doc.setTextColor(...INK);
-
-    // Footer
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.3);
+    doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
+    doc.text("Patient:", MARGIN + 4, y + 5);
+    doc.text("Selected Symptoms:", MARGIN + 4, y + 14);
 
-    doc.text("QuantumDiagnose \u2022 Educational Project", MARGIN, y);
-    doc.text("Generated: " + formatDateTime(new Date()), MARGIN, y + 4);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...INK);
+    const patientStr = `${patient.name || "—"}  •  ${patient.gender || "—"}  •  Age ${patient.age || "—"}`;
+    doc.text(patientStr, MARGIN + 18, y + 5);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text(`Height: ${patient.height ? patient.height + " cm" : "—"}   Weight: ${patient.weight ? patient.weight + " kg" : "—"}   Email: ${source.userEmail || currentUser?.email || "—"}`, MARGIN + 18, y + 9.2);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+    doc.text(symptoms || "Not recorded", MARGIN + 34, y + 14);
+
+    y += 26;
+
+    // --- 3. FINAL PREDICTED DISEASE CARD ---
+    doc.setFillColor(...BG_LIGHT);
+    doc.setDrawColor(...BORDER);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 17, 1.5, 1.5, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text("Final Predicted Disease", MARGIN + 4, y + 5.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...INK);
+    doc.text(hybridDisease, MARGIN + 4, y + 12.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...PRIMARY);
+    doc.text(`${hybridConfidence.toFixed(2)}% confidence`, MARGIN + CONTENT_WIDTH - 4.5, y + 10, { align: "right" });
+
+    y += 21;
+
+    // --- 4. RANDOM FOREST CARD ---
+    doc.setFillColor(...BG_LIGHT);
+    doc.setDrawColor(...BORDER);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 17, 1.5, 1.5, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text("Random Forest", MARGIN + 4, y + 5.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...INK);
+    doc.text(disease, MARGIN + 4, y + 12.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...PRIMARY);
+    doc.text(`${rf.toFixed(2)}% confidence`, MARGIN + CONTENT_WIDTH - 4.5, y + 10, { align: "right" });
+
+    y += 21;
+
+    // --- 5. QISKIT QUANTUM CARD ---
+    doc.setFillColor(...PURPLE_BG);
+    doc.setDrawColor(...PURPLE_BORDER);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 17, 1.5, 1.5, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...PURPLE_TXT);
+    doc.text("Qiskit Experimental Prediction", MARGIN + 4, y + 5.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...INK);
+    doc.text(formatDisease(source.qiskit_disease || source.qiskitDisease || disease), MARGIN + 4, y + 12.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...PURPLE_TXT);
+    doc.text(`${quantum.toFixed(2)}%`, MARGIN + CONTENT_WIDTH - 4.5, y + 8, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...PURPLE_TXT);
+    doc.text(`Quantum signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%`, MARGIN + CONTENT_WIDTH - 4.5, y + 12.5, { align: "right" });
+
+    y += 21;
+
+    // --- 6. TOP EVALUATIONS TABLE ---
+    const topList = (source.top_predictions || []).slice(0, 3);
+    if (topList.length > 0) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(...MUTED);
+        doc.text("TOP EVALUATIONS", MARGIN, y);
+        y += 2;
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
+        y += 4;
+
+        topList.forEach(item => {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7.8);
+            doc.setTextColor(...INK);
+            doc.text(formatDisease(item.disease), MARGIN + 2, y);
+
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...PRIMARY);
+            doc.text(`${Number(item.confidence || 0).toFixed(2)}%`, MARGIN + CONTENT_WIDTH - 2, y, { align: "right" });
+
+            y += 1.8;
+            doc.setDrawColor(...BORDER);
+            doc.line(MARGIN + 2, y, MARGIN + CONTENT_WIDTH - 2, y);
+            y += 3.8;
+        });
+        y += 1;
+    }
+
+    // --- 7. RECOMMENDED DOCTOR ---
+    const doctors = source.doctors || [];
+    const docInfo = doctors.length ? doctors[0] : null;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text("RECOMMENDED DOCTOR", MARGIN, y);
+    y += 2;
+    doc.setDrawColor(...BORDER);
+    doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
+    y += 4.5;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...INK);
+    doc.text(docInfo ? `${docInfo.name}  •  ${docInfo.specialization}` : `Specialty: ${source.specialty || "General Physician"}`, MARGIN + 2, y);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text(docInfo ? `${docInfo.hospital}, ${docInfo.location}  (Experience: ${docInfo.experience || "—"})` : "Consult a certified medical provider.", MARGIN + 2, y + 4.2);
+
+    y += 11;
+
+    // --- 8. SHORTENED NOTICE ---
+    doc.setFillColor(...NOTICE_BG);
+    doc.setDrawColor(...NOTICE_BORDER);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 9, 1.5, 1.5, "FD");
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...NOTICE_TEXT);
+    doc.text("Important: Educational research prototype. Not a substitute for professional medical advice.", MARGIN + 4, y + 5.5);
+
+    y += 14;
+
+    // --- 9. FOOTER (BOTTOM-LEFT ALIGNED) ---
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.text(`Generated ${formatDateTime(predictionTime)} • QuantumDiagnose Educational Project`, MARGIN, y);
 
     const safeDisease = disease.replace(/[^a-z0-9]/gi, "_");
-    doc.save("QuantumDiagnose_Report_" + safeDisease + ".pdf");
+    doc.save(`QuantumDiagnose_Report_${safeDisease}.pdf`);
 }
 
 function downloadCurrentReport() {
@@ -1591,7 +1437,7 @@ function downloadCurrentReport() {
 
 
 // ============================================================
-// EMAIL REPORT MODAL
+// EMAIL MODAL SYSTEM
 // ============================================================
 
 const emailModalOverlay = $("emailModalOverlay");
@@ -1602,10 +1448,8 @@ const emailModalClose = $("emailModalClose");
 
 function setEmailModalMessage(text, error = false) {
     if (!emailModalMessage) return;
-
     emailModalMessage.textContent = text;
-    emailModalMessage.className =
-        "status-message " + (error ? "error" : "success");
+    emailModalMessage.className = "status-message " + (error ? "error" : "success");
 }
 
 function openEmailModal(source) {
@@ -1618,8 +1462,7 @@ function openEmailModal(source) {
     setEmailModalMessage("");
 
     if (emailModalInput) {
-        emailModalInput.value =
-            currentUser?.email || source.userEmail || "";
+        emailModalInput.value = currentUser?.email || source.userEmail || "";
     }
 
     emailModalOverlay?.classList.remove("hidden");
@@ -1649,29 +1492,20 @@ async function sendEmailReport() {
         patient: source.patient || currentProfile || {},
         disease: source.disease,
         confidence: source.confidence ?? source.rf_confidence,
-        quantum_score:
-            source.quantum_score ?? source.qiskit_score ?? source.qiskitScore,
+        quantum_score: source.quantum_score ?? source.qiskit_score ?? source.qiskitScore,
         qiskit_disease: source.qiskit_disease ?? source.qiskitDisease,
         hybrid_disease: source.hybrid_disease ?? source.hybridDisease,
-        hybrid_confidence:
-            source.hybrid_confidence ?? source.hybridConfidence,
-        quantum_signal:
-            source.quantum_signal ?? source.quantumSignal,
+        hybrid_confidence: source.hybrid_confidence ?? source.hybridConfidence,
+        quantum_signal: source.quantum_signal ?? source.quantumSignal,
         qiskit_qubits: source.qiskit_qubits ?? source.qiskitQubits,
         qiskit_depth: source.qiskit_depth ?? source.qiskitDepth,
         specialty: source.specialty,
         doctors: source.doctors || [],
-        top_predictions:
-            source.top_predictions || source.topPredictions || [],
-        qiskit_top_predictions:
-            source.qiskit_top_predictions || source.qiskitTopPredictions || [],
-        selected_symptoms:
-            source.selected_symptoms || source.symptoms || [],
-        prediction_time:
-            source.prediction_time || source.predictionTime,
-        prediction_time_display: formatDateTime(
-            source.prediction_time || source.predictionTime
-        )
+        top_predictions: source.top_predictions || source.topPredictions || [],
+        qiskit_top_predictions: source.qiskit_top_predictions || source.qiskitTopPredictions || [],
+        selected_symptoms: source.selected_symptoms || source.symptoms || [],
+        prediction_time: source.prediction_time || source.predictionTime,
+        prediction_time_display: formatDateTime(source.prediction_time || source.predictionTime)
     };
 
     if (emailModalSend) {
@@ -1762,7 +1596,7 @@ $("quantumBtn")?.addEventListener("click", renderQuantumPage);
 
 
 // ============================================================
-// FIREBASE AUTH STATE
+// AUTH STATE LISTENER & INIT
 // ============================================================
 
 onAuthStateChanged(auth, async user => {
@@ -1772,11 +1606,6 @@ onAuthStateChanged(auth, async user => {
         showAuthScreen();
     }
 });
-
-
-// ============================================================
-// INITIALIZE
-// ============================================================
 
 setupSymptoms();
 setAuthMode("login");
