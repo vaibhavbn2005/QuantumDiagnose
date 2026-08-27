@@ -551,7 +551,7 @@ const pageNames = {
         "Patient Profile",
 
     prediction:
-        "New Prediction",
+        "Hybrid Health Analysis",
 
     history:
         "Prediction History",
@@ -2717,13 +2717,16 @@ function renderComparisonPage() {
 
 
 // ============================================================
-// PDF REPORT (COMPACT SINGLE PAGE)
 // ============================================================
-// Note: jsPDF's built-in fonts can only render plain text
-// (no color emoji), so this report uses clean typography and
-// simple bullet points instead of emoji, and is deliberately
-// laid out to fit on a single A4 page regardless of how many
-// symptoms or predictions are included.
+// PDF REPORT (COMPACT, PROFESSIONAL, SINGLE PAGE)
+// ============================================================
+// jsPDF's built-in fonts can only render plain text (no color
+// emoji), so this report uses clean typography instead of
+// icons. Every section below writes through the same small
+// set of helpers, and the footer is placed relative to the
+// last line written (not a fixed y-coordinate), so the layout
+// never overflows onto a second page and never leaves a large
+// blank gap at the bottom, however short or long the content is.
 
 function downloadPDF(
     source
@@ -2814,33 +2817,78 @@ function downloadPDF(
             )
             .join(", ");
 
-    const MARGIN = 15;
-    const CONTENT_WIDTH = 180;
+    // --------------------------------------------------------
+    // LAYOUT CONSTANTS
+    // --------------------------------------------------------
 
-    let y = 13;
+    const MARGIN = 16;
+    const CONTENT_WIDTH = 178;
+    const COLOR_PRIMARY = [49, 91, 234];
+    const COLOR_TEXT = [24, 34, 56];
+    const COLOR_MUTED = [104, 116, 138];
+    const COLOR_HEADING = [22, 30, 56];
+
+    let y = 16;
 
     function heading(text) {
 
-        doc.setFontSize(11.5);
+        doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(30, 40, 70);
+        doc.setTextColor(...COLOR_HEADING);
         doc.text(text, MARGIN, y);
-        y += 5.2;
-        doc.setTextColor(20, 20, 20);
+        y += 4.6;
+
+        doc.setDrawColor(226, 231, 240);
+        doc.setLineWidth(0.2);
+        doc.line(MARGIN, y - 3, MARGIN + CONTENT_WIDTH, y - 3);
+
+        doc.setTextColor(...COLOR_TEXT);
     }
 
-    function line(text) {
+    function keyValueLine(pairs) {
 
-        doc.setFontSize(8.5);
-        doc.setFont("helvetica", "normal");
-        doc.text(text, MARGIN, y);
-        y += 4;
+        // pairs: [[label, value], [label, value], ...] rendered
+        // on one line, evenly spaced, so related facts (like
+        // Gender / Age) sit together instead of stacking.
+
+        doc.setFontSize(8.7);
+
+        const colWidth = CONTENT_WIDTH / pairs.length;
+
+        pairs.forEach(([label, value], index) => {
+
+            const x = MARGIN + index * colWidth;
+
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...COLOR_MUTED);
+            doc.text(label, x, y);
+
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...COLOR_TEXT);
+            doc.text(
+                String(value ?? "-"),
+                x,
+                y + 3.6
+            );
+        });
+
+        y += 8.4;
     }
 
-    function wrappedLine(text) {
+    function bodyLine(text) {
 
-        doc.setFontSize(8.5);
+        doc.setFontSize(8.7);
         doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLOR_TEXT);
+        doc.text(text, MARGIN, y);
+        y += 4.3;
+    }
+
+    function wrappedBody(text) {
+
+        doc.setFontSize(8.7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLOR_TEXT);
 
         const wrapped =
             doc.splitTextToSize(
@@ -2850,135 +2898,157 @@ function downloadPDF(
 
         doc.text(wrapped, MARGIN, y);
 
-        y += wrapped.length * 3.8;
+        y += wrapped.length * 4.1;
+    }
+
+    function sectionGap(amount = 3.5) {
+
+        y += amount;
     }
 
 
-    // ------------------------------------------------------
+    // --------------------------------------------------------
     // HEADER
-    // ------------------------------------------------------
+    // --------------------------------------------------------
 
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(49, 91, 234);
+    doc.setTextColor(...COLOR_PRIMARY);
     doc.text("QuantumDiagnose", MARGIN, y);
 
-    y += 6;
+    y += 6.5;
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(...COLOR_MUTED);
     doc.text(
-        "AI-Assisted Symptom Analysis Report",
+        "Hybrid AI-Assisted Symptom Analysis Report",
         MARGIN,
         y
     );
 
-    y += 4;
+    y += 4.5;
 
-    doc.setDrawColor(49, 91, 234);
+    doc.setDrawColor(...COLOR_PRIMARY);
+    doc.setLineWidth(0.6);
     doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
 
-    y += 6;
-
-    doc.setTextColor(20, 20, 20);
+    sectionGap(6);
 
 
-    // ------------------------------------------------------
+    // --------------------------------------------------------
     // PATIENT INFORMATION
-    // ------------------------------------------------------
+    // --------------------------------------------------------
 
     heading("Patient Information");
 
-    line(`Name: ${patient.name || "-"}`);
-    line(`Email: ${source.userEmail || currentUser?.email || "-"}`);
-    line(`Gender: ${patient.gender || "-"}    Age: ${patient.age || "-"}`);
-    line(`Height: ${patient.height ? patient.height + " cm" : "-"}    Weight: ${patient.weight ? patient.weight + " kg" : "-"}`);
-    line(`Date & Time: ${formatDateTime(predictionTime)}`);
+    keyValueLine([
+        ["Name", patient.name || "-"],
+        ["Email", source.userEmail || currentUser?.email || "-"]
+    ]);
 
-    y += 2;
+    keyValueLine([
+        ["Gender", patient.gender || "-"],
+        ["Age", patient.age || "-"],
+        ["Height", patient.height ? patient.height + " cm" : "-"],
+        ["Weight", patient.weight ? patient.weight + " kg" : "-"]
+    ]);
+
+    bodyLine(`Date & Time: ${formatDateTime(predictionTime)}`);
+
+    sectionGap();
 
 
-    // ------------------------------------------------------
-    // SYMPTOMS
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // SELECTED SYMPTOMS
+    // --------------------------------------------------------
 
     heading("Selected Symptoms");
 
-    wrappedLine(symptoms || "No symptoms recorded.");
+    wrappedBody(symptoms || "No symptoms recorded.");
 
-    y += 3;
+    sectionGap();
 
 
-    // ------------------------------------------------------
+    // --------------------------------------------------------
     // RANDOM FOREST RESULT
-    // ------------------------------------------------------
+    // --------------------------------------------------------
 
     heading("Random Forest Result");
 
-    line(`Predicted Disease: ${disease}`);
-    line(`Confidence: ${rf.toFixed(2)}%`);
-
-    y += 1;
+    keyValueLine([
+        ["Predicted Disease", disease],
+        ["Confidence", rf.toFixed(2) + "%"]
+    ]);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.text("Top Predictions:", MARGIN, y);
-    y += 4;
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.7);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("Top Predictions", MARGIN, y);
+    y += 4.3;
 
     const topList =
         (source.top_predictions || []).slice(0, 3);
 
     if (topList.length === 0) {
 
-        line("- No additional predictions recorded.");
+        bodyLine("-  No additional predictions recorded.");
 
     } else {
 
         topList.forEach(item => {
 
-            line(
-                `- ${formatDisease(item.disease)}: ${Number(item.confidence || 0).toFixed(2)}%`
+            bodyLine(
+                `-  ${formatDisease(item.disease)}: ${Number(item.confidence || 0).toFixed(2)}%`
             );
         });
     }
 
-    y += 2;
+    sectionGap();
 
 
-    // ------------------------------------------------------
-    // QISKIT
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // QISKIT RESULT
+    // --------------------------------------------------------
 
     heading("Qiskit Result");
 
-    line(`Predicted Disease: ${qiskitDisease}`);
-    line(`Confidence: ${quantum.toFixed(2)}%    Signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%`);
-    line(`Qubits Used: ${source.qiskit_qubits ?? source.qiskitQubits ?? "-"}    Circuit Depth: ${source.qiskit_depth ?? source.qiskitDepth ?? "-"}`);
+    keyValueLine([
+        ["Predicted Disease", qiskitDisease],
+        ["Confidence", quantum.toFixed(2) + "%"],
+        ["Signal", Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2) + "%"]
+    ]);
 
-    y += 2;
+    keyValueLine([
+        ["Qubits Used", source.qiskit_qubits ?? source.qiskitQubits ?? "-"],
+        ["Circuit Depth", source.qiskit_depth ?? source.qiskitDepth ?? "-"]
+    ]);
+
+    sectionGap();
 
 
-    // ------------------------------------------------------
-    // HYBRID RESULT
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // HYBRID PREDICTION
+    // --------------------------------------------------------
 
     heading("Hybrid Prediction");
 
-    line(`Disease: ${hybridDisease}`);
-    line(`Confidence: ${hybridConfidence.toFixed(2)}%    Agreement: ${source.model_agreement || source.modelAgreement || "-"}`);
+    keyValueLine([
+        ["Disease", hybridDisease],
+        ["Confidence", hybridConfidence.toFixed(2) + "%"],
+        ["Agreement", source.model_agreement || source.modelAgreement || "-"]
+    ]);
 
-    y += 2;
+    sectionGap();
 
 
-    // ------------------------------------------------------
+    // --------------------------------------------------------
     // DOCTOR RECOMMENDATION
-    // ------------------------------------------------------
+    // --------------------------------------------------------
 
     heading("Doctor Recommendation");
 
-    line(`Recommended Specialty: ${source.specialty || "General Physician"}`);
+    bodyLine(`Recommended Specialty: ${source.specialty || "General Physician"}`);
 
     const doctors = source.doctors || [];
 
@@ -2986,60 +3056,78 @@ function downloadPDF(
 
         const doctor = doctors[0];
 
-        line(`Doctor: ${doctor.name || "-"}    Experience: ${doctor.experience || "-"}`);
-        line(`Hospital: ${doctor.hospital || "-"}, ${doctor.location || "-"}`);
+        keyValueLine([
+            ["Doctor", doctor.name || "-"],
+            ["Experience", doctor.experience || "-"]
+        ]);
+
+        bodyLine(`Hospital: ${doctor.hospital || "-"}, ${doctor.location || "-"}`);
     }
 
-    y += 3;
+    sectionGap(4.5);
 
 
-    // ------------------------------------------------------
-    // DISCLAIMER
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // IMPORTANT NOTICE (highlighted box)
+    // --------------------------------------------------------
+
+    const disclaimer =
+        "This is an educational/research project. Results are not a medical diagnosis " +
+        "or a substitute for professional medical advice.";
+
+    doc.setFontSize(7.6);
+    doc.setFont("helvetica", "normal");
+
+    const disclaimerLines =
+        doc.splitTextToSize(disclaimer, CONTENT_WIDTH - 8);
+
+    const boxHeight =
+        10 + disclaimerLines.length * 3.6;
 
     doc.setFillColor(255, 248, 232);
-    doc.roundedRect(MARGIN, y - 4, CONTENT_WIDTH, 20, 2, 2, "F");
+    doc.setDrawColor(244, 226, 181);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, boxHeight, 2, 2, "FD");
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(117, 90, 29);
-    doc.text("Important Notice", MARGIN + 3, y + 1);
+    doc.text("Important Notice", MARGIN + 4, y + 6);
 
-    y += 5;
+    doc.setFontSize(7.6);
+    doc.setFont("helvetica", "normal");
+    doc.text(disclaimerLines, MARGIN + 4, y + 10.5);
+
+    y += boxHeight;
+
+    doc.setTextColor(...COLOR_TEXT);
+
+
+    // --------------------------------------------------------
+    // FOOTER
+    // (placed right after the content, not pinned to a fixed
+    // coordinate — this is what stops short reports from
+    // leaving a large blank area at the bottom of the page)
+    // --------------------------------------------------------
+
+    y += 6;
 
     doc.setFontSize(7.3);
     doc.setFont("helvetica", "normal");
-
-    const disclaimer =
-        "QuantumDiagnose is an educational and research demonstration. The Random Forest prediction is generated " +
-        "from the project dataset. The Qiskit score is experimental and is not a clinically validated probability. " +
-        "This report is not a medical diagnosis or a substitute for professional medical advice.";
-
-    const disclaimerLines =
-        doc.splitTextToSize(disclaimer, CONTENT_WIDTH - 6);
-
-    doc.text(disclaimerLines, MARGIN + 3, y);
-
-    doc.setTextColor(20, 20, 20);
-
-
-    // ------------------------------------------------------
-    // FOOTER
-    // ------------------------------------------------------
-
-    doc.setFontSize(7.5);
-    doc.setTextColor(120, 120, 120);
+    doc.setTextColor(...COLOR_MUTED);
 
     doc.text(
-        "QuantumDiagnose  |  Educational Project",
+        "QuantumDiagnose \u2022 Educational Project",
         MARGIN,
-        285
+        y
     );
+
+    y += 3.6;
 
     doc.text(
         "Generated: " + formatDateTime(new Date()),
         MARGIN,
-        290
+        y
     );
 
     const safeDisease =
