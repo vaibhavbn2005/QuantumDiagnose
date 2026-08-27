@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
-import math
 from pathlib import Path
 from datetime import datetime, timezone
 import os
@@ -298,55 +297,6 @@ symptom_map = {
 
 
 # ============================================================
-# CONFIDENCE CALIBRATION
-# ============================================================
-#
-# Both the Random Forest and Qiskit produce a probability
-# distribution spread across every possible disease, so a raw
-# top score is often well under 50% even when the model is
-# clearly leaning toward one diagnosis. This calibrates a sorted
-# probability distribution with a power-law temperature so the
-# leading candidate lands in a professional, presentable
-# confidence band, while keeping the same ranking of diseases
-# and a normalized (sums to 100%) distribution underneath it.
-# ============================================================
-
-def sharpen_to_target(sorted_probabilities, target=0.92, ceiling=0.975, max_power=80.0):
-
-    probs = np.clip(
-        np.asarray(sorted_probabilities, dtype=float),
-        1e-9,
-        None
-    )
-
-    probs = probs / probs.sum()
-
-    sharpened = probs
-    power = 1.0
-
-    while sharpened[0] < target and power < max_power:
-        power *= 1.4
-        sharpened = probs ** power
-        sharpened = sharpened / sharpened.sum()
-
-    top = float(np.clip(sharpened[0], target, ceiling))
-
-    remainder = 1.0 - top
-
-    rest = sharpened[1:]
-    rest_sum = float(rest.sum())
-
-    if rest_sum > 0:
-        rest = rest / rest_sum * remainder
-    else:
-        rest = rest
-
-    calibrated = np.concatenate(([top], rest))
-
-    return calibrated
-
-
-# ============================================================
 # DISEASE SYMPTOM PROFILES
 # ============================================================
 #
@@ -559,42 +509,15 @@ DOCTORS = [
 
 
 # ============================================================
-# QUANTUM FEATURE SPACE (FULL-INFORMATION AMPLITUDE ENCODING)
+# QUANTUM FEATURE REDUCTION
 # ============================================================
 #
-# Earlier versions compressed the symptom vector down to a
-# handful of numbers before handing it to Qiskit (first by
-# arbitrary column-chunking, then by a 6-dimension PCA
-# projection). Either kind of compression still throws away
-# real information, so even when Qiskit was restricted to
-# Random Forest's own shortlist of candidate diseases, it could
-# still rank the "wrong" one inside that shortlist because it
-# was comparing a blurred version of the symptoms.
+# Real datasets can contain many symptoms while a small
+# demonstration circuit may use only a few qubits.
 #
-# This version keeps the *entire* symptom vector. Amplitude
-# encoding maps all of it into the quantum statevector with
-# zero information loss - it only needs ceil(log2(number of
-# symptoms)) qubits to hold it exactly. Qiskit's similarity
-# score is then a full-fidelity comparison against each disease
-# profile, using the same complete information Random Forest
-# was trained on, not a lossy summary of it. Combined with only
-# comparing Random Forest's own leading candidates (below), this
-# makes the two models agree on the same disease the vast
-# majority of the time - genuinely, because they are now looking
-# at the same information, not because one is copying the other.
+# We therefore compress the complete symptom vector into
+# 4 quantum features.
 # ============================================================
-
-N_QUBITS = max(
-    1,
-    math.ceil(
-        math.log2(
-            len(symptom_columns)
-        )
-    )
-)
-
-QUANTUM_STATE_SIZE = 2 ** N_QUBITS
-
 
 def create_quantum_features(vector):
 
@@ -603,48 +526,33 @@ def create_quantum_features(vector):
         dtype=float
     )
 
-    padded = np.zeros(
-        QUANTUM_STATE_SIZE,
+    number_of_features = 4
+
+    chunks = np.array_split(
+        vector,
+        number_of_features
+    )
+
+    features = []
+
+    for chunk in chunks:
+
+        if len(chunk) == 0:
+
+            features.append(0.0)
+
+        else:
+
+            features.append(
+                float(
+                    np.mean(chunk)
+                )
+            )
+
+    return np.asarray(
+        features,
         dtype=float
     )
-
-    padded[:len(vector)] = vector
-
-    norm = float(
-        np.linalg.norm(padded)
-    )
-
-    if norm < 1e-9:
-
-        # A patient with literally no symptoms selected can't
-        # happen through the API (at least one is required), but
-        # guard against a degenerate all-zero disease profile
-        # anyway so the statevector stays valid.
-
-        padded[0] = 1.0
-        norm = 1.0
-
-    return padded / norm
-
-
-# ============================================================
-# QUANTUM CANDIDATE POOL
-# ============================================================
-#
-# Instead of letting Qiskit search the entire disease list on
-# its own (which is how it could end up naming a completely
-# different disease than Random Forest), Qiskit now runs its
-# similarity comparison only against the diseases Random Forest
-# already ranked as most likely for this patient. This keeps
-# both models "looking at" the same short list of realistic
-# candidates, so the quantum stage behaves as a confirmation /
-# re-ranking step on top of the classical model rather than an
-# independent guess over the full dataset. Agreement between the
-# two models, and therefore the confidence of the combined
-# result, becomes far higher and far more realistic.
-# ============================================================
-
-QUANTUM_CANDIDATE_SIZE = 3
 
 
 # ============================================================
@@ -655,12 +563,32 @@ def create_quantum_state(
     feature_vector
 ):
 
-    circuit = QuantumCircuit(N_QUBITS)
+    circuit = QuantumCircuit(4)
 
-    circuit.initialize(
-        feature_vector,
-        range(N_QUBITS)
-    )
+    for qubit in range(4):
+
+        value = float(
+            np.clip(
+                feature_vector[qubit],
+                0,
+                1
+            )
+        )
+
+        angle = (
+            value * np.pi
+        )
+
+        circuit.ry(
+            angle,
+            qubit
+        )
+
+    # Entanglement
+
+    circuit.cx(0, 1)
+    circuit.cx(1, 2)
+    circuit.cx(2, 3)
 
     return (
         circuit,
@@ -668,21 +596,6 @@ def create_quantum_state(
             circuit
         )
     )
-
-
-def circuit_depth(circuit):
-
-    # "initialize" is a single high-level instruction until it
-    # is decomposed into elementary gates, so the circuit has to
-    # be decomposed first to report a meaningful depth number.
-
-    try:
-
-        return circuit.decompose().depth()
-
-    except Exception:
-
-        return circuit.depth()
 
 
 # ============================================================
@@ -724,8 +637,8 @@ def quantum_similarity(
     )
 
     depth = max(
-        circuit_depth(input_circuit),
-        circuit_depth(disease_circuit)
+        input_circuit.depth(),
+        disease_circuit.depth()
     )
 
     return (
@@ -739,100 +652,71 @@ def quantum_similarity(
 # ============================================================
 
 def quantum_disease_prediction(
-    input_vector,
-    candidate_diseases=None
+    input_vector
 ):
+
+    """
+    Quantum-assisted disease scoring.
+
+    The Qiskit circuit evaluates similarity between the encoded
+    symptom vector and the prototype of EVERY disease in the
+    training set.  The Random Forest probability is used only as
+    a statistical prior so the quantum-assisted result remains
+    aligned with the same disease space as the classical model.
+
+    This is intentionally presented as a research/educational
+    hybrid demonstration, not as an independent clinical quantum
+    classifier or a fabricated accuracy claim.
+    """
 
     if not QISKIT_AVAILABLE:
 
         return {
-
             "available": False,
-
             "disease": None,
-
             "score": 0,
-
             "qubits": 0,
-
             "circuit_depth": 0,
-
             "quantum_signal": 0,
-
             "top_predictions": [],
-
-            "message":
-                "Qiskit is not available."
+            "message": "Qiskit is not available."
         }
 
+    # --------------------------------------------------------
+    # INPUT -> QUANTUM FEATURES
+    # --------------------------------------------------------
 
-    # --------------------------------------------------------
-    # CONVERT INPUT INTO QUANTUM FEATURES (FULL AMPLITUDE
-    # ENCODING - NO INFORMATION LOSS)
-    # --------------------------------------------------------
+    input_vector = np.asarray(
+        input_vector,
+        dtype=float
+    )
 
     input_features = create_quantum_features(
         input_vector
     )
 
-
     quantum_predictions = []
-
     maximum_depth = 0
 
-
     # --------------------------------------------------------
-    # BUILD THE CANDIDATE POOL
-    # --------------------------------------------------------
-    #
-    # When Random Forest's leading candidates are supplied,
-    # Qiskit only compares the patient's quantum-encoded
-    # symptom pattern against those diseases instead of the
-    # full disease list. This is what keeps the two models
-    # aligned on the same short list of realistic diagnoses.
+    # QUANTUM SIMILARITY FOR EVERY DISEASE
     # --------------------------------------------------------
 
-    if candidate_diseases:
+    for disease in model.classes_:
 
-        candidate_pool = [
+        disease = str(disease)
+        profile = disease_profiles.get(disease)
 
-            (disease, disease_profiles[disease])
+        if profile is None:
+            continue
 
-            for disease in candidate_diseases
-
-            if disease in disease_profiles
-
-        ]
-
-    else:
-
-        candidate_pool = []
-
-
-    if not candidate_pool:
-
-        candidate_pool = list(
-            disease_profiles.items()
+        disease_features = create_quantum_features(
+            profile
         )
 
-
-    # --------------------------------------------------------
-    # COMPARE WITH EACH CANDIDATE DISEASE PROFILE
-    # --------------------------------------------------------
-
-    for disease, profile in candidate_pool:
-
-        disease_features = (
-            create_quantum_features(
-                profile
-            )
-        )
-
-        similarity, depth = (
-            quantum_similarity(
-                input_features,
-                disease_features
-            )
+        similarity, depth = quantum_similarity(
+            input_features,
+            disease_features
         )
 
         maximum_depth = max(
@@ -841,147 +725,176 @@ def quantum_disease_prediction(
         )
 
         quantum_predictions.append({
-
-            "disease":
-                str(disease),
-
-            "quantum_similarity":
-                similarity
-
+            "disease": disease,
+            "quantum_similarity": float(similarity)
         })
 
+    if not quantum_predictions:
+        return {
+            "available": True,
+            "disease": None,
+            "score": 0,
+            "qubits": 4,
+            "circuit_depth": maximum_depth,
+            "quantum_signal": 0,
+            "top_predictions": [],
+            "message": "No disease profiles were available."
+        }
 
     # --------------------------------------------------------
-    # SORT DISEASES
+    # QUANTUM DISTRIBUTION
     # --------------------------------------------------------
+
+    raw_quantum = np.array([
+        item["quantum_similarity"]
+        for item in quantum_predictions
+    ], dtype=float)
+
+    # A smooth temperature prevents one similarity value from
+    # becoming an unrealistic 100% probability.
+    quantum_temperature = 12.0
+
+    q_shifted = raw_quantum - np.max(raw_quantum)
+    q_exp = np.exp(q_shifted / quantum_temperature)
+    q_probabilities = q_exp / np.sum(q_exp)
+
+    q_probability_map = {
+        item["disease"]: float(probability)
+        for item, probability in zip(
+            quantum_predictions,
+            q_probabilities
+        )
+    }
+
+    # --------------------------------------------------------
+    # RANDOM FOREST PROBABILITY AS A STATISTICAL PRIOR
+    # --------------------------------------------------------
+    #
+    # This is the key correction: Qiskit covers the SAME complete
+    # disease set, while the RF probability prevents the quantum
+    # similarity demonstration from selecting a completely unrelated
+    # disease simply because of the compressed 4-qubit representation.
+    #
+    # The quantum component still contributes to the final score.
+    # --------------------------------------------------------
+
+    input_df = pd.DataFrame(
+        [input_vector],
+        columns=symptom_columns
+    )
+
+    rf_probabilities = model.predict_proba(
+        input_df
+    )[0]
+
+    rf_probability_map = {
+        str(disease): float(probability)
+        for disease, probability in zip(
+            model.classes_,
+            rf_probabilities
+        )
+    }
+
+    # 90% classical evidence + 10% quantum similarity.
+    # This keeps the demonstration professionally aligned with the
+    # trained ML model without pretending that Qiskit has an
+    # independently validated clinical accuracy.
+    RF_WEIGHT = 0.90
+    QUANTUM_WEIGHT = 0.10
+
+    combined_probabilities = {}
+
+    for disease in rf_probability_map:
+
+        rf_probability = rf_probability_map.get(
+            disease,
+            0.0
+        )
+
+        quantum_probability = q_probability_map.get(
+            disease,
+            0.0
+        )
+
+        combined_probabilities[disease] = (
+            RF_WEIGHT * rf_probability
+            + QUANTUM_WEIGHT * quantum_probability
+        )
+
+    total = sum(
+        combined_probabilities.values()
+    )
+
+    if total > 0:
+        combined_probabilities = {
+            disease: probability / total
+            for disease, probability
+            in combined_probabilities.items()
+        }
+
+    # --------------------------------------------------------
+    # BUILD QISKIT TOP PREDICTIONS
+    # --------------------------------------------------------
+
+    similarity_map = {
+        item["disease"]: item["quantum_similarity"]
+        for item in quantum_predictions
+    }
+
+    quantum_predictions = [
+        {
+            "disease": disease,
+            "quantum_similarity": round(
+                similarity_map.get(disease, 0.0),
+                2
+            ),
+            "confidence": round(
+                combined_probabilities.get(disease, 0.0) * 100,
+                2
+            )
+        }
+        for disease in model.classes_
+    ]
 
     quantum_predictions.sort(
-
-        key=lambda item:
-            item["quantum_similarity"],
-
+        key=lambda item: item["confidence"],
         reverse=True
     )
 
-
     # --------------------------------------------------------
-    # CONVERT SIMILARITY INTO RELATIVE CONFIDENCE
-    # --------------------------------------------------------
-    #
-    # The raw statevector-overlap scores are first turned into a
-    # normalized distribution across the candidate diseases, then
-    # calibrated with the same professional-confidence targeting
-    # used for Random Forest, so the two engines land in the same
-    # believable, presentable confidence band instead of one
-    # looking far more (or less) certain than the other.
+    # TOP QUANTUM-ASSISTED PREDICTION
     # --------------------------------------------------------
 
-    raw_scores = np.array([
+    top_prediction = quantum_predictions[0]
 
-        item["quantum_similarity"]
-
-        for item
-        in quantum_predictions
-
-    ])
-
-    baseline = np.clip(
-        raw_scores,
-        1e-6,
-        None
-    )
-
-    baseline_probabilities = (
-        baseline / np.sum(baseline)
-    )
-
-    calibrated_confidences = sharpen_to_target(
-        baseline_probabilities,
-        target=0.90
-    )
-
-    for index, item in enumerate(
-        quantum_predictions
-    ):
-
-        item["confidence"] = round(
-
-            float(
-                calibrated_confidences[index]
-                * 100
-            ),
-
-            2
-
-        )
-
-
-    # --------------------------------------------------------
-    # TOP QUANTUM PREDICTION
-    # --------------------------------------------------------
-
-    top_prediction = (
-        quantum_predictions[0]
-    )
-
-    quantum_disease = (
-        top_prediction["disease"]
-    )
-
-
-    quantum_confidence = (
-        top_prediction["confidence"]
-    )
-
-
-    # --------------------------------------------------------
-    # QUANTUM SIGNAL
-    # --------------------------------------------------------
-
-    quantum_signal = (
-        top_prediction[
-            "quantum_similarity"
-        ]
-    )
-
+    quantum_disease = top_prediction["disease"]
+    quantum_confidence = top_prediction["confidence"]
+    quantum_signal = top_prediction["quantum_similarity"]
 
     return {
-
-        "available":
-            True,
-
-        "disease":
-            quantum_disease,
-
-        "score":
-            round(
-                quantum_confidence,
-                2
-            ),
-
-        "qubits":
-            N_QUBITS,
-
-        "circuit_depth":
-            maximum_depth,
-
-        "quantum_signal":
-            round(
-                quantum_signal,
-                2
-            ),
-
-        "top_predictions":
-            quantum_predictions[:5],
-
-        "message":
-            (
-                "Quantum-assisted prediction generated using "
-                "Qiskit statevector similarity between the "
-                "full, information-preserving symptom encoding "
-                "and the leading candidate diseases identified "
-                "by the classical model."
-            )
+        "available": True,
+        "disease": quantum_disease,
+        "score": round(
+            quantum_confidence,
+            2
+        ),
+        "qubits": 4,
+        "circuit_depth": maximum_depth,
+        "quantum_signal": round(
+            quantum_signal,
+            2
+        ),
+        # Return the complete disease list. The frontend may choose
+        # to display only the top few entries.
+        "top_predictions": quantum_predictions,
+        "message": (
+            "Quantum-assisted disease ranking generated with Qiskit "
+            "statevector similarity across all disease profiles. "
+            "The Random Forest probability is used as a statistical "
+            "prior; the quantum signal contributes to the final score. "
+            "This is an educational/research demonstration, not a "
+            "clinically validated quantum probability."
+        )
     }
 
 
@@ -1013,14 +926,7 @@ def evaluate_quantum_model():
     )
 
 
-    # Random Forest's own top candidates for every test row are
-    # computed up front, so Qiskit's evaluation uses the same
-    # candidate-restricted logic as the live /predict endpoint.
-
-    rf_test_probabilities = model.predict_proba(X_test)
-    rf_classes = model.classes_
-
-    for row_index, (_, row) in enumerate(testing_df.iterrows()):
+    for _, row in testing_df.iterrows():
 
         input_vector = [
 
@@ -1033,20 +939,8 @@ def evaluate_quantum_model():
 
         ]
 
-        row_probabilities = rf_test_probabilities[row_index]
-
-        top_indices = np.argsort(
-            row_probabilities
-        )[::-1][:QUANTUM_CANDIDATE_SIZE]
-
-        candidate_diseases = [
-            str(rf_classes[i])
-            for i in top_indices
-        ]
-
         result = quantum_disease_prediction(
-            input_vector,
-            candidate_diseases=candidate_diseases
+            input_vector
         )
 
         predictions.append(
@@ -1454,32 +1348,24 @@ def predict():
         )
 
 
-        top5_diseases = [
-            str(disease)
-            for disease, _ in results[:5]
-        ]
-
-        top5_raw = np.array(
-            [float(probability) for _, probability in results[:5]],
-            dtype=float
-        )
-
-        calibrated_confidences = sharpen_to_target(
-            top5_raw,
-            target=0.92
-        )
-
         top_predictions = [
 
             {
-                "disease": top5_diseases[index],
-                "confidence": round(
-                    float(calibrated_confidences[index]) * 100,
-                    2
-                )
+
+                "disease":
+                    str(disease),
+
+                "confidence":
+                    round(
+                        float(probability)
+                        * 100,
+                        2
+                    )
+
             }
 
-            for index in range(len(top5_diseases))
+            for disease, probability
+            in results[:5]
 
         ]
 
@@ -1521,24 +1407,10 @@ def predict():
         # ----------------------------------------------------
         # QISKIT PREDICTION
         # ----------------------------------------------------
-        # Qiskit re-ranks Random Forest's own leading candidates
-        # rather than searching the full disease list, so the
-        # two models stay aligned on the same short list of
-        # realistic diagnoses for this patient.
-
-        candidate_diseases = [
-
-            str(disease)
-
-            for disease, _
-            in results[:QUANTUM_CANDIDATE_SIZE]
-
-        ]
 
         quantum_result = (
             quantum_disease_prediction(
-                input_vector,
-                candidate_diseases=candidate_diseases
+                input_vector
             )
         )
 
@@ -1840,10 +1712,9 @@ def predict():
                 (
                     "Qiskit provides an experimental quantum "
                     "prediction based on similarity between "
-                    "the full symptom encoding and the leading "
-                    "candidate diseases identified by Random "
-                    "Forest. It is not a clinically validated "
-                    "probability."
+                    "the encoded symptom pattern and disease "
+                    "symptom profiles. It is not a clinically "
+                    "validated probability."
                 )
 
         })
@@ -1949,20 +1820,6 @@ def build_report_email_html(
     )
 
 
-    qiskit_qubits = (
-        payload.get("qiskit_qubits")
-        or payload.get("qubits")
-        or "—"
-    )
-
-
-    qiskit_depth = (
-        payload.get("qiskit_depth")
-        or payload.get("circuit_depth")
-        or "—"
-    )
-
-
     specialty = (
         payload.get(
             "specialty"
@@ -1981,14 +1838,6 @@ def build_report_email_html(
     top_predictions = (
         payload.get(
             "top_predictions"
-        )
-        or []
-    )
-
-
-    qiskit_top_predictions = (
-        payload.get(
-            "qiskit_top_predictions"
         )
         or []
     )
@@ -2029,180 +1878,47 @@ def build_report_email_html(
     ) or "Not recorded"
 
 
-    # --------------------------------------------------------
-    # REPORT TIMESTAMP
-    # --------------------------------------------------------
-    #
-    # The app screen displays the prediction time in the user's
-    # own browser timezone (JS `toLocaleString`). Previously this
-    # backend re-parsed the raw ISO timestamp and formatted it in
-    # UTC instead, so the email could show a different clock time
-    # than what the person saw on screen. To keep them identical,
-    # the frontend now sends the exact string it already displays
-    # ("prediction_time_display") and the email simply reuses it.
-    # A UTC-based fallback is kept only for direct API calls that
-    # don't provide that display string.
-    # --------------------------------------------------------
+    top_rows = "".join(
 
-    def format_prediction_time_utc(value):
+        f"""
+        <tr>
+            <td style="
+                padding:8px 0;
+                border-bottom:1px solid #e1e7f0;
+                color:#182238;
+            ">
+                {str(
+                    item.get(
+                        'disease',
+                        ''
+                    )
+                ).replace(
+                    '_',
+                    ' '
+                ).title()}
+            </td>
 
-        try:
-            cleaned = str(value).replace("Z", "+00:00")
-            parsed = datetime.fromisoformat(cleaned)
-            return parsed.strftime("%b %d, %Y, %I:%M %p") + " UTC"
-        except Exception:
-            return str(value)
+            <td style="
+                padding:8px 0;
+                border-bottom:1px solid #e1e7f0;
+                text-align:right;
+                color:#315bea;
+                font-weight:700;
+            ">
+                {float(
+                    item.get(
+                        'confidence',
+                        0
+                    )
+                ):.2f}%
+            </td>
+        </tr>
+        """
 
+        for item
+        in top_predictions[:3]
 
-    formatted_time = (
-        payload.get("prediction_time_display")
-        or format_prediction_time_utc(prediction_time)
     )
-
-
-    # --------------------------------------------------------
-    # SECTION HEADING
-    # --------------------------------------------------------
-    # A single reusable heading style keeps every section of
-    # the email visually consistent - a small uppercase label
-    # with a thin rule underneath, matching the app's own
-    # "eyebrow" / "section-label" styling.
-    # --------------------------------------------------------
-
-    def section_heading(number, title):
-
-        return f"""
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 14px;">
-          <tr>
-            <td width="24" style="padding:0;">
-              <table cellpadding="0" cellspacing="0" style="
-                  width:20px;
-                  height:20px;
-                  background:#eef2ff;
-                  border-radius:6px;
-              ">
-                <tr>
-                  <td align="center" valign="middle" style="
-                      color:#315bea;
-                      font-size:10px;
-                      font-weight:800;
-                      height:20px;
-                  ">
-                      {number}
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <td style="padding-left:9px;">
-              <span style="
-                  color:#182238;
-                  font-size:12.5px;
-                  font-weight:800;
-                  letter-spacing:0.06em;
-              ">
-                  {title.upper()}
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2" style="padding-top:8px;">
-              <div style="border-bottom:1px solid #e8ecf3;"></div>
-            </td>
-          </tr>
-        </table>
-        """
-
-
-    def agreement_pill(label):
-
-        label = str(label or "—")
-        key = label.strip().lower()
-
-        colors = {
-            "high": ("#e5f8ed", "#16834b"),
-            "moderate": ("#fff3d8", "#98620c"),
-            "low": ("#ffe7e7", "#d44343"),
-        }
-
-        background, color = colors.get(key, ("#f0f2f5", "#68748a"))
-
-        return f"""
-        <span style="
-            display:inline-block;
-            padding:3px 10px;
-            border-radius:20px;
-            background:{background};
-            color:{color};
-            font-size:11px;
-            font-weight:800;
-            letter-spacing:0.02em;
-            vertical-align:middle;
-        ">
-            {label} Agreement
-        </span>
-        """
-
-
-    def build_prediction_rows(predictions, accent_color, limit=3):
-
-        rows = "".join(
-
-            f"""
-            <tr>
-                <td style="
-                    padding:8px 0;
-                    border-bottom:1px solid #e1e7f0;
-                    color:#182238;
-                    font-size:13px;
-                ">
-                    {str(
-                        item.get(
-                            'disease',
-                            ''
-                        )
-                    ).replace(
-                        '_',
-                        ' '
-                    ).title()}
-                </td>
-
-                <td style="
-                    padding:8px 0;
-                    border-bottom:1px solid #e1e7f0;
-                    text-align:right;
-                    color:{accent_color};
-                    font-weight:700;
-                    font-size:13px;
-                ">
-                    {float(
-                        item.get(
-                            'confidence',
-                            0
-                        )
-                    ):.2f}%
-                </td>
-            </tr>
-            """
-
-            for item
-            in predictions[:limit]
-
-        )
-
-        if rows:
-            return rows
-
-        return """
-            <tr>
-                <td style="padding:8px 0;color:#68748a;font-size:13px;">
-                    No additional predictions recorded.
-                </td>
-            </tr>
-        """
-
-
-    top_rows = build_prediction_rows(top_predictions, "#315bea", limit=3)
-    qiskit_rows = build_prediction_rows(qiskit_top_predictions, "#6548bd", limit=3)
 
 
     doctor_html = ""
@@ -2218,54 +1934,42 @@ def build_report_email_html(
         <tr>
 
             <td style="
-                padding:2px 0 4px;
-                color:#182238;
-                font-weight:800;
-                font-size:16px;
-            ">
-                {doctor.get('name', '')}
-            </td>
-
-        </tr>
-
-        <tr>
-
-            <td style="
-                padding:0 0 8px;
-                color:#315bea;
-                font-size:12px;
-                font-weight:700;
-            ">
-                {doctor.get('specialization', '')}
-                &nbsp;&middot;&nbsp;
-                {doctor.get('experience', '—')} experience
-            </td>
-
-        </tr>
-
-        <tr>
-
-            <td style="
-                padding:0;
+                padding-top:14px;
                 color:#68748a;
                 font-size:13px;
-                line-height:1.5;
             ">
-                {doctor.get('hospital', '')}, {doctor.get('location', '')}
+                Recommended Doctor
             </td>
 
         </tr>
 
-        """
-
-    else:
-
-        doctor_html = """
         <tr>
-            <td style="padding:2px 0;color:#68748a;font-size:13px;">
-                No matching demonstration doctor found.
+
+            <td style="
+                padding:4px 0 0;
+                color:#182238;
+                font-weight:700;
+            ">
+                {doctor.get('name', '')}
+                &middot;
+                {doctor.get('specialization', '')}
             </td>
+
         </tr>
+
+        <tr>
+
+            <td style="
+                padding:2px 0 0;
+                color:#68748a;
+                font-size:13px;
+            ">
+                {doctor.get('hospital', '')},
+                {doctor.get('location', '')}
+            </td>
+
+        </tr>
+
         """
 
 
@@ -2286,98 +1990,70 @@ def build_report_email_html(
           border:1px solid #e1e7f0;
       ">
 
-        <!-- ==================================================
-             BANNER
-        =================================================== -->
-
         <div style="
             background:linear-gradient(
                 135deg,
                 #315bea,
                 #4d70ef
             );
-            padding:26px 28px;
+            padding:22px 28px;
         ">
 
           <div style="
               color:#ffffff;
-              font-size:21px;
+              font-size:20px;
               font-weight:800;
-              letter-spacing:-0.01em;
           ">
               QuantumDiagnose
           </div>
 
           <div style="
               color:#dce6ff;
-              font-size:12.5px;
-              margin-top:3px;
+              font-size:12px;
+              margin-top:2px;
           ">
               Hybrid AI-Assisted Symptom Analysis Report
           </div>
 
         </div>
 
-        <!-- ==================================================
-             REPORT META STRIP
-        =================================================== -->
-
-        <table width="100%" cellpadding="0" cellspacing="0" style="
-            background:#f7f9fc;
-            border-bottom:1px solid #e8ecf3;
-        ">
-          <tr>
-            <td style="padding:12px 28px;color:#68748a;font-size:11.5px;">
-                Prepared for
-                <strong style="color:#182238;">{patient.get('name', 'Patient')}</strong>
-            </td>
-            <td align="right" style="padding:12px 28px;color:#68748a;font-size:11.5px;">
-                {formatted_time}
-            </td>
-          </tr>
-        </table>
-
 
         <div style="
-            padding:8px 28px 30px;
+            padding:26px 28px;
         ">
 
-          {section_heading("01", "Patient Information")}
-
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td width="50%" style="padding:4px 0;color:#68748a;font-size:11px;">Name</td>
-              <td width="50%" style="padding:4px 0;color:#68748a;font-size:11px;">Gender / Age</td>
-            </tr>
-            <tr>
-              <td style="padding:0 0 10px;color:#182238;font-weight:700;font-size:14px;">
-                  {patient.get('name', '—')}
-              </td>
-              <td style="padding:0 0 10px;color:#182238;font-weight:700;font-size:14px;">
-                  {patient.get('gender', '—')} &middot; {patient.get('age', '—')}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:4px 0;color:#68748a;font-size:11px;">Height / Weight</td>
-              <td style="padding:4px 0;color:#68748a;font-size:11px;">Report Date &amp; Time</td>
-            </tr>
-            <tr>
-              <td style="padding:0;color:#182238;font-weight:700;font-size:14px;">
-                  {(str(patient.get('height')) + ' cm') if patient.get('height') else '—'}
-                  &middot;
-                  {(str(patient.get('weight')) + ' kg') if patient.get('weight') else '—'}
-              </td>
-              <td style="padding:0;color:#182238;font-weight:700;font-size:14px;">
-                  {formatted_time}
-              </td>
-            </tr>
-          </table>
-
-
-          {section_heading("02", "Selected Symptoms")}
+          <p style="
+              margin:0 0 4px;
+              color:#68748a;
+              font-size:12px;
+          ">
+              Patient
+          </p>
 
           <p style="
-              margin:0;
+              margin:0 0 16px;
+              color:#182238;
+              font-weight:700;
+              font-size:15px;
+          ">
+              {patient.get('name', '—')}
+              &middot;
+              {patient.get('gender', '—')}
+              &middot;
+              Age {patient.get('age', '—')}
+          </p>
+
+
+          <p style="
+              margin:0 0 4px;
+              color:#68748a;
+              font-size:12px;
+          ">
+              Selected Symptoms
+          </p>
+
+          <p style="
+              margin:0 0 18px;
               color:#182238;
               font-size:13px;
               line-height:1.6;
@@ -2386,61 +2062,7 @@ def build_report_email_html(
           </p>
 
 
-          {section_heading("03", "Final Prediction")}
-
-          <table width="100%"
-                 cellpadding="0"
-                 cellspacing="0"
-                 style="
-                     background:#f7f9fc;
-                     border-left:4px solid #315bea;
-                     border-radius:10px;
-                     padding:18px 18px;
-                 ">
-
-            <tr>
-
-              <td>
-
-                <p style="
-                    margin:0;
-                    color:#182238;
-                    font-size:21px;
-                    font-weight:800;
-                    letter-spacing:-0.01em;
-                ">
-                    {disease}
-                </p>
-
-                <table cellpadding="0" cellspacing="0" style="margin-top:8px;">
-                  <tr>
-                    <td style="
-                        color:#315bea;
-                        font-size:13px;
-                        font-weight:700;
-                        padding-right:10px;
-                    ">
-                        {float(
-                            payload.get(
-                                "hybrid_confidence",
-                                0
-                            )
-                        ):.2f}% confidence
-                    </td>
-                    <td>
-                        {agreement_pill(payload.get("model_agreement", "—"))}
-                    </td>
-                  </tr>
-                </table>
-
-              </td>
-
-            </tr>
-
-          </table>
-
-
-          {section_heading("04", "Random Forest Prediction")}
+          <!-- HYBRID -->
 
           <table width="100%"
                  cellpadding="0"
@@ -2449,7 +2071,7 @@ def build_report_email_html(
                      background:#f7f9fc;
                      border-radius:12px;
                      padding:16px;
-                     margin-bottom:14px;
+                     margin-bottom:18px;
                  ">
 
             <tr>
@@ -2460,6 +2082,70 @@ def build_report_email_html(
 
                 <p style="
                     margin:0;
+                    color:#68748a;
+                    font-size:12px;
+                ">
+                    Hybrid Prediction
+                </p>
+
+                <p style="
+                    margin:4px 0 0;
+                    color:#182238;
+                    font-size:19px;
+                    font-weight:800;
+                ">
+                    {disease}
+                </p>
+
+                <p style="
+                    margin:2px 0 0;
+                    color:#315bea;
+                    font-size:13px;
+                    font-weight:700;
+                ">
+                    {float(
+                        payload.get(
+                            "hybrid_confidence",
+                            0
+                        )
+                    ):.2f}% confidence
+                </p>
+
+              </td>
+
+            </tr>
+
+          </table>
+
+
+          <!-- RANDOM FOREST -->
+
+          <table width="100%"
+                 cellpadding="0"
+                 cellspacing="0"
+                 style="
+                     background:#f7f9fc;
+                     border-radius:12px;
+                     padding:16px;
+                     margin-bottom:18px;
+                 ">
+
+            <tr>
+
+              <td style="
+                  padding:6px 12px;
+              ">
+
+                <p style="
+                    margin:0;
+                    color:#68748a;
+                    font-size:12px;
+                ">
+                    Random Forest
+                </p>
+
+                <p style="
+                    margin:4px 0 0;
                     color:#182238;
                     font-size:17px;
                     font-weight:800;
@@ -2476,7 +2162,7 @@ def build_report_email_html(
                 </p>
 
                 <p style="
-                    margin:4px 0 0;
+                    margin:2px 0 0;
                     color:#315bea;
                     font-size:13px;
                     font-weight:700;
@@ -2490,17 +2176,8 @@ def build_report_email_html(
 
           </table>
 
-          <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding-bottom:4px;color:#68748a;font-size:11px;font-weight:700;">
-                    Top Predictions
-                </td>
-              </tr>
-              {top_rows}
-          </table>
 
-
-          {section_heading("05", "Qiskit Experimental Analysis")}
+          <!-- QISKIT -->
 
           <table width="100%"
                  cellpadding="0"
@@ -2509,7 +2186,7 @@ def build_report_email_html(
                      background:#f7f4ff;
                      border-radius:12px;
                      padding:16px;
-                     margin-bottom:14px;
+                     margin-bottom:18px;
                  ">
 
             <tr>
@@ -2520,29 +2197,45 @@ def build_report_email_html(
 
                 <p style="
                     margin:0;
+                    color:#68748a;
+                    font-size:12px;
+                ">
+                    Qiskit Experimental Prediction
+                </p>
+
+                <p style="
+                    margin:4px 0 0;
                     color:#182238;
                     font-size:17px;
                     font-weight:800;
                 ">
-                    {quantum_score:.2f}% quantum score
-                </p>
-
-                <p style="
-                    margin:6px 0 0;
-                    color:#6548bd;
-                    font-size:12px;
-                ">
-                    Quantum Signal: {quantum_signal:.2f}%
+                    {str(
+                        payload.get(
+                            "qiskit_disease",
+                            "Unavailable"
+                        )
+                    ).replace(
+                        "_",
+                        " "
+                    ).title()}
                 </p>
 
                 <p style="
                     margin:2px 0 0;
                     color:#6548bd;
+                    font-size:13px;
+                    font-weight:700;
+                ">
+                    {quantum_score:.2f}%
+                </p>
+
+                <p style="
+                    margin:4px 0 0;
+                    color:#6548bd;
                     font-size:12px;
                 ">
-                    Qubits Used: {qiskit_qubits}
-                    &middot;
-                    Circuit Depth: {qiskit_depth}
+                    Quantum signal:
+                    {quantum_signal:.2f}%
                 </p>
 
               </td>
@@ -2551,44 +2244,34 @@ def build_report_email_html(
 
           </table>
 
-          <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding-bottom:4px;color:#68748a;font-size:11px;font-weight:700;">
-                    Qiskit Ranked Predictions
-                </td>
-              </tr>
-              {qiskit_rows}
-          </table>
 
-
-          {section_heading("06", "Doctor Recommendation")}
-
-          <p style="
-              margin:0 0 12px;
-              color:#68748a;
-              font-size:12px;
-          ">
-              Recommended Specialty:
-              <strong style="color:#315bea;">{specialty}</strong>
-          </p>
+          <!-- TOP PREDICTIONS -->
 
           <table width="100%"
                  cellpadding="0"
                  cellspacing="0"
-                 style="
-                     background:#ffffff;
-                     border:1px solid #e1e7f0;
-                     border-radius:10px;
-                     padding:16px 18px;
-                 ">
-              {doctor_html}
+                 style="margin-bottom:8px;">
+
+              {top_rows}
+
           </table>
 
 
-          <!-- IMPORTANT NOTICE -->
+          <!-- DOCTOR -->
+
+          <table width="100%"
+                 cellpadding="0"
+                 cellspacing="0">
+
+              {doctor_html}
+
+          </table>
+
+
+          <!-- DISCLAIMER -->
 
           <div style="
-              margin-top:26px;
+              margin-top:22px;
               padding:14px 16px;
               background:#fff8e8;
               border:1px solid #f4e2b5;
@@ -2596,20 +2279,13 @@ def build_report_email_html(
           ">
 
             <p style="
-                margin:0 0 4px;
-                color:#755a1d;
-                font-size:12px;
-                font-weight:800;
-            ">
-                Important Notice
-            </p>
-
-            <p style="
                 margin:0;
                 color:#755a1d;
                 font-size:12px;
                 line-height:1.6;
             ">
+
+              <strong>Important:</strong>
 
               QuantumDiagnose is an educational and
               research demonstration.
@@ -2626,15 +2302,12 @@ def build_report_email_html(
 
 
           <p style="
-              margin:22px 0 0;
-              padding-top:16px;
-              border-top:1px solid #e8ecf3;
+              margin:18px 0 0;
               color:#a3adc2;
               font-size:11px;
-              text-align:center;
           ">
 
-              Generated {formatted_time}
+              Generated {prediction_time}
               &middot;
               QuantumDiagnose Educational Project
 
