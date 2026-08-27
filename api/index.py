@@ -963,7 +963,7 @@ def build_report_email_html(payload):
             {doctor_html}
           </table>
 
-          <!-- SHORTENED IMPORTANT NOTICE -->
+          <!-- SHORTENED NOTICE -->
           <div style="margin-top:22px; padding:12px 14px; background:#fff8e8; border:1px solid #f4e2b5; border-radius:8px;">
             <p style="margin:0; color:#755a1d; font-size:12px; line-height:1.4;">
               <strong>Important:</strong> Educational research prototype. Not a substitute for professional medical advice.
