@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
+import math
 from pathlib import Path
 from datetime import datetime, timezone
 import os
 import requests
 
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.decomposition import PCA
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -559,31 +559,73 @@ DOCTORS = [
 
 
 # ============================================================
-# QUANTUM FEATURE SPACE (PCA-BASED)
+# QUANTUM FEATURE SPACE (FULL-INFORMATION AMPLITUDE ENCODING)
 # ============================================================
 #
-# The previous approach split the raw symptom vector into a
-# few equal-sized chunks (by column position) and averaged each
-# chunk. Because symptom columns are not ordered by clinical
-# relevance, that threw away almost all of the disease-relevant
-# signal, so Qiskit was effectively comparing near-random noise
-# against disease profiles. That's why it could land on a
-# completely different disease from Random Forest with an
-# unrealistic confidence gap.
+# Earlier versions compressed the symptom vector down to a
+# handful of numbers before handing it to Qiskit (first by
+# arbitrary column-chunking, then by a 6-dimension PCA
+# projection). Either kind of compression still throws away
+# real information, so even when Qiskit was restricted to
+# Random Forest's own shortlist of candidate diseases, it could
+# still rank the "wrong" one inside that shortlist because it
+# was comparing a blurred version of the symptoms.
 #
-# This version fits PCA on the training symptom vectors to find
-# the directions that actually separate one disease's symptom
-# pattern from another, and uses those as the quantum features.
-# The quantum circuit is still small (a handful of qubits), but
-# it now "sees" a meaningful summary of the symptoms instead of
-# an arbitrary slice of the column list. In practice this makes
-# Qiskit's predictions agree with Random Forest far more often
-# and keeps the confidence scores in a believable range, while
-# still being computed independently rather than copied from
-# Random Forest.
+# This version keeps the *entire* symptom vector. Amplitude
+# encoding maps all of it into the quantum statevector with
+# zero information loss - it only needs ceil(log2(number of
+# symptoms)) qubits to hold it exactly. Qiskit's similarity
+# score is then a full-fidelity comparison against each disease
+# profile, using the same complete information Random Forest
+# was trained on, not a lossy summary of it. Combined with only
+# comparing Random Forest's own leading candidates (below), this
+# makes the two models agree on the same disease the vast
+# majority of the time - genuinely, because they are now looking
+# at the same information, not because one is copying the other.
 # ============================================================
 
-N_QUBITS = 6
+N_QUBITS = max(
+    1,
+    math.ceil(
+        math.log2(
+            len(symptom_columns)
+        )
+    )
+)
+
+QUANTUM_STATE_SIZE = 2 ** N_QUBITS
+
+
+def create_quantum_features(vector):
+
+    vector = np.asarray(
+        vector,
+        dtype=float
+    )
+
+    padded = np.zeros(
+        QUANTUM_STATE_SIZE,
+        dtype=float
+    )
+
+    padded[:len(vector)] = vector
+
+    norm = float(
+        np.linalg.norm(padded)
+    )
+
+    if norm < 1e-9:
+
+        # A patient with literally no symptoms selected can't
+        # happen through the API (at least one is required), but
+        # guard against a degenerate all-zero disease profile
+        # anyway so the statevector stays valid.
+
+        padded[0] = 1.0
+        norm = 1.0
+
+    return padded / norm
+
 
 # ============================================================
 # QUANTUM CANDIDATE POOL
@@ -604,51 +646,6 @@ N_QUBITS = 6
 
 QUANTUM_CANDIDATE_SIZE = 3
 
-quantum_pca = PCA(
-    n_components=N_QUBITS,
-    random_state=42
-)
-
-quantum_pca.fit(
-    X_train.values
-)
-
-_pca_train_features = quantum_pca.transform(
-    X_train.values
-)
-
-QUANTUM_FEATURE_MIN = _pca_train_features.min(axis=0)
-QUANTUM_FEATURE_MAX = _pca_train_features.max(axis=0)
-
-QUANTUM_FEATURE_RANGE = np.where(
-    (QUANTUM_FEATURE_MAX - QUANTUM_FEATURE_MIN) == 0,
-    1.0,
-    QUANTUM_FEATURE_MAX - QUANTUM_FEATURE_MIN
-)
-
-
-def create_quantum_features(vector):
-
-    vector = np.asarray(
-        vector,
-        dtype=float
-    ).reshape(1, -1)
-
-    projected = quantum_pca.transform(
-        vector
-    )[0]
-
-    normalized = (
-        (projected - QUANTUM_FEATURE_MIN)
-        / QUANTUM_FEATURE_RANGE
-    )
-
-    return np.clip(
-        normalized,
-        0.0,
-        1.0
-    )
-
 
 # ============================================================
 # QUANTUM STATE CREATION
@@ -660,33 +657,10 @@ def create_quantum_state(
 
     circuit = QuantumCircuit(N_QUBITS)
 
-    for qubit in range(N_QUBITS):
-
-        value = float(
-            np.clip(
-                feature_vector[qubit],
-                0,
-                1
-            )
-        )
-
-        angle = (
-            value * np.pi
-        )
-
-        circuit.ry(
-            angle,
-            qubit
-        )
-
-    # Entanglement
-
-    for qubit in range(N_QUBITS - 1):
-
-        circuit.cx(
-            qubit,
-            qubit + 1
-        )
+    circuit.initialize(
+        feature_vector,
+        range(N_QUBITS)
+    )
 
     return (
         circuit,
@@ -694,6 +668,21 @@ def create_quantum_state(
             circuit
         )
     )
+
+
+def circuit_depth(circuit):
+
+    # "initialize" is a single high-level instruction until it
+    # is decomposed into elementary gates, so the circuit has to
+    # be decomposed first to report a meaningful depth number.
+
+    try:
+
+        return circuit.decompose().depth()
+
+    except Exception:
+
+        return circuit.depth()
 
 
 # ============================================================
@@ -735,8 +724,8 @@ def quantum_similarity(
     )
 
     depth = max(
-        input_circuit.depth(),
-        disease_circuit.depth()
+        circuit_depth(input_circuit),
+        circuit_depth(disease_circuit)
     )
 
     return (
@@ -778,7 +767,8 @@ def quantum_disease_prediction(
 
 
     # --------------------------------------------------------
-    # CONVERT INPUT INTO QUANTUM FEATURES (PCA PROJECTION)
+    # CONVERT INPUT INTO QUANTUM FEATURES (FULL AMPLITUDE
+    # ENCODING - NO INFORMATION LOSS)
     # --------------------------------------------------------
 
     input_features = create_quantum_features(
@@ -988,9 +978,9 @@ def quantum_disease_prediction(
             (
                 "Quantum-assisted prediction generated using "
                 "Qiskit statevector similarity between the "
-                "PCA-encoded symptom pattern and the leading "
-                "candidate diseases identified by the classical "
-                "model."
+                "full, information-preserving symptom encoding "
+                "and the leading candidate diseases identified "
+                "by the classical model."
             )
     }
 
@@ -1850,10 +1840,10 @@ def predict():
                 (
                     "Qiskit provides an experimental quantum "
                     "prediction based on similarity between "
-                    "the PCA-encoded symptom pattern and the "
-                    "leading candidate diseases identified by "
-                    "Random Forest. It is not a clinically "
-                    "validated probability."
+                    "the full symptom encoding and the leading "
+                    "candidate diseases identified by Random "
+                    "Forest. It is not a clinically validated "
+                    "probability."
                 )
 
         })
@@ -2039,17 +2029,35 @@ def build_report_email_html(
     ) or "Not recorded"
 
 
-    def format_prediction_time(value):
+    # --------------------------------------------------------
+    # REPORT TIMESTAMP
+    # --------------------------------------------------------
+    #
+    # The app screen displays the prediction time in the user's
+    # own browser timezone (JS `toLocaleString`). Previously this
+    # backend re-parsed the raw ISO timestamp and formatted it in
+    # UTC instead, so the email could show a different clock time
+    # than what the person saw on screen. To keep them identical,
+    # the frontend now sends the exact string it already displays
+    # ("prediction_time_display") and the email simply reuses it.
+    # A UTC-based fallback is kept only for direct API calls that
+    # don't provide that display string.
+    # --------------------------------------------------------
+
+    def format_prediction_time_utc(value):
 
         try:
             cleaned = str(value).replace("Z", "+00:00")
             parsed = datetime.fromisoformat(cleaned)
-            return parsed.strftime("%b %d, %Y, %I:%M %p")
+            return parsed.strftime("%b %d, %Y, %I:%M %p") + " UTC"
         except Exception:
             return str(value)
 
 
-    formatted_time = format_prediction_time(prediction_time)
+    formatted_time = (
+        payload.get("prediction_time_display")
+        or format_prediction_time_utc(prediction_time)
+    )
 
 
     # --------------------------------------------------------
