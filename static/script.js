@@ -1,7 +1,5 @@
 // ============================================================
-// QUANTUMDIAGNOSE
-// PROFESSIONAL FRONTEND
-// EMAIL/PASSWORD AUTHENTICATION & REPORT GENERATOR
+// QUANTUMDIAGNOSE FRONTEND & REPORT GENERATOR
 // ============================================================
 
 import {
@@ -93,7 +91,7 @@ function formatDateTime(value) {
 
 
 // ============================================================
-// STATE
+// APPLICATION STATE
 // ============================================================
 
 let authMode = "login";
@@ -123,7 +121,7 @@ const predictBtn = $("predictBtn");
 
 
 // ============================================================
-// AUTH HANDLERS
+// AUTHENTICATION LOGIC
 // ============================================================
 
 function showAuthMessage(text, isError = false) {
@@ -224,7 +222,7 @@ async function handleForgotPassword() {
 
     try {
         await sendPasswordResetEmail(auth, email);
-        showAuthMessage("Password reset email sent. Please check your inbox (and Spam folder).", false);
+        showAuthMessage("Password reset email sent. Please check your inbox.", false);
     } catch (error) {
         console.error("Password reset error:", error);
         let message = "Could not send reset email.";
@@ -499,7 +497,7 @@ function clearSymptoms() {
 
 
 // ============================================================
-// INFERENCE & PREDICTION EXECUTION
+// INFERENCE EXECUTION
 // ============================================================
 
 async function makePrediction() {
@@ -572,7 +570,7 @@ async function makePrediction() {
 
 
 // ============================================================
-// RENDER RESULT IN UI
+// RENDER UI PREDICTION RESULTS
 // ============================================================
 
 function renderPrediction(data) {
@@ -690,7 +688,7 @@ function renderAgreement(agreement) {
 
 
 // ============================================================
-// DOCTOR DIRECTORY UI
+// DOCTOR DIRECTORY
 // ============================================================
 
 function doctorCard(doctor) {
@@ -775,7 +773,7 @@ async function loadDoctors() {
 
 
 // ============================================================
-// HISTORY SYSTEM
+// PREDICTION HISTORY
 // ============================================================
 
 async function saveCurrentHistory() {
@@ -1170,7 +1168,7 @@ function renderComparisonPage() {
 
 
 // ============================================================
-// PDF REPORT GENERATION (SINGLE PAGE CLINICAL LAYOUT)
+// PDF REPORT GENERATOR (BALANCED CLINICAL SINGLE-PAGE)
 // ============================================================
 
 function downloadPDF(source) {
@@ -1210,160 +1208,163 @@ function downloadPDF(source) {
         .map(formatDisease)
         .join(", ");
 
-    const MARGIN = 14;
+    const MARGIN = 16;
     const PAGE_WIDTH = 210;
-    const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 182 mm
+    const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 178 mm
 
-    // Clinical Color Palette
-    const PRIMARY = [49, 91, 234];       // Medical Blue
-    const INK = [24, 34, 56];            // Deep Slate
-    const MUTED = [104, 116, 138];       // Muted Text
-    const BORDER = [225, 231, 240];      // Light Gray Border
-    const BG_LIGHT = [247, 249, 252];    // Card Fill
-    const PURPLE_BG = [247, 244, 255];   // Quantum Card Fill
+    const PRIMARY = [49, 91, 234];       // #315bea
+    const INK = [24, 34, 56];            // #182238
+    const MUTED = [104, 116, 138];       // #68748a
+    const BORDER = [225, 231, 240];      // #e1e7f0
+    const BG_LIGHT = [247, 249, 252];    // #f7f9fc
+    const PURPLE_BG = [247, 244, 255];
     const PURPLE_BORDER = [220, 209, 250];
     const PURPLE_TXT = [101, 72, 189];
-    const NOTICE_BG = [255, 248, 232];   // Alert Fill
+    const NOTICE_BG = [255, 248, 232];
     const NOTICE_BORDER = [244, 226, 181];
     const NOTICE_TEXT = [117, 90, 29];
 
-    let y = 14;
+    let y = 18;
 
     // --- 1. HEADER ---
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.setTextColor(...PRIMARY);
     doc.text("QuantumDiagnose", MARGIN, y);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(...MUTED);
     doc.text("CONFIDENTIAL PATIENT SUMMARY", MARGIN + CONTENT_WIDTH, y - 1, { align: "right" });
-    doc.text("Quantum-Assisted ML Disease Prediction Report", MARGIN + CONTENT_WIDTH, y + 3.5, { align: "right" });
+    doc.text("Quantum-Assisted ML Disease Prediction Report", MARGIN + CONTENT_WIDTH, y + 4, { align: "right" });
 
-    y += 6;
+    y += 8;
     doc.setDrawColor(...PRIMARY);
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.6);
     doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
-    y += 6;
+    y += 9;
 
-    // --- 2. PATIENT & SYMPTOMS CARD ---
+    // --- 2. PATIENT DEMOGRAPHICS & SYMPTOMS ---
     doc.setFillColor(...BG_LIGHT);
     doc.setDrawColor(...BORDER);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 22, 1.5, 1.5, "FD");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(...MUTED);
-    doc.text("Patient:", MARGIN + 4, y + 5);
-    doc.text("Selected Symptoms:", MARGIN + 4, y + 14);
+    doc.setLineWidth(0.35);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 28, 2, 2, "FD");
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
-    doc.setTextColor(...INK);
-    const patientStr = `${patient.name || "—"}  •  ${patient.gender || "—"}  •  Age ${patient.age || "—"}`;
-    doc.text(patientStr, MARGIN + 18, y + 5);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
-    doc.text(`Height: ${patient.height ? patient.height + " cm" : "—"}   Weight: ${patient.weight ? patient.weight + " kg" : "—"}   Email: ${source.userEmail || currentUser?.email || "—"}`, MARGIN + 18, y + 9.2);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(...INK);
-    doc.text(symptoms || "Not recorded", MARGIN + 34, y + 14);
-
-    y += 26;
-
-    // --- 3. FINAL PREDICTED DISEASE CARD ---
-    doc.setFillColor(...BG_LIGHT);
-    doc.setDrawColor(...BORDER);
-    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 17, 1.5, 1.5, "FD");
+    doc.text("Patient:", MARGIN + 5, y + 7.5);
+    doc.text("Selected Symptoms:", MARGIN + 5, y + 21);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
+    doc.setFontSize(10);
+    doc.setTextColor(...INK);
+    const patientLine = `${patient.name || "—"}   •   ${patient.gender || "—"}   •   Age ${patient.age || "—"}`;
+    doc.text(patientLine, MARGIN + 22, y + 7.5);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
     doc.setTextColor(...MUTED);
-    doc.text("Final Predicted Disease", MARGIN + 4, y + 5.5);
+    doc.text(`Height: ${patient.height ? patient.height + " cm" : "—"}    Weight: ${patient.weight ? patient.weight + " kg" : "—"}    Email: ${source.userEmail || currentUser?.email || "—"}`, MARGIN + 22, y + 13);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...INK);
+    const splitSymptoms = doc.splitTextToSize(symptoms || "Not recorded", CONTENT_WIDTH - 46);
+    doc.text(splitSymptoms, MARGIN + 40, y + 21);
+
+    y += 36;
+
+    // --- 3. FINAL PREDICTED DISEASE HERO CARD ---
+    doc.setFillColor(...BG_LIGHT);
+    doc.setDrawColor(...BORDER);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 24, 2, 2, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...MUTED);
+    doc.text("Final Predicted Disease", MARGIN + 6, y + 7.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(...INK);
+    doc.text(hybridDisease, MARGIN + 6, y + 17.5);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
-    doc.setTextColor(...INK);
-    doc.text(hybridDisease, MARGIN + 4, y + 12.5);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
     doc.setTextColor(...PRIMARY);
-    doc.text(`${hybridConfidence.toFixed(2)}% confidence`, MARGIN + CONTENT_WIDTH - 4.5, y + 10, { align: "right" });
+    doc.text(`${hybridConfidence.toFixed(2)}% confidence`, MARGIN + CONTENT_WIDTH - 6, y + 14.5, { align: "right" });
 
-    y += 21;
+    y += 32;
 
-    // --- 4. RANDOM FOREST CARD ---
+    // --- 4. SIDE-BY-SIDE ANALYTICAL TILES ---
+    const tileWidth = (CONTENT_WIDTH - 6) / 2;
+
+    // Left: Random Forest Card
     doc.setFillColor(...BG_LIGHT);
     doc.setDrawColor(...BORDER);
-    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 17, 1.5, 1.5, "FD");
+    doc.roundedRect(MARGIN, y, tileWidth, 26, 2, 2, "FD");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     doc.setTextColor(...MUTED);
-    doc.text("Random Forest", MARGIN + 4, y + 5.5);
+    doc.text("Random Forest", MARGIN + 5, y + 7);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...INK);
-    doc.text(disease, MARGIN + 4, y + 12.5);
+    doc.text(disease, MARGIN + 5, y + 15.5);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(10.5);
     doc.setTextColor(...PRIMARY);
-    doc.text(`${rf.toFixed(2)}% confidence`, MARGIN + CONTENT_WIDTH - 4.5, y + 10, { align: "right" });
+    doc.text(`${rf.toFixed(2)}% confidence`, MARGIN + 5, y + 21.5);
 
-    y += 21;
-
-    // --- 5. QISKIT QUANTUM CARD ---
+    // Right: Qiskit Quantum Card
+    const rightX = MARGIN + tileWidth + 6;
     doc.setFillColor(...PURPLE_BG);
     doc.setDrawColor(...PURPLE_BORDER);
-    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 17, 1.5, 1.5, "FD");
+    doc.roundedRect(rightX, y, tileWidth, 26, 2, 2, "FD");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     doc.setTextColor(...PURPLE_TXT);
-    doc.text("Qiskit Experimental Prediction", MARGIN + 4, y + 5.5);
+    doc.text("Qiskit Experimental Prediction", rightX + 5, y + 7);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...INK);
-    doc.text(formatDisease(source.qiskit_disease || source.qiskitDisease || disease), MARGIN + 4, y + 12.5);
+    doc.text(formatDisease(source.qiskit_disease || source.qiskitDisease || disease), rightX + 5, y + 15.5);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(10.5);
     doc.setTextColor(...PURPLE_TXT);
-    doc.text(`${quantum.toFixed(2)}%`, MARGIN + CONTENT_WIDTH - 4.5, y + 8, { align: "right" });
+    doc.text(`${quantum.toFixed(2)}%`, rightX + 5, y + 21.5);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.setTextColor(...PURPLE_TXT);
-    doc.text(`Quantum signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%`, MARGIN + CONTENT_WIDTH - 4.5, y + 12.5, { align: "right" });
+    doc.text(`Quantum signal: ${Number(source.quantum_signal || source.quantumSignal || 0).toFixed(2)}%`, rightX + tileWidth - 5, y + 21.5, { align: "right" });
 
-    y += 21;
+    y += 34;
 
-    // --- 6. TOP EVALUATIONS TABLE ---
+    // --- 5. TOP EVALUATIONS TABLE ---
     const topList = (source.top_predictions || []).slice(0, 3);
     if (topList.length > 0) {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7.5);
+        doc.setFontSize(8.5);
         doc.setTextColor(...MUTED);
         doc.text("TOP EVALUATIONS", MARGIN, y);
-        y += 2;
+        y += 2.5;
+
         doc.setDrawColor(...BORDER);
-        doc.setLineWidth(0.3);
+        doc.setLineWidth(0.35);
         doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
-        y += 4;
+        y += 5.5;
 
         topList.forEach(item => {
             doc.setFont("helvetica", "normal");
-            doc.setFontSize(7.8);
+            doc.setFontSize(9);
             doc.setTextColor(...INK);
             doc.text(formatDisease(item.disease), MARGIN + 2, y);
 
@@ -1371,55 +1372,56 @@ function downloadPDF(source) {
             doc.setTextColor(...PRIMARY);
             doc.text(`${Number(item.confidence || 0).toFixed(2)}%`, MARGIN + CONTENT_WIDTH - 2, y, { align: "right" });
 
-            y += 1.8;
+            y += 2.5;
             doc.setDrawColor(...BORDER);
             doc.line(MARGIN + 2, y, MARGIN + CONTENT_WIDTH - 2, y);
-            y += 3.8;
+            y += 5.5;
         });
-        y += 1;
+        y += 4;
     }
 
-    // --- 7. RECOMMENDED DOCTOR ---
+    // --- 6. RECOMMENDED DOCTOR ---
     const doctors = source.doctors || [];
     const docInfo = doctors.length ? doctors[0] : null;
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(...MUTED);
     doc.text("RECOMMENDED DOCTOR", MARGIN, y);
-    y += 2;
+    y += 2.5;
+
     doc.setDrawColor(...BORDER);
     doc.line(MARGIN, y, MARGIN + CONTENT_WIDTH, y);
-    y += 4.5;
+    y += 6;
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
+    doc.setFontSize(10);
     doc.setTextColor(...INK);
-    doc.text(docInfo ? `${docInfo.name}  •  ${docInfo.specialization}` : `Specialty: ${source.specialty || "General Physician"}`, MARGIN + 2, y);
+    doc.text(docInfo ? `${docInfo.name}   •   ${docInfo.specialization}` : `Specialty: ${source.specialty || "General Physician"}`, MARGIN + 2, y);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(...MUTED);
-    doc.text(docInfo ? `${docInfo.hospital}, ${docInfo.location}  (Experience: ${docInfo.experience || "—"})` : "Consult a certified medical provider.", MARGIN + 2, y + 4.2);
+    doc.text(docInfo ? `${docInfo.hospital}, ${docInfo.location}  (Experience: ${docInfo.experience || "—"})` : "Consult a certified medical provider.", MARGIN + 2, y + 5.5);
 
-    y += 11;
+    y += 18;
 
-    // --- 8. SHORTENED NOTICE ---
+    // --- 7. SHORTENED NOTICE ---
     doc.setFillColor(...NOTICE_BG);
     doc.setDrawColor(...NOTICE_BORDER);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 9, 1.5, 1.5, "FD");
+    doc.setLineWidth(0.35);
+    doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 12, 1.5, 1.5, "FD");
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.setTextColor(...NOTICE_TEXT);
-    doc.text("Important: Educational research prototype. Not a substitute for professional medical advice.", MARGIN + 4, y + 5.5);
+    doc.text("Important: Educational research prototype. Not a substitute for professional medical advice.", MARGIN + 5, y + 7.5);
 
-    y += 14;
+    y += 20;
 
-    // --- 9. FOOTER (BOTTOM-LEFT ALIGNED) ---
+    // --- 8. FOOTER ---
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.setTextColor(...MUTED);
     doc.text(`Generated ${formatDateTime(predictionTime)} • QuantumDiagnose Educational Project`, MARGIN, y);
 
@@ -1546,7 +1548,7 @@ async function sendEmailReport() {
 
 
 // ============================================================
-// EVENT LISTENERS
+// EVENT LISTENERS & INITIALIZATION
 // ============================================================
 
 loginTab?.addEventListener("click", () => setAuthMode("login"));
@@ -1593,11 +1595,6 @@ emailModalInput?.addEventListener("keydown", event => {
 });
 
 $("quantumBtn")?.addEventListener("click", renderQuantumPage);
-
-
-// ============================================================
-// AUTH STATE LISTENER & INIT
-// ============================================================
 
 onAuthStateChanged(auth, async user => {
     if (user) {
