@@ -3348,7 +3348,22 @@ async function sendEmailReport() {
 
         prediction_time:
             source.prediction_time ||
-            source.predictionTime
+            source.predictionTime,
+
+        // ------------------------------------------------------
+        // Sends the exact date/time string already shown on
+        // screen (formatted in the user's own browser timezone),
+        // so the emailed report always matches what the person
+        // saw in the app instead of the backend reformatting the
+        // raw timestamp in UTC.
+        // ------------------------------------------------------
+
+        prediction_time_display:
+            formatDateTime(
+                source.prediction_time ||
+                source.predictionTime
+            )
+
     };
 
     if (emailModalSend) {
